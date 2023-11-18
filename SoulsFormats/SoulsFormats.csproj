@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Copyright>Copyright © Joseph Anderson 2019</Copyright>
+    <Description>A .NET library for reading and writing FromSoftware file formats.</Description>
+    <Company>JKAnderson</Company>
+    <Authors>Joseph Anderson</Authors>
+    <PackageProjectUrl>https://github.com/JKAnderson/SoulsFormats</PackageProjectUrl>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <LangVersion>11</LangVersion>
+    <NoWarn>SYSLIB0021,CS0649,CS1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle" Version="1.8.9">
+      <NoWarn>NU1701</NoWarn>
+    </PackageReference>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
+  </ItemGroup>
+</Project>
