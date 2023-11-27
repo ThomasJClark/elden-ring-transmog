@@ -75,6 +75,12 @@ shopLineups.Rows = new List<PARAM.Row>(shopLineups.Rows);
 spEffects.ApplyParamdefCarefully(paramDefs);
 spEffects.Rows = new List<PARAM.Row>(spEffects.Rows);
 
+Console.WriteLine("  Reading events...");
+var commonEmevdPath = Path.Combine(inputPath, "event/common.emevd.dcx");
+var commonEmevd = EMEVD.Read(
+    DCX.Decompress(File.ReadAllBytes(commonEmevdPath), out DCX.Type commonEvevdDcxType)
+);
+
 Console.WriteLine("Summary (before):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
 Console.WriteLine($"  Material sets: {materialSets.Rows.Count}");
@@ -220,6 +226,23 @@ PARAM.Row AddShopLineup(int itemType, int itemId, int materialSet)
     return shopLineupRow;
 }
 
+Console.WriteLine("Adding event handlers...");
+
+// Add a speffect to undo any equipped transmogs
+var undoTransmogEffect = new PARAM.Row(250, "", spEffects.AppliedParamdef);
+undoTransmogEffect["effectTargetSelf"].Value = (byte)1;
+undoTransmogEffect["effectTargetFriend"].Value = (byte)1;
+undoTransmogEffect["effectTargetPlayer"].Value = (byte)1;
+undoTransmogEffect["effectTargetSelfTarget"].Value = (byte)1;
+spEffects.Rows.Add(undoTransmogEffect);
+
+// Initialize event handlers to undo equipped transmogs when the above effect is applied
+var undoTransmogEvent = TransmogEMEVDUtils.BuildUntransmogEvent(9007101, undoTransmogEffect.ID);
+commonEmevd.Events.Add(undoTransmogEvent);
+
+var initializeEvent = commonEmevd.Events.Find(evt => evt.ID == 0)!;
+var eventSlotId = 0;
+
 Console.WriteLine("Generating transmogrified armor...");
 
 // Use the vanilla data to determine valid armor. This keeps save files compatible, and keeps
@@ -295,30 +318,32 @@ foreach (var baseArmorRow in validArmorRows)
             armorById[targetArmorRow.ID]
         );
 
-        // Add a shop item to create the transmogrified armor, and to turn the transmogrified
-        // armor back into the base armor
+        // Add a shop item to create the transmogrified armor
         var transmogrifiedMaterialSet = AddMaterialSet(itemTypeArmor, transmogrifiedArmorRow.ID);
         AddShopLineup(itemTypeArmor, transmogrifiedArmorRow.ID, baseMaterialSet.ID);
-        AddShopLineup(itemTypeArmor, baseArmorRow.ID, transmogrifiedMaterialSet.ID);
+
+        // Add an event initializer to undo the transmogrified armor when an spEffect is applied
+        // to the player
+        initializeEvent.Instructions.Add(
+            TransmogEMEVDUtils.BuildUntransmogInitializeInstruction(
+                eventSlotId++,
+                (int)undoTransmogEvent.ID,
+                baseProtectorCategory,
+                transmogrifiedArmorRow.ID,
+                baseArmorRow.ID
+            )
+        );
     }
 
     i++;
 }
 
+Console.WriteLine(initializeEvent.Instructions.Count);
+
 // Add the menu text used to open the transmogrify screen
 talkTexts[69000000] = isInputReforged
     ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify equipment"
     : "Transmogrify equipment";
-
-Console.WriteLine("Adding event handlers...");
-
-// Add a speffect to undo any equipped transmogs
-var undoTransmogEffect = new PARAM.Row(250, "", spEffects.AppliedParamdef);
-undoTransmogEffect["effectTargetSelf"].Value = (byte)1;
-undoTransmogEffect["effectTargetFriend"].Value = (byte)1;
-undoTransmogEffect["effectTargetPlayer"].Value = (byte)1;
-undoTransmogEffect["effectTargetSelfTarget"].Value = (byte)1;
-spEffects.Rows.Add(undoTransmogEffect);
 
 Console.WriteLine("Summary (after):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
@@ -344,5 +369,12 @@ GetBinderFile(paramBnd, materialSetFileName).Bytes = materialSets.Write();
 GetBinderFile(paramBnd, shopLineupFileName).Bytes = shopLineups.Write();
 GetBinderFile(paramBnd, spEffectFileName).Bytes = spEffects.Write();
 SFUtil.EncryptERRegulation(Path.Combine(modPath, "regulation.bin"), paramBnd);
+
+Console.WriteLine("  Writing events...");
+Directory.CreateDirectory(Path.Combine(modPath, "event"));
+File.WriteAllBytes(
+    Path.Combine(modPath, "event/common.emevd.dcx"),
+    DCX.Compress(commonEmevd.Write(), commonEvevdDcxType)
+);
 
 Console.WriteLine("Done");
