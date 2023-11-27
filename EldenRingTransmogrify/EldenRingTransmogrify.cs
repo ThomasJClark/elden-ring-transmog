@@ -12,6 +12,7 @@ bool isInputDetailedItemDescriptions = inputPath.ToUpper().Contains("DETAILED");
 string armorFileName = @"N:\GR\data\Param\param\GameParam\EquipParamProtector.param";
 string materialSetFileName = @"N:\GR\data\Param\param\GameParam\EquipMtrlSetParam.param";
 string shopLineupFileName = @"N:\GR\data\Param\param\GameParam\ShopLineupParam.param";
+string spEffectFileName = @"N:\GR\data\Param\param\GameParam\SpEffectParam.param";
 string armorNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorName.fmg";
 string armorInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorInfo.fmg";
 string armorCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorCaption.fmg";
@@ -23,10 +24,9 @@ var GetBinderFile = (BND4 bnd, string fileName) => bnd.Files.Find(f => f.Name ==
 
 Console.WriteLine($"Reading vanilla data from \"{inputPath}\"...");
 
-Dictionary<string, PARAMDEF> paramDefs = Directory
+var paramDefs = Directory
     .GetFiles(Path.Combine("..", "Paramdex", "ER", "Defs"))
-    .Select(PARAMDEF.XmlDeserialize)
-    .ToDictionary(paramDef => paramDef.ParamType);
+    .Select(PARAMDEF.XmlDeserialize);
 
 // Read the input data from the unpacked game folder
 Console.WriteLine($"  Reading item names...");
@@ -51,6 +51,7 @@ BND4 paramBnd = SFUtil.DecryptERRegulation(Path.Combine(inputPath, "regulation.b
 PARAM armor = PARAM.Read(GetBinderFile(paramBnd, armorFileName).Bytes);
 PARAM materialSets = PARAM.Read(GetBinderFile(paramBnd, materialSetFileName).Bytes);
 PARAM shopLineups = PARAM.Read(GetBinderFile(paramBnd, shopLineupFileName).Bytes);
+PARAM spEffects = PARAM.Read(GetBinderFile(paramBnd, spEffectFileName).Bytes);
 
 BND4 vanillaParamBnd = isInputVanilla
     ? paramBnd
@@ -59,17 +60,20 @@ PARAM vanillaArmor = isInputVanilla
     ? armor
     : PARAM.Read(GetBinderFile(vanillaParamBnd, armorFileName).Bytes);
 
-vanillaArmor.ApplyParamdef(paramDefs[vanillaArmor.ParamType]);
-armor.ApplyParamdef(paramDefs[armor.ParamType]);
+vanillaArmor.ApplyParamdefCarefully(paramDefs);
+armor.ApplyParamdefCarefully(paramDefs);
 armor.Rows = new List<PARAM.Row>(armor.Rows);
 
 int nextMaterialSetId = 6900000;
-materialSets.ApplyParamdef(paramDefs[materialSets.ParamType]);
+materialSets.ApplyParamdefCarefully(paramDefs);
 materialSets.Rows = new List<PARAM.Row>(materialSets.Rows);
 
 int nextShopLineupId = 4000000;
-shopLineups.ApplyParamdef(paramDefs[shopLineups.ParamType]);
+shopLineups.ApplyParamdefCarefully(paramDefs);
 shopLineups.Rows = new List<PARAM.Row>(shopLineups.Rows);
+
+spEffects.ApplyParamdefCarefully(paramDefs);
+spEffects.Rows = new List<PARAM.Row>(spEffects.Rows);
 
 Console.WriteLine("Summary (before):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
@@ -306,6 +310,16 @@ talkTexts[69000000] = isInputReforged
     ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify equipment"
     : "Transmogrify equipment";
 
+Console.WriteLine("Adding event handlers...");
+
+// Add a speffect to undo any equipped transmogs
+var undoTransmogEffect = new PARAM.Row(250, "", spEffects.AppliedParamdef);
+undoTransmogEffect["effectTargetSelf"].Value = (byte)1;
+undoTransmogEffect["effectTargetFriend"].Value = (byte)1;
+undoTransmogEffect["effectTargetPlayer"].Value = (byte)1;
+undoTransmogEffect["effectTargetSelfTarget"].Value = (byte)1;
+spEffects.Rows.Add(undoTransmogEffect);
+
 Console.WriteLine("Summary (after):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
 Console.WriteLine($"  Material sets: {materialSets.Rows.Count}");
@@ -328,6 +342,7 @@ Console.WriteLine($"  Writing params...");
 GetBinderFile(paramBnd, armorFileName).Bytes = armor.Write();
 GetBinderFile(paramBnd, materialSetFileName).Bytes = materialSets.Write();
 GetBinderFile(paramBnd, shopLineupFileName).Bytes = shopLineups.Write();
+GetBinderFile(paramBnd, spEffectFileName).Bytes = spEffects.Write();
 SFUtil.EncryptERRegulation(Path.Combine(modPath, "regulation.bin"), paramBnd);
 
 Console.WriteLine("Done");
