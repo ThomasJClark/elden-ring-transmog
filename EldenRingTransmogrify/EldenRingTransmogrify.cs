@@ -80,6 +80,9 @@ var commonEmevdPath = Path.Combine(inputPath, "event/common.emevd.dcx");
 var commonEmevd = EMEVD.Read(
     DCX.Decompress(File.ReadAllBytes(commonEmevdPath), out DCX.Type commonEvevdDcxType)
 );
+var transmogFuncEmevd = EMEVD.Read(
+    DCX.Decompress(File.ReadAllBytes("event/transmog_func.emevd.dcx"))
+);
 
 Console.WriteLine("Summary (before):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
@@ -95,7 +98,7 @@ int shopLineupItemIdIdx = shopLineups.GetCellIndex("equipId");
 int shopLineupMaterialIdx = shopLineups.GetCellIndex("mtrlId");
 int armorProtectorCategoryIdx = armor.GetCellIndex("protectorCategory");
 
-// Bare head/body/etc/arms/legs
+// Bare head/body/arms/legs
 int[] bareArmorIds = new int[] { 10000, 10100, 10200, 10300 };
 
 /**
@@ -103,8 +106,7 @@ int[] bareArmorIds = new int[] { 10000, 10100, 10200, 10300 };
  */
 PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
 {
-    var armorRow = new PARAM.Row(baseArmorRow);
-    armorRow.ID = id;
+    var armorRow = new PARAM.Row(baseArmorRow) { ID = id };
 
     // Is the target armor bare head/body/etc.? If so, instead of a transmogrified armor this is
     // an invisible version of the base armor
@@ -228,7 +230,7 @@ PARAM.Row AddShopLineup(int itemType, int itemId, int materialSet)
 
 Console.WriteLine("Adding event handlers...");
 
-// Add a speffect to undo any equipped transmogs
+// Add a speffect that triggers an event to undo all equipped transmogs
 var undoTransmogEffect = new PARAM.Row(250, "", spEffects.AppliedParamdef);
 undoTransmogEffect["effectTargetSelf"].Value = (byte)1;
 undoTransmogEffect["effectTargetFriend"].Value = (byte)1;
@@ -236,12 +238,29 @@ undoTransmogEffect["effectTargetPlayer"].Value = (byte)1;
 undoTransmogEffect["effectTargetSelfTarget"].Value = (byte)1;
 spEffects.Rows.Add(undoTransmogEffect);
 
-// Initialize event handlers to undo equipped transmogs when the above effect is applied
-var undoTransmogEvent = TransmogEMEVDUtils.BuildUntransmogEvent(9007101, undoTransmogEffect.ID);
+var nextEventId = 9007101;
+
+// Create an event to undo equipped transmogs when the above effect is applied
+var undoTransmogEvent = new EMEVD.Event(nextEventId++);
 commonEmevd.Events.Add(undoTransmogEvent);
+undoTransmogEvent.Instructions.Add(
+    TransmogEMEVDUtils.IfCharacterHasSpEffect(
+        TransmogEMEVDUtils.MAIN,
+        TransmogEMEVDUtils.ENTITY_PLAYER,
+        undoTransmogEffect.ID,
+        true,
+        TransmogEMEVDUtils.EQUAL,
+        1.0f
+    )
+);
+
+// Create an event that runs after an armor piece is successfully untransmogged, to spawn SFX
+var postUndoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 0)!;
+postUndoTransmogEvent.ID = nextEventId++;
+commonEmevd.Events.Add(postUndoTransmogEvent);
 
 var initializeEvent = commonEmevd.Events.Find(evt => evt.ID == 0)!;
-var eventSlotId = 0;
+initializeEvent.Instructions.Add(TransmogEMEVDUtils.InitializeEvent(0, (int)undoTransmogEvent.ID));
 
 Console.WriteLine("Generating transmogrified armor...");
 
@@ -295,17 +314,6 @@ foreach (var baseArmorRow in validArmorRows)
             continue;
         }
 
-        // Don't allow transmogging helms or gauntlets except to make them invisible. This is
-        // to avoid hitting the 16 bit row limit, and because these pieces are light and
-        // have a smaller impact on defense.
-        if (
-            (baseProtectorCategory == 0 || baseProtectorCategory == 2)
-            && !bareArmorIds.Contains(targetArmorRow.ID)
-        )
-        {
-            continue;
-        }
-
         // Generate a (relatively) stable ID. Assuming future patches/mods only add armor
         // pieces at the end of the current list, this should make save files forward compatible
         // with later updates.
@@ -319,26 +327,50 @@ foreach (var baseArmorRow in validArmorRows)
         );
 
         // Add a shop item to create the transmogrified armor
-        var transmogrifiedMaterialSet = AddMaterialSet(itemTypeArmor, transmogrifiedArmorRow.ID);
         AddShopLineup(itemTypeArmor, transmogrifiedArmorRow.ID, baseMaterialSet.ID);
 
-        // Add an event initializer to undo the transmogrified armor when an spEffect is applied
+        // Add event instructions to undo the transmogrified armor when an spEffect is applied
         // to the player
-        initializeEvent.Instructions.Add(
-            TransmogEMEVDUtils.BuildUntransmogInitializeInstruction(
-                eventSlotId++,
-                (int)undoTransmogEvent.ID,
-                baseProtectorCategory,
-                transmogrifiedArmorRow.ID,
-                baseArmorRow.ID
-            )
+        undoTransmogEvent.Instructions.AddRange(
+            new List<EMEVD.Instruction>()
+            {
+                TransmogEMEVDUtils.IfPlayerHasArmorEquipped(
+                    TransmogEMEVDUtils.OR_01,
+                    baseProtectorCategory,
+                    transmogrifiedArmorRow.ID
+                ),
+                TransmogEMEVDUtils.SkipIfConditionGroupStateUncompiled(
+                    3,
+                    TransmogEMEVDUtils.CONDITION_STATE_FAIL,
+                    TransmogEMEVDUtils.OR_01
+                ),
+                TransmogEMEVDUtils.RemoveItemFromPlayer(
+                    TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                    transmogrifiedArmorRow.ID,
+                    1
+                ),
+                TransmogEMEVDUtils.DirectlyGivePlayerItem(
+                    TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                    baseArmorRow.ID,
+                    6001,
+                    1
+                ),
+                TransmogEMEVDUtils.InitializeEvent(
+                    transmogrifiedArmorRow.ID,
+                    (int)postUndoTransmogEvent.ID,
+                    baseProtectorCategory
+                ),
+                TransmogEMEVDUtils.WaitFixedTimeFrames(0)
+            }
         );
     }
 
     i++;
 }
 
-Console.WriteLine(initializeEvent.Instructions.Count);
+undoTransmogEvent.Instructions.Add(
+    TransmogEMEVDUtils.EndUnconditionally(TransmogEMEVDUtils.EXECUTION_END_TYPE_RESTART)
+);
 
 // Add the menu text used to open the transmogrify screen
 talkTexts[69000000] = isInputReforged
