@@ -25,7 +25,7 @@ var GetBinderFile = (BND4 bnd, string fileName) => bnd.Files.Find(f => f.Name ==
 Console.WriteLine($"Reading vanilla data from \"{inputPath}\"...");
 
 var paramDefs = Directory
-    .GetFiles(Path.Combine("..", "Paramdex", "ER", "Defs"))
+    .GetFiles(Path.Combine("Paramdex", "ER", "Defs"))
     .Select(PARAMDEF.XmlDeserialize);
 
 // Read the input data from the unpacked game folder
