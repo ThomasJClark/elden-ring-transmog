@@ -101,6 +101,10 @@ int armorProtectorCategoryIdx = armor.GetCellIndex("protectorCategory");
 // Bare head/body/arms/legs
 int[] bareArmorIds = new int[] { 10000, 10100, 10200, 10300 };
 
+// Cut armor to generate IDs for, but not include in the mod. These were included in previous
+// versions of the mod, so their IDs need to be skipped so save files remain compatible.
+int[] skippedArmorIds = new int[] { 610000, 610100, 610200, 610300 };
+
 /**
  * Add a new armor piece with the stats of the first armor and the appearance of the second
  */
@@ -241,7 +245,7 @@ spEffects.Rows.Add(undoTransmogEffect);
 var nextEventId = 9007101;
 
 // Create an event to undo equipped transmogs when the above effect is applied
-var undoTransmogEvent = new EMEVD.Event(nextEventId++);
+EMEVD.Event undoTransmogEvent = new(nextEventId++);
 commonEmevd.Events.Add(undoTransmogEvent);
 undoTransmogEvent.Instructions.Add(
     TransmogEMEVDUtils.IfCharacterHasSpEffect(
@@ -255,11 +259,11 @@ undoTransmogEvent.Instructions.Add(
 );
 
 // Create an event that runs after an armor piece is successfully untransmogged, to spawn SFX
-var postUndoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 0)!;
+EMEVD.Event postUndoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 0)!;
 postUndoTransmogEvent.ID = nextEventId++;
 commonEmevd.Events.Add(postUndoTransmogEvent);
 
-var initializeEvent = commonEmevd.Events.Find(evt => evt.ID == 0)!;
+EMEVD.Event initializeEvent = commonEmevd.Events.Find(evt => evt.ID == 0)!;
 initializeEvent.Instructions.Add(TransmogEMEVDUtils.InitializeEvent(0, (int)undoTransmogEvent.ID));
 
 Console.WriteLine("Generating transmogrified armor...");
@@ -279,20 +283,29 @@ PARAM.Row[] validArmorRows = vanillaArmor.Rows
     )
     .ToArray();
 
-var armorById = armor.Rows.ToDictionary(row => row.ID);
+Dictionary<int, PARAM.Row> armorById = armor.Rows.ToDictionary(row => row.ID);
 
 // Base armor determines the stats of the transmogrified armor
 int i = 100;
 foreach (var baseArmorRow in validArmorRows)
 {
+    var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
+
     // Empty slots aren't obtainable as items, so they can't be the base armor
     if (bareArmorIds.Contains(baseArmorRow.ID))
     {
         continue;
     }
 
+    if (skippedArmorIds.Contains(baseArmorRow.ID))
+    {
+        // Still increment the ID counter, so IDs are the same as previous versions of the mod
+        // that didn't skip these armor pieces
+        i++;
+        continue;
+    }
+
     var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
-    var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
 
     // Target armor determines the appearance of the transmogrified armor
     int j = 0;
@@ -309,7 +322,11 @@ foreach (var baseArmorRow in validArmorRows)
 
         j++;
 
-        if (!armorById.ContainsKey(baseArmorRow.ID) || !armorById.ContainsKey(targetArmorRow.ID))
+        if (
+            !armorById.ContainsKey(baseArmorRow.ID)
+            || !armorById.ContainsKey(targetArmorRow.ID)
+            || skippedArmorIds.Contains(targetArmorRow.ID)
+        )
         {
             continue;
         }
