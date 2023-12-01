@@ -391,8 +391,12 @@ undoTransmogEvent.Instructions.Add(
 
 // Add the menu text used to open the transmogrify screen
 talkTexts[69000000] = isInputReforged
-    ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify equipment"
-    : "Transmogrify equipment";
+    ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify armor"
+    : "Transmogrify armor";
+
+talkTexts[69000001] = isInputReforged
+    ? "<img src='img://SB_ERR_Cosmetics.png' height='32' width='32' vspace='-16'/> Untransmogrify equipped armor"
+    : "Untransmogrify equipped armor";
 
 Console.WriteLine("Summary (after):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
