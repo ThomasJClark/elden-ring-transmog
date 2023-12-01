@@ -17,6 +17,9 @@ string armorNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorName.
 string armorInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorInfo.fmg";
 string armorCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorCaption.fmg";
 string talkTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForTalk.fmg";
+string commonTalkFileName = @"N:\GR\data\INTERROOT_win64\script\talk\m00_00_00_00\t000001000.esd";
+string roundtableTalkFileName =
+    @"N:\GR\data\INTERROOT_win64\script\talk\m11_10_00_00\t608001110.esd";
 
 int itemTypeArmor = 1;
 
@@ -59,6 +62,16 @@ BND4 vanillaParamBnd = isInputVanilla
 PARAM vanillaArmor = isInputVanilla
     ? armor
     : PARAM.Read(GetBinderFile(vanillaParamBnd, armorFileName).Bytes);
+
+Console.WriteLine($"  Reading dialogue trees...");
+BND4 commonTalkBnd = BND4.Read(
+    Path.Combine(inputPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx")
+);
+BND4 roundtableTalkBnd = BND4.Read(
+    Path.Combine(inputPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx")
+);
+ESD commonTalk = ESD.Read(GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes);
+ESD roundtableTalk = ESD.Read(GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes);
 
 vanillaArmor.ApplyParamdefCarefully(paramDefs);
 armor.ApplyParamdefCarefully(paramDefs);
@@ -429,5 +442,11 @@ File.WriteAllBytes(
     Path.Combine(modPath, "event/common.emevd.dcx"),
     DCX.Compress(commonEmevd.Write(), commonEvevdDcxType)
 );
+
+Console.WriteLine("  Writing dialogue trees...");
+GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes = commonTalk.Write();
+GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes = roundtableTalk.Write();
+commonTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx"));
+roundtableTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx"));
 
 Console.WriteLine("Done");
