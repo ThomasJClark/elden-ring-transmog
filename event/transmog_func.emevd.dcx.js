@@ -2,7 +2,7 @@
 // @docs    er-common.emedf.json
 // @compress    DCX_KRAK
 // @game    Sekiro
-// @string
+// @string    
 // @linked    []
 // @version    3.4.1
 // ==/EMEVD==
@@ -26,6 +26,9 @@ $Event(0, Default, function (X0_4) {
     SpawnOneshotSFX(TargetEntityType.Character, 10000, 5, 300552);
     SpawnOneshotSFX(TargetEntityType.Character, 10000, 6, 300552);
   }
+
+  PlaySE(10000, SoundType.SFX, 302061);
   SpawnOneshotSFX(TargetEntityType.Character, 10000, 2, 636505);
+  DisplayStatusMessage(690000, Enabled);
   EndEvent();
 });

@@ -17,6 +17,7 @@ string armorNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorName.
 string armorInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorInfo.fmg";
 string armorCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorCaption.fmg";
 string talkTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForTalk.fmg";
+string mapTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForMap.fmg";
 string commonTalkFileName = @"N:\GR\data\INTERROOT_win64\script\talk\m00_00_00_00\t000001000.esd";
 string roundtableTalkFileName =
     @"N:\GR\data\INTERROOT_win64\script\talk\m11_10_00_00\t608001110.esd";
@@ -48,6 +49,7 @@ FMG vanillaArmorNames = isInputVanilla
 Console.WriteLine($"  Reading menu text...");
 BND4 menuMsgBnd = BND4.Read(Path.Combine(inputPath, "msg", "engus", "menu.msgbnd.dcx"));
 FMG talkTexts = FMG.Read(GetBinderFile(menuMsgBnd, talkTextFileName).Bytes);
+FMG mapTexts = FMG.Read(GetBinderFile(menuMsgBnd, mapTextFileName).Bytes);
 
 Console.WriteLine($"  Reading params...");
 BND4 paramBnd = SFUtil.DecryptERRegulation(Path.Combine(inputPath, "regulation.bin"));
@@ -81,7 +83,8 @@ int nextMaterialSetId = 6900000;
 materialSets.ApplyParamdefCarefully(paramDefs);
 materialSets.Rows = new List<PARAM.Row>(materialSets.Rows);
 
-int nextShopLineupId = 4000000;
+int startShopLineupId = 4000000;
+int nextShopLineupId = startShopLineupId;
 shopLineups.ApplyParamdefCarefully(paramDefs);
 shopLineups.Rows = new List<PARAM.Row>(shopLineups.Rows);
 
@@ -411,6 +414,8 @@ talkTexts[69000001] = isInputReforged
     ? "<img src='img://SB_ERR_Cosmetics.png' height='32' width='32' vspace='-16'/> Untransmogrify equipped armor"
     : "Untransmogrify equipped armor";
 
+mapTexts[690000] = "Untransmogrified armor has been returned to your inventory";
+
 Console.WriteLine("Summary (after):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
 Console.WriteLine($"  Material sets: {materialSets.Rows.Count}");
@@ -427,6 +432,7 @@ itemMsgBnd.Write(Path.Combine(modPath, "msg", "engus", "item.msgbnd.dcx"));
 
 Console.WriteLine($"  Writing menu text...");
 GetBinderFile(menuMsgBnd, talkTextFileName).Bytes = talkTexts.Write();
+GetBinderFile(menuMsgBnd, mapTextFileName).Bytes = mapTexts.Write();
 menuMsgBnd.Write(Path.Combine(modPath, "msg", "engus", "menu.msgbnd.dcx"));
 
 Console.WriteLine($"  Writing params...");

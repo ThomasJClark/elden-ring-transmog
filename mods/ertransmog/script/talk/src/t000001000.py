@@ -986,7 +986,8 @@ def t000001000_x31():
                           9, 22230000, -1)
         
         # START MOD
-        AddTalkListData(69, 69000000, -1) # Transmogrify Equipment
+        AddTalkListData(69, 69000000, -1) # Transmogrify armor
+        AddTalkListData(70, 69000001, -1) # Untransmogrify equipped armor
         # END MOD
 
         """State 32"""
@@ -1077,6 +1078,9 @@ def t000001000_x31():
         elif GetTalkListEntryResult() == 69:
             OpenTailoringShop(4000000, 4200000)
             assert not (CheckSpecificPersonMenuIsOpen(26, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+            continue
+        elif GetTalkListEntryResult() == 70:
+            GiveSpEffectToPlayer(250)
             continue
         # END MOD
 
