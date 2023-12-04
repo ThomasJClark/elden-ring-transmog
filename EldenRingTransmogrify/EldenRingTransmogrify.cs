@@ -13,6 +13,7 @@ string armorFileName = @"N:\GR\data\Param\param\GameParam\EquipParamProtector.pa
 string materialSetFileName = @"N:\GR\data\Param\param\GameParam\EquipMtrlSetParam.param";
 string shopLineupFileName = @"N:\GR\data\Param\param\GameParam\ShopLineupParam.param";
 string spEffectFileName = @"N:\GR\data\Param\param\GameParam\SpEffectParam.param";
+string spEffectVfxFileName = @"N:\GR\data\Param\param\GameParam\SpEffectVfxParam.param";
 string armorNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorName.fmg";
 string armorInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorInfo.fmg";
 string armorCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorCaption.fmg";
@@ -58,6 +59,7 @@ PARAM armor = PARAM.Read(GetBinderFile(paramBnd, armorFileName).Bytes);
 PARAM materialSets = PARAM.Read(GetBinderFile(paramBnd, materialSetFileName).Bytes);
 PARAM shopLineups = PARAM.Read(GetBinderFile(paramBnd, shopLineupFileName).Bytes);
 PARAM spEffects = PARAM.Read(GetBinderFile(paramBnd, spEffectFileName).Bytes);
+PARAM spEffectVfx = PARAM.Read(GetBinderFile(paramBnd, spEffectVfxFileName).Bytes);
 
 BND4 vanillaParamBnd = isInputVanilla
     ? paramBnd
@@ -91,6 +93,9 @@ shopLineups.Rows = new List<PARAM.Row>(shopLineups.Rows);
 
 spEffects.ApplyParamdefCarefully(paramDefs);
 spEffects.Rows = new List<PARAM.Row>(spEffects.Rows);
+
+spEffectVfx.ApplyParamdefCarefully(paramDefs);
+spEffectVfx.Rows = new List<PARAM.Row>(spEffectVfx.Rows);
 
 Console.WriteLine("  Reading events...");
 var commonEmevdPath = Path.Combine(inputPath, "event/common.emevd.dcx");
@@ -322,6 +327,23 @@ foreach (var baseArmorRow in validArmorRows)
         continue;
     }
 
+    // For helmets only, transmogrification is implemented by adding an effect to the player
+    // that changes the visual appearance of their head. Generating actual transmogs for
+    // all helmets would take up too many param rows, and the engine conveniently has support
+    // for transmogging heads as a vestige of Dark Souls dragon form.
+    var pseudoTransmog = baseProtectorCategory == 0;
+    if (pseudoTransmog)
+    {
+        var transmogVfx = new PARAM.Row(6900000 + i, "", spEffectVfx.AppliedParamdef);
+        transmogVfx["transformProtectorId"].Value = baseArmorRow.ID;
+        spEffectVfx.Rows.Add(transmogVfx);
+
+        var transmogEffect = new PARAM.Row(6900000 + i, "", spEffects.AppliedParamdef);
+        transmogEffect["vfxId"].Value = transmogVfx.ID;
+        transmogEffect["effectEndurance"].Value = -1.0f;
+        spEffects.Rows.Add(transmogEffect);
+    }
+
     var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
 
     // Target armor determines the appearance of the transmogrified armor
@@ -343,6 +365,10 @@ foreach (var baseArmorRow in validArmorRows)
             !armorById.ContainsKey(baseArmorRow.ID)
             || !armorById.ContainsKey(targetArmorRow.ID)
             || skippedArmorIds.Contains(targetArmorRow.ID)
+            // Generate invisible helms, even though they are transmogged through the speffect
+            // system. Previous version fo the mod supported invisible helms, so we need to
+            // generate the params for backwards compatibility.
+            || (pseudoTransmog && !bareArmorIds.Contains(targetArmorRow.ID))
         )
         {
             continue;
@@ -360,8 +386,11 @@ foreach (var baseArmorRow in validArmorRows)
             armorById[targetArmorRow.ID]
         );
 
-        // Add a shop item to create the transmogrified armor
-        AddShopLineup(itemTypeArmor, transmogrifiedArmorRow.ID, baseMaterialSet.ID);
+        if (!pseudoTransmog)
+        {
+            // Add a shop item to create the transmogrified armor
+            AddShopLineup(itemTypeArmor, transmogrifiedArmorRow.ID, baseMaterialSet.ID);
+        }
 
         // Add event instructions to undo the transmogrified armor when an spEffect is applied
         // to the player
@@ -441,6 +470,7 @@ GetBinderFile(paramBnd, armorFileName).Bytes = armor.Write();
 GetBinderFile(paramBnd, materialSetFileName).Bytes = materialSets.Write();
 GetBinderFile(paramBnd, shopLineupFileName).Bytes = shopLineups.Write();
 GetBinderFile(paramBnd, spEffectFileName).Bytes = spEffects.Write();
+GetBinderFile(paramBnd, spEffectVfxFileName).Bytes = spEffectVfx.Write();
 SFUtil.EncryptERRegulation(Path.Combine(modPath, "regulation.bin"), paramBnd);
 
 Console.WriteLine("  Writing events...");
