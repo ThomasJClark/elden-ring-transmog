@@ -948,6 +948,46 @@ def t000001000_x30():
     """State 8"""
     return 0
 
+
+
+# START MOD
+def t000001000_x10069():
+    CloseShopMessage()
+    while True:
+        ClearTalkListData()
+        AddTalkListData(1, 69000010, -1) # Head
+        AddTalkListData(2, 69000011, -1) # Body
+        AddTalkListData(3, 69000012, -1) # Arms
+        AddTalkListData(4, 69000013, -1) # Legs
+        AddTalkListData(5, 69000020, -1) # Untransmogrify equipped armor
+        AddTalkListData(99, 15000372, -1) # Cancel
+
+        ShowShopMessage(1)
+        assert not (CheckSpecificPersonMenuIsOpen(1, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+
+        if GetTalkListEntryResult() == 1:
+            OpenRegularShop(4000000, 4099999)
+            assert not (CheckSpecificPersonMenuIsOpen(5, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+            continue
+        elif GetTalkListEntryResult() == 2:
+            OpenTailoringShop(4100000, 4199999)
+            assert not (CheckSpecificPersonMenuIsOpen(26, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+            continue
+        elif GetTalkListEntryResult() == 3:
+            OpenTailoringShop(4200000, 4299999)
+            assert not (CheckSpecificPersonMenuIsOpen(26, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+            continue
+        elif GetTalkListEntryResult() == 4:
+            OpenTailoringShop(4300000, 4399999)
+            assert not (CheckSpecificPersonMenuIsOpen(26, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
+            continue
+        elif GetTalkListEntryResult() == 5:
+            GiveSpEffectToPlayer(250)
+            continue
+        else:
+            return 0
+# END MOD
+
 def t000001000_x31():
     """State 0,10"""
     assert GetCurrentStateElapsedTime() > 0.1 or not GetEventFlag(4651)
@@ -984,10 +1024,9 @@ def t000001000_x31():
         # goods:8163:Tailoring Tools, goods:8188:Golden Tailoring Tools, action:22230000:"Alter garments"
         AddTalkListDataIf(ComparePlayerInventoryNumber(3, 8163, 2, 0, 0) == 1 or ComparePlayerInventoryNumber(3, 8188, 2, 0, 0) == 1,
                           9, 22230000, -1)
-        
+
         # START MOD
         AddTalkListData(69, 69000000, -1) # Transmogrify armor
-        AddTalkListData(70, 69000001, -1) # Untransmogrify equipped armor
         # END MOD
 
         """State 32"""
@@ -1076,12 +1115,7 @@ def t000001000_x31():
 
         # START MOD
         elif GetTalkListEntryResult() == 69:
-            OpenTailoringShop(4000000, 4200000)
-            assert not (CheckSpecificPersonMenuIsOpen(26, 0) == 1 and not CheckSpecificPersonGenericDialogIsOpen(0))
-            continue
-        elif GetTalkListEntryResult() == 70:
-            GiveSpEffectToPlayer(250)
-            continue
+            assert t000001000_x10069();
         # END MOD
 
         else:

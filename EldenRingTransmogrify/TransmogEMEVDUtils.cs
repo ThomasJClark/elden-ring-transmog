@@ -14,11 +14,13 @@ class TransmogEMEVDUtils
     public static readonly sbyte MAIN = 0;
     public static readonly sbyte OR_01 = -1;
     public static readonly sbyte EQUAL = 0;
+    public static readonly byte OFF = 0;
     public static readonly byte CONDITION_STATE_FAIL = 0;
     public static readonly sbyte EXECUTION_END_TYPE_RESTART = 1;
     public static readonly byte ITEM_TYPE_ARMOR = 1;
     public static readonly int ENTITY_TYPE_CHARACTER = 2;
     public static readonly uint ENTITY_PLAYER = 10000;
+    public static readonly byte EVENT_FLAG = 0;
 
     public static EMEVD.Instruction IfPlayerHasArmorEquipped(
         sbyte resultConditionGroup,
@@ -116,6 +118,27 @@ class TransmogEMEVDUtils
         };
     }
 
+    public static EMEVD.Instruction SkipIfEventFlag(
+        byte numberOfSkippedLines,
+        byte desiredFlagState,
+        byte targetEventFlagType,
+        int targetEventFlagId
+    )
+    {
+        var binaryWriter = new BinaryWriterEx(false);
+        binaryWriter.WriteByte(numberOfSkippedLines);
+        binaryWriter.WriteByte(desiredFlagState);
+        binaryWriter.WriteByte(targetEventFlagType);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteInt32(targetEventFlagId);
+        return new()
+        {
+            Bank = 1003,
+            ID = 1,
+            ArgData = binaryWriter.FinishBytes()
+        };
+    }
+
     public static EMEVD.Instruction InitializeEvent(
         int eventSlotId,
         int eventId,
@@ -170,6 +193,30 @@ class TransmogEMEVDUtils
         {
             Bank = 2003,
             ID = 43,
+            ArgData = binaryWriter.FinishBytes()
+        };
+    }
+
+    public static EMEVD.Instruction SetEventFlag(
+        byte targetEventFlagType,
+        int targetEventFlagId,
+        byte desiredFlagState
+    )
+    {
+        var binaryWriter = new BinaryWriterEx(false);
+        binaryWriter.WriteByte(targetEventFlagType);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteInt32(targetEventFlagId);
+        binaryWriter.WriteByte(desiredFlagState);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        return new()
+        {
+            Bank = 2003,
+            ID = 66,
             ArgData = binaryWriter.FinishBytes()
         };
     }
