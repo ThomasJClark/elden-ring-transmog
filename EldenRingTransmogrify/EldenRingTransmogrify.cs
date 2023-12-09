@@ -157,8 +157,14 @@ talkTexts[69000012] = "Transmogrify Arms";
 talkTexts[69000013] = "Transmogrify Legs";
 talkTexts[69000020] = "Untransmogrify equipped armor";
 
-int transmogMenuTextId = 690000;
-menuTexts[transmogMenuTextId] = "Transmogrify armor";
+int transmogHeadMenuTextId = 690000;
+int transmogBodyMenuTextId = 690001;
+int transmogArmsMenuTextId = 690002;
+int transmogLegsMenuTextId = 690003;
+menuTexts[transmogHeadMenuTextId] = "Transmogrify Head";
+menuTexts[transmogBodyMenuTextId] = "Transmogrify Hody";
+menuTexts[transmogArmsMenuTextId] = "Transmogrify Hrms";
+menuTexts[transmogLegsMenuTextId] = "Transmogrify Hegs";
 
 mapTexts[690000] = "Untransmogrified armor has been returned to your inventory";
 
@@ -285,15 +291,23 @@ PARAM.Row AddTransmogShopLineup(int id, int itemId, int materialSet)
     shopLineupRow[shopLineupItemTypeIdx].Value = itemTypeArmor;
     shopLineupRow[shopLineupItemIdIdx].Value = itemId;
     shopLineupRow[shopLineupMaterialIdx].Value = materialSet;
-    if (
-        shopLineupRow.ID == startTransmogBodyShopLineupId
-        || shopLineupRow.ID == startTransmogArmsShopLineupId
-        || shopLineupRow.ID == startTransmogLegsShopLineupId
-    )
+
+    if (shopLineupRow.ID == startTransmogBodyShopLineupId)
     {
-        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogMenuTextId;
+        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogBodyMenuTextId;
         shopLineupRow[shopLineupMenuIconIdx].Value = 5;
     }
+    else if (shopLineupRow.ID == startTransmogArmsShopLineupId)
+    {
+        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogArmsMenuTextId;
+        shopLineupRow[shopLineupMenuIconIdx].Value = 5;
+    }
+    else if (shopLineupRow.ID == startTransmogLegsShopLineupId)
+    {
+        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogLegsMenuTextId;
+        shopLineupRow[shopLineupMenuIconIdx].Value = 5;
+    }
+
     shopLineups.Rows.Add(shopLineupRow);
     return shopLineupRow;
 }
@@ -313,7 +327,7 @@ PARAM.Row AddPseudoTransmogShopLineup(int itemId, PARAM.Row armorRow)
     shopLineupRow[shopLineupIconIdx].Value = armorRow[armorIconIdIdx].Value;
     if (shopLineupRow.ID == startTransmogHeadShopLineupId)
     {
-        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogMenuTextId;
+        shopLineupRow[shopLineupMenuTitleIdx].Value = transmogHeadMenuTextId;
         shopLineupRow[shopLineupMenuIconIdx].Value = 5;
     }
     shopLineups.Rows.Add(shopLineupRow);
