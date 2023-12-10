@@ -130,6 +130,7 @@ int materialSetItemIdIdx = materialSets.GetCellIndex("materialId01");
 int materialSetItemNumIdx = materialSets.GetCellIndex("itemNum01");
 int shopLineupItemTypeIdx = shopLineups.GetCellIndex("equipType");
 int shopLineupItemIdIdx = shopLineups.GetCellIndex("equipId");
+int shopLineupNameIdx = shopLineups.GetCellIndex("nameMsgId");
 int shopLineupIconIdx = shopLineups.GetCellIndex("iconId");
 int shopLineupMaterialIdx = shopLineups.GetCellIndex("mtrlId");
 int shopLineupMenuTitleIdx = shopLineups.GetCellIndex("menuTitleMsgId");
@@ -162,9 +163,9 @@ int transmogBodyMenuTextId = 690001;
 int transmogArmsMenuTextId = 690002;
 int transmogLegsMenuTextId = 690003;
 menuTexts[transmogHeadMenuTextId] = "Transmogrify Head";
-menuTexts[transmogBodyMenuTextId] = "Transmogrify Hody";
-menuTexts[transmogArmsMenuTextId] = "Transmogrify Hrms";
-menuTexts[transmogLegsMenuTextId] = "Transmogrify Hegs";
+menuTexts[transmogBodyMenuTextId] = "Transmogrify Body";
+menuTexts[transmogArmsMenuTextId] = "Transmogrify Arms";
+menuTexts[transmogLegsMenuTextId] = "Transmogrify Legs";
 
 mapTexts[690000] = "Untransmogrified armor has been returned to your inventory";
 
@@ -286,11 +287,16 @@ PARAM.Row AddMaterialSet(int itemType, int itemId)
 /**
  * Add a new shop item for the given item and the given material set
  */
-PARAM.Row AddTransmogShopLineup(int id, int itemId, int materialSet)
+PARAM.Row AddTransmogShopLineup(
+    int id,
+    int targetArmorId,
+    int transmogrifiedArmorId,
+    int materialSet
+)
 {
     var shopLineupRow = new PARAM.Row(id, null, shopLineups.AppliedParamdef);
     shopLineupRow[shopLineupItemTypeIdx].Value = itemTypeArmor;
-    shopLineupRow[shopLineupItemIdIdx].Value = itemId;
+    shopLineupRow[shopLineupItemIdIdx].Value = transmogrifiedArmorId;
     shopLineupRow[shopLineupMaterialIdx].Value = materialSet;
 
     if (shopLineupRow.ID == startTransmogBodyShopLineupId)
@@ -307,6 +313,11 @@ PARAM.Row AddTransmogShopLineup(int id, int itemId, int materialSet)
     {
         shopLineupRow[shopLineupMenuTitleIdx].Value = transmogLegsMenuTextId;
         shopLineupRow[shopLineupMenuIconIdx].Value = 5;
+    }
+
+    if (!bareArmorIds.Contains(targetArmorId))
+    {
+        shopLineupRow[shopLineupNameIdx].Value = targetArmorId;
     }
 
     shopLineups.Rows.Add(shopLineupRow);
@@ -606,7 +617,12 @@ foreach (var baseArmorRow in validArmorRows)
             {
                 shopLineupId = nextTransmogLegsShopLineupId++;
             }
-            AddTransmogShopLineup(shopLineupId, transmogrifiedArmorRow.ID, baseMaterialSet.ID);
+            AddTransmogShopLineup(
+                shopLineupId,
+                targetArmorRow.ID,
+                transmogrifiedArmorRow.ID,
+                baseMaterialSet.ID
+            );
         }
 
         // Add event instructions to undo the transmogrified armor when an spEffect is applied
