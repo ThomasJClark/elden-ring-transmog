@@ -435,7 +435,7 @@ EMEVD.Event buyPseudoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID
 EMEVD.Event applyPseudoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 9007104)!;
 
 initializeEvent.Instructions.Add(
-    TransmogEMEVDUtils.InitializeEvent(0, (int)undoTransmogEvent.ID, 0)
+    TransmogEventUtils.InitializeEvent(0, (int)undoTransmogEvent.ID, 0)
 );
 
 commonEmevd.Events.Add(undoTransmogEvent);
@@ -444,12 +444,12 @@ commonEmevd.Events.Add(buyPseudoTransmogEvent);
 commonEmevd.Events.Add(applyPseudoTransmogEvent);
 
 undoTransmogEvent.Instructions.Add(
-    TransmogEMEVDUtils.IfCharacterHasSpEffect(
-        TransmogEMEVDUtils.MAIN,
-        TransmogEMEVDUtils.ENTITY_PLAYER,
+    TransmogEventUtils.IfCharacterHasSpEffect(
+        TransmogEventUtils.MAIN,
+        TransmogEventUtils.ENTITY_PLAYER,
         undoTransmogEffect.ID,
         true,
-        TransmogEMEVDUtils.EQUAL,
+        TransmogEventUtils.EQUAL,
         1.0f
     )
 );
@@ -538,7 +538,7 @@ void AddPseudoTransmogs()
         // When the player aquires the item, remove it and set an event flag.
         var eventFlagId = 690000 + index;
         initializeEvent.Instructions.Add(
-            TransmogEMEVDUtils.InitializeEvent(
+            TransmogEventUtils.InitializeEvent(
                 index,
                 (int)buyPseudoTransmogEvent.ID,
                 pseudoTransmogItem.ID,
@@ -548,7 +548,7 @@ void AddPseudoTransmogs()
 
         // When the above event is set, apply the speffect that transmogrifies the player's head.
         initializeEvent.Instructions.Add(
-            TransmogEMEVDUtils.InitializeEvent(
+            TransmogEventUtils.InitializeEvent(
                 index,
                 (int)applyPseudoTransmogEvent.ID,
                 eventFlagId,
@@ -560,23 +560,23 @@ void AddPseudoTransmogs()
         undoTransmogEvent.Instructions.AddRange(
             new List<EMEVD.Instruction>()
             {
-                TransmogEMEVDUtils.SkipIfEventFlag(
+                TransmogEventUtils.SkipIfEventFlag(
                     2,
-                    TransmogEMEVDUtils.OFF,
-                    TransmogEMEVDUtils.EVENT_FLAG,
+                    TransmogEventUtils.OFF,
+                    TransmogEventUtils.EVENT_FLAG,
                     eventFlagId
                 ),
-                TransmogEMEVDUtils.SetEventFlag(
-                    TransmogEMEVDUtils.EVENT_FLAG,
+                TransmogEventUtils.SetEventFlag(
+                    TransmogEventUtils.EVENT_FLAG,
                     eventFlagId,
-                    TransmogEMEVDUtils.OFF
+                    TransmogEventUtils.OFF
                 ),
-                TransmogEMEVDUtils.InitializeEvent(
+                TransmogEventUtils.InitializeEvent(
                     armorIndex,
                     (int)postUndoTransmogEvent.ID,
                     protectorCategory
                 ),
-                TransmogEMEVDUtils.WaitFixedTimeFrames(0)
+                TransmogEventUtils.WaitFixedTimeFrames(0)
             }
         );
     }
@@ -694,33 +694,33 @@ void AddTransmogs()
             undoTransmogEvent.Instructions.AddRange(
                 new List<EMEVD.Instruction>()
                 {
-                    TransmogEMEVDUtils.IfPlayerHasArmorEquipped(
-                        TransmogEMEVDUtils.OR_01,
+                    TransmogEventUtils.IfPlayerHasArmorEquipped(
+                        TransmogEventUtils.OR_01,
                         baseProtectorCategory,
                         transmogrifiedArmorRow.ID
                     ),
-                    TransmogEMEVDUtils.SkipIfConditionGroupStateUncompiled(
+                    TransmogEventUtils.SkipIfConditionGroupStateUncompiled(
                         3,
-                        TransmogEMEVDUtils.CONDITION_STATE_FAIL,
-                        TransmogEMEVDUtils.OR_01
+                        TransmogEventUtils.CONDITION_STATE_FAIL,
+                        TransmogEventUtils.OR_01
                     ),
-                    TransmogEMEVDUtils.RemoveItemFromPlayer(
-                        TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                    TransmogEventUtils.RemoveItemFromPlayer(
+                        TransmogEventUtils.ITEM_TYPE_ARMOR,
                         transmogrifiedArmorRow.ID,
                         1
                     ),
-                    TransmogEMEVDUtils.DirectlyGivePlayerItem(
-                        TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                    TransmogEventUtils.DirectlyGivePlayerItem(
+                        TransmogEventUtils.ITEM_TYPE_ARMOR,
                         baseArmorRow.ID,
                         6001,
                         1
                     ),
-                    TransmogEMEVDUtils.InitializeEvent(
+                    TransmogEventUtils.InitializeEvent(
                         transmogrifiedArmorRow.ID,
                         (int)postUndoTransmogEvent.ID,
                         baseProtectorCategory
                     ),
-                    TransmogEMEVDUtils.WaitFixedTimeFrames(0)
+                    TransmogEventUtils.WaitFixedTimeFrames(0)
                 }
             );
         }
@@ -731,7 +731,7 @@ AddPseudoTransmogs();
 AddTransmogs();
 
 undoTransmogEvent.Instructions.Add(
-    TransmogEMEVDUtils.EndUnconditionally(TransmogEMEVDUtils.EXECUTION_END_TYPE_RESTART)
+    TransmogEventUtils.EndUnconditionally(TransmogEventUtils.EXECUTION_END_TYPE_RESTART)
 );
 
 Console.WriteLine("Summary (after):");

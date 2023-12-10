@@ -9,7 +9,7 @@ using SoulsFormats;
  *
  * See https://soulsmods.github.io/emedf/er-emedf.html
  */
-class TransmogEMEVDUtils
+class TransmogEventUtils
 {
     public static readonly sbyte MAIN = 0;
     public static readonly sbyte OR_01 = -1;
