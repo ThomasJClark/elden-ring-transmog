@@ -456,213 +456,290 @@ undoTransmogEvent.Instructions.Add(
 
 Console.WriteLine("Generating transmogrified armor...");
 
-// Use the vanilla data to determine valid armor. This keeps save files compatible, and keeps
-// the number of rows in line with the 16 bit limit because custom armor sets aren't included.
-PARAM.Row[] validArmorRows = vanillaArmor.Rows
-    .Where(
-        row =>
-            row.ID >= 10000
-            && vanillaArmorNames[row.ID] != null
-            // Exclude unobtainable armor
-            && !vanillaArmorNames[row.ID].StartsWith("[ERROR]")
-            // Don't allow transmogs to or from altered pieces, to avoid hitting the 16 bit row
-            // limit
-            && !vanillaArmorNames[row.ID].EndsWith(" (Altered)")
+List<PARAM.Row> validArmorRows = new();
+foreach (var row in vanillaArmor.Rows)
+{
+    if (
+        row.ID >= 10000
+        && vanillaArmorNames[row.ID] != null
+        && !vanillaArmorNames[row.ID].StartsWith("[ERROR]")
+        && !vanillaArmorNames[row.ID].EndsWith(" (Altered)")
     )
-    .ToArray();
+    {
+        validArmorRows.Add(armor[row.ID]);
+    }
+}
+
+// Generate transmogs for modded armor sets (e.g. new sets added in The Convergence) after vanilla
+// armor, to keep IDs of vanilla transmogs compatible with previous version of this mod
+foreach (var row in armor.Rows)
+{
+    if (
+        row.ID >= 10000
+        && vanillaArmor[row.ID] == null
+        && armorNames[row.ID] != null
+        && !armorNames[row.ID].StartsWith("[ERROR]")
+        && !armorNames[row.ID].EndsWith(" (Altered)")
+        && armorInfos[row.ID] != null
+        && armorCaptions[row.ID] != null
+    )
+    {
+        validArmorRows.Add(row);
+    }
+}
 
 Dictionary<int, PARAM.Row> armorById = armor.Rows.ToDictionary(row => row.ID);
 
 Dictionary<int, int> pseudoTransmogEffectsByItemId = new();
 
-// For helmets only, transmogrification is implemented by adding an effect to the player
-// that changes the visual appearance of their head. Generating actual transmogs for
-// all helmets would take up too many param rows, and the engine conveniently has support
-// for transmogging heads as a vestige of Dark Souls dragon form.
-int i = 100;
-foreach (var targetArmorRow in validArmorRows)
+/**
+ * For helmets only, transmogrification is implemented by adding an effect to the player
+ * that changes the visual appearance of their head. Generating actual transmogs for
+ * all helmets would take up too many param rows, and the engine conveniently has support
+ * for transmogging heads as a vestige of Dark Souls dragon form.
+ */
+void AddPseudoTransmogs()
 {
-    var baseProtectorCategory = (byte)targetArmorRow[armorProtectorCategoryIdx].Value;
-    var pseudoTransmog = baseProtectorCategory == 0;
-    if (!pseudoTransmog)
+    // Put vanilla and modded armor params in two different ID ranges, so future vanilla armor can
+    // be added without conflicitng with mods.
+    int armorIndex = 100;
+    int moddedArmorIndex = 750;
+
+    foreach (var armorRow in validArmorRows)
     {
-        continue;
-    }
-
-    var pseudoTransmogEffect = AddPseudoTransmogEffect(targetArmorRow);
-    var pseudoTransmogItem = AddPseudoTransmogItem(690000 + i, targetArmorRow);
-    AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, targetArmorRow);
-    pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
-
-    var eventFlagId = 690000 + i;
-    initializeEvent.Instructions.Add(
-        TransmogEMEVDUtils.InitializeEvent(
-            i,
-            (int)buyPseudoTransmogEvent.ID,
-            pseudoTransmogItem.ID,
-            eventFlagId
-        )
-    );
-    initializeEvent.Instructions.Add(
-        TransmogEMEVDUtils.InitializeEvent(
-            i,
-            (int)applyPseudoTransmogEvent.ID,
-            eventFlagId,
-            pseudoTransmogEffect.ID
-        )
-    );
-
-    undoTransmogEvent.Instructions.AddRange(
-        new List<EMEVD.Instruction>()
+        // If this armor isn't present, it's a vanilla piece that was removed in a mod. Increment
+        // the ID for save file compatibility and skip it
+        if (armorRow == null)
         {
-            TransmogEMEVDUtils.SkipIfEventFlag(
-                2,
-                TransmogEMEVDUtils.OFF,
-                TransmogEMEVDUtils.EVENT_FLAG,
-                eventFlagId
-            ),
-            TransmogEMEVDUtils.SetEventFlag(
-                TransmogEMEVDUtils.EVENT_FLAG,
-                eventFlagId,
-                TransmogEMEVDUtils.OFF
-            ),
+            armorIndex++;
+            continue;
+        }
+
+        // Only pseud-transmog helms
+        var protectorCategory = (byte)armorRow[armorProtectorCategoryIdx].Value;
+        var isPseudoTransmog = protectorCategory == 0;
+        if (!isPseudoTransmog)
+        {
+            continue;
+        }
+
+        var isModded = vanillaArmor[armorRow.ID] == null;
+        var index = isModded ? moddedArmorIndex++ : armorIndex++;
+
+        // Add a speffect that makes the player character appear to be wearing the target armor
+        var pseudoTransmogEffect = AddPseudoTransmogEffect(armorRow);
+
+        // Add a placeholder item that the player can buy in a fake shop to activate the transmog
+        var pseudoTransmogItem = AddPseudoTransmogItem(690000 + armorIndex, armorRow);
+        AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, armorRow);
+
+        pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
+
+        // When the player aquires the item, remove it and set an event flag.
+        var eventFlagId = 690000 + index;
+        initializeEvent.Instructions.Add(
             TransmogEMEVDUtils.InitializeEvent(
-                i,
-                (int)postUndoTransmogEvent.ID,
-                baseProtectorCategory
-            ),
-            TransmogEMEVDUtils.WaitFixedTimeFrames(0)
-        }
-    );
-
-    i++;
-}
-
-// Base armor determines the stats of the transmogrified armor
-i = 100;
-foreach (var baseArmorRow in validArmorRows)
-{
-    var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
-    var pseudoTransmog = baseProtectorCategory == 0;
-
-    if (skippedArmorIds.Contains(baseArmorRow.ID))
-    {
-        // Still increment the ID counter, so IDs are the same as previous versions of the mod
-        // that didn't skip these armor pieces
-        i++;
-        continue;
-    }
-
-    // Empty slots aren't obtainable as items, so they can't be the base armor
-    if (bareArmorIds.Contains(baseArmorRow.ID))
-    {
-        continue;
-    }
-
-    var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
-
-    // Target armor determines the appearance of the transmogrified armor
-    int j = 0;
-    foreach (var targetArmorRow in validArmorRows)
-    {
-        var targetProtectorCategory = (byte)targetArmorRow[armorProtectorCategoryIdx].Value;
-
-        // Allow transmogs to different armor pieces of the same category
-        // (e.g. helmet => different helmet)
-        if (targetArmorRow == baseArmorRow || baseProtectorCategory != targetProtectorCategory)
-        {
-            continue;
-        }
-
-        j++;
-
-        if (
-            !armorById.ContainsKey(baseArmorRow.ID)
-            || !armorById.ContainsKey(targetArmorRow.ID)
-            || skippedArmorIds.Contains(targetArmorRow.ID)
-            // Generate invisible helms, even though they are transmogged through the speffect
-            // system. Previous version fo the mod supported invisible helms, so we need to
-            // generate the params for backwards compatibility.
-            || (pseudoTransmog && !bareArmorIds.Contains(targetArmorRow.ID))
-        )
-        {
-            continue;
-        }
-
-        // Generate a (relatively) stable ID. Assuming future patches/mods only add armor
-        // pieces at the end of the current list, this should make save files forward compatible
-        // with later updates.
-        int transmogrifiedArmorID = 100000 * i + 100 * j;
-
-        // Copy the armor piece, changing the name and decription
-        var transmogrifiedArmorRow = AddArmor(
-            transmogrifiedArmorID,
-            armorById[baseArmorRow.ID],
-            armorById[targetArmorRow.ID]
+                index,
+                (int)buyPseudoTransmogEvent.ID,
+                pseudoTransmogItem.ID,
+                eventFlagId
+            )
         );
 
-        if (!pseudoTransmog)
-        {
-            // Add a shop item to create the transmogrified armor
-            int shopLineupId = -1;
-            if (baseProtectorCategory == 1)
-            {
-                shopLineupId = nextTransmogBodyShopLineupId++;
-            }
-            else if (baseProtectorCategory == 2)
-            {
-                shopLineupId = nextTransmogArmsShopLineupId++;
-            }
-            else if (baseProtectorCategory == 3)
-            {
-                shopLineupId = nextTransmogLegsShopLineupId++;
-            }
-            AddTransmogShopLineup(
-                shopLineupId,
-                targetArmorRow.ID,
-                transmogrifiedArmorRow.ID,
-                baseMaterialSet.ID
-            );
-        }
+        // When the above event is set, apply the speffect that transmogrifies the player's head.
+        initializeEvent.Instructions.Add(
+            TransmogEMEVDUtils.InitializeEvent(
+                index,
+                (int)applyPseudoTransmogEvent.ID,
+                eventFlagId,
+                pseudoTransmogEffect.ID
+            )
+        );
 
-        // Add event instructions to undo the transmogrified armor when an spEffect is applied
-        // to the player
+        // Remove the event flag in the undo transmog event
         undoTransmogEvent.Instructions.AddRange(
             new List<EMEVD.Instruction>()
             {
-                TransmogEMEVDUtils.IfPlayerHasArmorEquipped(
-                    TransmogEMEVDUtils.OR_01,
-                    baseProtectorCategory,
-                    transmogrifiedArmorRow.ID
+                TransmogEMEVDUtils.SkipIfEventFlag(
+                    2,
+                    TransmogEMEVDUtils.OFF,
+                    TransmogEMEVDUtils.EVENT_FLAG,
+                    eventFlagId
                 ),
-                TransmogEMEVDUtils.SkipIfConditionGroupStateUncompiled(
-                    3,
-                    TransmogEMEVDUtils.CONDITION_STATE_FAIL,
-                    TransmogEMEVDUtils.OR_01
-                ),
-                TransmogEMEVDUtils.RemoveItemFromPlayer(
-                    TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
-                    transmogrifiedArmorRow.ID,
-                    1
-                ),
-                TransmogEMEVDUtils.DirectlyGivePlayerItem(
-                    TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
-                    baseArmorRow.ID,
-                    6001,
-                    1
+                TransmogEMEVDUtils.SetEventFlag(
+                    TransmogEMEVDUtils.EVENT_FLAG,
+                    eventFlagId,
+                    TransmogEMEVDUtils.OFF
                 ),
                 TransmogEMEVDUtils.InitializeEvent(
-                    transmogrifiedArmorRow.ID,
+                    armorIndex,
                     (int)postUndoTransmogEvent.ID,
-                    baseProtectorCategory
+                    protectorCategory
                 ),
                 TransmogEMEVDUtils.WaitFixedTimeFrames(0)
             }
         );
     }
-
-    i++;
 }
+
+/**
+ * For most armor, add a new protector row for each valid combination of transmogs, and a
+ * crafting recipe to turn the base armor into the transmogrified armor.
+ */
+void AddTransmogs()
+{
+    // Put vanilla and modded armor params in two different ID ranges, so future vanilla armor can
+    // be added without conflicitng with mods.
+    int baseArmorIndex = 100;
+    int moddedBaseArmorIndex = 750;
+    foreach (var baseArmorRow in validArmorRows)
+    {
+        // If this armor isn't present, it's a vanilla piece that was removed in a mod. Increment the
+        // ID for save file compatibility and skip it
+        if (baseArmorRow == null)
+        {
+            baseArmorIndex++;
+            continue;
+        }
+
+        var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
+        var pseudoTransmog = baseProtectorCategory == 0;
+
+        if (skippedArmorIds.Contains(baseArmorRow.ID))
+        {
+            // Still increment the ID counter, so IDs are the same as previous versions of the mod
+            // that didn't skip these armor pieces
+            baseArmorIndex++;
+            continue;
+        }
+
+        // Empty slots aren't obtainable as items, so they can't be the base armor
+        if (bareArmorIds.Contains(baseArmorRow.ID))
+        {
+            continue;
+        }
+
+        var isBaseModded = vanillaArmor[baseArmorRow.ID] == null;
+        var baseIndex = isBaseModded ? moddedBaseArmorIndex++ : baseArmorIndex++;
+
+        var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
+
+        // Target armor determines the appearance of the transmogrified armor
+        int targetArmorIndex = 100;
+        int moddedTargetArmorIndex = 750;
+        foreach (var targetArmorRow in validArmorRows)
+        {
+            // If this armor isn't present, it's a vanilla piece that was removed in a mod. Increment the
+            // ID for save file compatibility and skip it
+            if (targetArmorRow == null)
+            {
+                targetArmorIndex++;
+                continue;
+            }
+
+            var targetProtectorCategory = (byte)targetArmorRow[armorProtectorCategoryIdx].Value;
+
+            // Allow transmogs to different armor pieces of the same category
+            // (e.g. helmet => different helmet)
+            if (targetArmorRow == baseArmorRow || baseProtectorCategory != targetProtectorCategory)
+            {
+                continue;
+            }
+
+            var isTargetModded = vanillaArmor[targetArmorRow.ID] == null;
+            var targetIndex = isTargetModded ? moddedTargetArmorIndex++ : targetArmorIndex++;
+
+            if (
+                !armorById.ContainsKey(baseArmorRow.ID)
+                || !armorById.ContainsKey(targetArmorRow.ID)
+                || skippedArmorIds.Contains(targetArmorRow.ID)
+                // Generate invisible helms, even though they are transmogged through the speffect
+                // system. Previous version fo the mod supported invisible helms, so we need to
+                // generate the params for backwards compatibility.
+                || (pseudoTransmog && !bareArmorIds.Contains(targetArmorRow.ID))
+            )
+            {
+                continue;
+            }
+
+            var isTargetArmorModded = vanillaArmor[targetArmorRow.ID] == null;
+
+            // Generate a (relatively) stable ID. Assuming future patches/mods only add armor
+            // pieces at the end of the current list, this should make save files forward compatible
+            // with later updates.
+            int transmogrifiedArmorID = 100000 * baseIndex + 100 * targetIndex;
+
+            // Copy the armor piece, changing the name and decription
+            var transmogrifiedArmorRow = AddArmor(
+                transmogrifiedArmorID,
+                armorById[baseArmorRow.ID],
+                armorById[targetArmorRow.ID]
+            );
+
+            if (!pseudoTransmog)
+            {
+                // Add a shop item to create the transmogrified armor
+                int shopLineupId = -1;
+                if (baseProtectorCategory == 1)
+                {
+                    shopLineupId = nextTransmogBodyShopLineupId++;
+                }
+                else if (baseProtectorCategory == 2)
+                {
+                    shopLineupId = nextTransmogArmsShopLineupId++;
+                }
+                else if (baseProtectorCategory == 3)
+                {
+                    shopLineupId = nextTransmogLegsShopLineupId++;
+                }
+                AddTransmogShopLineup(
+                    shopLineupId,
+                    targetArmorRow.ID,
+                    transmogrifiedArmorRow.ID,
+                    baseMaterialSet.ID
+                );
+            }
+
+            // Add event instructions to undo the transmogrified armor when an spEffect is applied
+            // to the player
+            undoTransmogEvent.Instructions.AddRange(
+                new List<EMEVD.Instruction>()
+                {
+                    TransmogEMEVDUtils.IfPlayerHasArmorEquipped(
+                        TransmogEMEVDUtils.OR_01,
+                        baseProtectorCategory,
+                        transmogrifiedArmorRow.ID
+                    ),
+                    TransmogEMEVDUtils.SkipIfConditionGroupStateUncompiled(
+                        3,
+                        TransmogEMEVDUtils.CONDITION_STATE_FAIL,
+                        TransmogEMEVDUtils.OR_01
+                    ),
+                    TransmogEMEVDUtils.RemoveItemFromPlayer(
+                        TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                        transmogrifiedArmorRow.ID,
+                        1
+                    ),
+                    TransmogEMEVDUtils.DirectlyGivePlayerItem(
+                        TransmogEMEVDUtils.ITEM_TYPE_ARMOR,
+                        baseArmorRow.ID,
+                        6001,
+                        1
+                    ),
+                    TransmogEMEVDUtils.InitializeEvent(
+                        transmogrifiedArmorRow.ID,
+                        (int)postUndoTransmogEvent.ID,
+                        baseProtectorCategory
+                    ),
+                    TransmogEMEVDUtils.WaitFixedTimeFrames(0)
+                }
+            );
+        }
+    }
+}
+
+AddPseudoTransmogs();
+AddTransmogs();
 
 undoTransmogEvent.Instructions.Add(
     TransmogEMEVDUtils.EndUnconditionally(TransmogEMEVDUtils.EXECUTION_END_TYPE_RESTART)
