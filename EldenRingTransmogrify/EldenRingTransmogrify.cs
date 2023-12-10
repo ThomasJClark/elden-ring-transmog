@@ -24,10 +24,9 @@ string itemCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GoodsCaption
 string talkTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForTalk.fmg";
 string mapTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForMap.fmg";
 string menuTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GR_MenuText.fmg";
-
-// string commonTalkFileName = @"N:\GR\data\INTERROOT_win64\script\talk\m00_00_00_00\t000001000.esd";
-// string roundtableTalkFileName =
-//     @"N:\GR\data\INTERROOT_win64\script\talk\m11_10_00_00\t608001110.esd";
+string commonTalkFileName = @"N:\GR\data\INTERROOT_win64\script\talk\m00_00_00_00\t000001000.esd";
+string roundtableTalkFileName =
+    @"N:\GR\data\INTERROOT_win64\script\talk\m11_10_00_00\t608001110.esd";
 
 int itemTypeArmor = 1;
 int itemTypeGood = 3;
@@ -88,15 +87,16 @@ PARAM vanillaArmor = isInputVanilla
     : PARAM.Read(GetBinderFile(vanillaParamBnd, armorFileName).Bytes);
 vanillaArmor.ApplyParamdefCarefully(paramDefs);
 
-// Console.WriteLine($"  Reading dialogue trees...");
-// BND4 commonTalkBnd = BND4.Read(
-//     Path.Combine(inputPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx")
-// );
-// BND4 roundtableTalkBnd = BND4.Read(
-//     Path.Combine(inputPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx")
-// );
-// ESD commonTalk = ESD.Read(GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes);
-// ESD roundtableTalk = ESD.Read(GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes);
+Console.WriteLine($"  Reading dialogue trees...");
+BND4 commonTalkBnd = BND4.Read(
+    Path.Combine(inputPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx")
+);
+BND4 roundtableTalkBnd = BND4.Read(
+    Path.Combine(inputPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx")
+);
+ESD commonTalk = ESD.Read(GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes);
+ESD roundtableTalk = ESD.Read(GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes);
+ESD transmogTalk = ESD.Read("mods/common/script/talk/t000001000.esd");
 
 int nextMaterialSetId = 6900000;
 int startTransmogHeadShopLineupId = 4000000;
@@ -116,7 +116,7 @@ var commonEmevd = EMEVD.Read(
     DCX.Decompress(File.ReadAllBytes(commonEmevdPath), out DCX.Type commonEvevdDcxType)
 );
 var transmogFuncEmevd = EMEVD.Read(
-    DCX.Decompress(File.ReadAllBytes("event/transmog_func.emevd.dcx"))
+    DCX.Decompress(File.ReadAllBytes("mods/common/event/transmog_func.emevd.dcx"))
 );
 
 Console.WriteLine("Summary (before):");
@@ -149,7 +149,8 @@ int[] bareArmorIds = new int[] { 10000, 10100, 10200, 10300 };
 int[] skippedArmorIds = new int[] { 610000, 610100, 610200, 610300 };
 
 // Add the menu text used to open the transmogrify screen
-talkTexts[69000000] = isInputReforged
+int transmogTalkTextId = 69000000;
+talkTexts[transmogTalkTextId] = isInputReforged
     ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify armor"
     : "Transmogrify armor";
 talkTexts[69000010] = "Transmogrify Head";
@@ -417,6 +418,26 @@ PARAM.Row AddPseudoTransmogItem(int itemId, PARAM.Row armorRow)
 
     return transmogItem;
 }
+
+Console.WriteLine("Adding dialogue trees...");
+
+var (transmogStateGroupID, transmogStateGroup) = transmogTalk.StateGroups.First();
+
+commonTalk.StateGroups[transmogStateGroupID] = transmogStateGroup;
+TransmogTalkUtils.AddTransmogMenuOption(
+    commonTalk.StateGroups,
+    (int)transmogStateGroupID,
+    15000395, // "Sort Chest"
+    transmogTalkTextId // "Transmogrify armor"
+);
+
+roundtableTalk.StateGroups[transmogStateGroupID] = transmogStateGroup;
+TransmogTalkUtils.AddTransmogMenuOption(
+    roundtableTalk.StateGroups,
+    (int)transmogStateGroupID,
+    -1, // TODO
+    transmogTalkTextId // "Transmogrify armor"
+);
 
 Console.WriteLine("Adding event handlers...");
 
@@ -777,10 +798,10 @@ File.WriteAllBytes(
     DCX.Compress(commonEmevd.Write(), commonEvevdDcxType)
 );
 
-// Console.WriteLine("  Writing dialogue trees...");
-// GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes = commonTalk.Write();
-// GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes = roundtableTalk.Write();
-// commonTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx"));
-// roundtableTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx"));
+Console.WriteLine("  Writing dialogue trees...");
+GetBinderFile(commonTalkBnd, commonTalkFileName).Bytes = commonTalk.Write();
+GetBinderFile(roundtableTalkBnd, roundtableTalkFileName).Bytes = roundtableTalk.Write();
+commonTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m00_00_00_00.talkesdbnd.dcx"));
+roundtableTalkBnd.Write(Path.Combine(modPath, "script", "talk", "m11_10_00_00.talkesdbnd.dcx"));
 
 Console.WriteLine("Done");
