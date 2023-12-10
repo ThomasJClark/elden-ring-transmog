@@ -594,21 +594,11 @@ void AddTransmogs()
     int moddedBaseArmorIndex = 750;
     foreach (var baseArmorRow in validArmorRows)
     {
-        // If this armor isn't present, it's a vanilla piece that was removed in a mod. Increment the
-        // ID for save file compatibility and skip it
-        if (baseArmorRow == null)
+        // If this armor isn't present or is in this list, it's a vanilla piece that was patched
+        // out of the game or removed in a mod. Increment the ID for save file compatibility and
+        // skip it
+        if (baseArmorRow == null || skippedArmorIds.Contains(baseArmorRow.ID))
         {
-            baseArmorIndex++;
-            continue;
-        }
-
-        var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
-        var pseudoTransmog = baseProtectorCategory == 0;
-
-        if (skippedArmorIds.Contains(baseArmorRow.ID))
-        {
-            // Still increment the ID counter, so IDs are the same as previous versions of the mod
-            // that didn't skip these armor pieces
             baseArmorIndex++;
             continue;
         }
@@ -619,21 +609,20 @@ void AddTransmogs()
             continue;
         }
 
+        var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
+        var isPseudoTransmog = baseProtectorCategory == 0;
         var isBaseModded = vanillaArmor[baseArmorRow.ID] == null;
         var baseIndex = isBaseModded ? moddedBaseArmorIndex++ : baseArmorIndex++;
 
         var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
 
         // Target armor determines the appearance of the transmogrified armor
-        int targetArmorIndex = 100;
-        int moddedTargetArmorIndex = 750;
+        int targetArmorIndex = 1;
+        int moddedTargetArmorIndex = 651;
         foreach (var targetArmorRow in validArmorRows)
         {
-            // If this armor isn't present, it's a vanilla piece that was removed in a mod. Increment the
-            // ID for save file compatibility and skip it
             if (targetArmorRow == null)
             {
-                targetArmorIndex++;
                 continue;
             }
 
@@ -656,7 +645,7 @@ void AddTransmogs()
                 // Generate invisible helms, even though they are transmogged through the speffect
                 // system. Previous version fo the mod supported invisible helms, so we need to
                 // generate the params for backwards compatibility.
-                || (pseudoTransmog && !bareArmorIds.Contains(targetArmorRow.ID))
+                || (isPseudoTransmog && !bareArmorIds.Contains(targetArmorRow.ID))
             )
             {
                 continue;
@@ -676,7 +665,7 @@ void AddTransmogs()
                 armorById[targetArmorRow.ID]
             );
 
-            if (!pseudoTransmog)
+            if (!isPseudoTransmog)
             {
                 // Add a shop item to create the transmogrified armor
                 int shopLineupId = -1;
