@@ -31,6 +31,7 @@ string menuTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GR_MenuText.fmg
 
 int itemTypeArmor = 1;
 int itemTypeGood = 3;
+int invisibleIconId = 3142;
 
 var GetBinderFile = (BND4 bnd, string fileName) => bnd.Files.Find(f => f.Name == fileName)!;
 
@@ -135,7 +136,6 @@ int shopLineupMenuTitleIdx = shopLineups.GetCellIndex("menuTitleMsgId");
 int shopLineupMenuIconIdx = shopLineups.GetCellIndex("menuIconId");
 int armorProtectorCategoryIdx = armor.GetCellIndex("protectorCategory");
 int armorIconIdIdx = armor.GetCellIndex("iconIdM");
-int itemIconIdIdx = items.GetCellIndex("iconId");
 int itemGoodsTypeIdx = items.GetCellIndex("goodsType");
 int itemSaleValueIdx = items.GetCellIndex("saleValue");
 int itemMaxNumIdx = items.GetCellIndex("maxNum");
@@ -201,6 +201,7 @@ PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
 
     if (isInvisible)
     {
+        armorRow[armorIconIdIdx].Value = invisibleIconId;
         armorNames[armorRow.ID] = $"Invisible {armorNames[baseArmorRow.ID]}";
         armorInfos[armorRow.ID] = armorInfos[baseArmorRow.ID];
         armorCaptions[armorRow.ID] = armorCaptions[baseArmorRow.ID];
@@ -324,7 +325,14 @@ PARAM.Row AddPseudoTransmogShopLineup(int itemId, PARAM.Row armorRow)
     );
     shopLineupRow[shopLineupItemTypeIdx].Value = itemTypeGood;
     shopLineupRow[shopLineupItemIdIdx].Value = itemId;
-    shopLineupRow[shopLineupIconIdx].Value = armorRow[armorIconIdIdx].Value;
+    if (bareArmorIds.Contains(armorRow.ID))
+    {
+        shopLineupRow[shopLineupIconIdx].Value = invisibleIconId;
+    }
+    else
+    {
+        shopLineupRow[shopLineupIconIdx].Value = armorRow[armorIconIdIdx].Value;
+    }
     if (shopLineupRow.ID == startTransmogHeadShopLineupId)
     {
         shopLineupRow[shopLineupMenuTitleIdx].Value = transmogHeadMenuTextId;
@@ -456,11 +464,75 @@ Dictionary<int, PARAM.Row> armorById = armor.Rows.ToDictionary(row => row.ID);
 
 Dictionary<int, int> pseudoTransmogEffectsByItemId = new();
 
-// Base armor determines the stats of the transmogrified armor
+// For helmets only, transmogrification is implemented by adding an effect to the player
+// that changes the visual appearance of their head. Generating actual transmogs for
+// all helmets would take up too many param rows, and the engine conveniently has support
+// for transmogging heads as a vestige of Dark Souls dragon form.
 int i = 100;
+foreach (var targetArmorRow in validArmorRows)
+{
+    var baseProtectorCategory = (byte)targetArmorRow[armorProtectorCategoryIdx].Value;
+    var pseudoTransmog = baseProtectorCategory == 0;
+    if (!pseudoTransmog)
+    {
+        continue;
+    }
+
+    var pseudoTransmogEffect = AddPseudoTransmogEffect(targetArmorRow);
+    var pseudoTransmogItem = AddPseudoTransmogItem(690000 + i, targetArmorRow);
+    AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, targetArmorRow);
+    pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
+
+    var eventFlagId = 690000 + i;
+    initializeEvent.Instructions.Add(
+        TransmogEMEVDUtils.InitializeEvent(
+            i,
+            (int)buyPseudoTransmogEvent.ID,
+            pseudoTransmogItem.ID,
+            eventFlagId
+        )
+    );
+    initializeEvent.Instructions.Add(
+        TransmogEMEVDUtils.InitializeEvent(
+            i,
+            (int)applyPseudoTransmogEvent.ID,
+            eventFlagId,
+            pseudoTransmogEffect.ID
+        )
+    );
+
+    undoTransmogEvent.Instructions.AddRange(
+        new List<EMEVD.Instruction>()
+        {
+            TransmogEMEVDUtils.SkipIfEventFlag(
+                2,
+                TransmogEMEVDUtils.OFF,
+                TransmogEMEVDUtils.EVENT_FLAG,
+                eventFlagId
+            ),
+            TransmogEMEVDUtils.SetEventFlag(
+                TransmogEMEVDUtils.EVENT_FLAG,
+                eventFlagId,
+                TransmogEMEVDUtils.OFF
+            ),
+            TransmogEMEVDUtils.InitializeEvent(
+                i,
+                (int)postUndoTransmogEvent.ID,
+                baseProtectorCategory
+            ),
+            TransmogEMEVDUtils.WaitFixedTimeFrames(0)
+        }
+    );
+
+    i++;
+}
+
+// Base armor determines the stats of the transmogrified armor
+i = 100;
 foreach (var baseArmorRow in validArmorRows)
 {
     var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
+    var pseudoTransmog = baseProtectorCategory == 0;
 
     if (skippedArmorIds.Contains(baseArmorRow.ID))
     {
@@ -468,60 +540,6 @@ foreach (var baseArmorRow in validArmorRows)
         // that didn't skip these armor pieces
         i++;
         continue;
-    }
-
-    // For helmets only, transmogrification is implemented by adding an effect to the player
-    // that changes the visual appearance of their head. Generating actual transmogs for
-    // all helmets would take up too many param rows, and the engine conveniently has support
-    // for transmogging heads as a vestige of Dark Souls dragon form.
-    var pseudoTransmog = baseProtectorCategory == 0;
-    if (pseudoTransmog)
-    {
-        var pseudoTransmogEffect = AddPseudoTransmogEffect(baseArmorRow);
-        var pseudoTransmogItem = AddPseudoTransmogItem(690000 + i, baseArmorRow);
-        AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, baseArmorRow);
-        pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
-
-        var eventFlagId = 690000 + i;
-        initializeEvent.Instructions.Add(
-            TransmogEMEVDUtils.InitializeEvent(
-                i,
-                (int)buyPseudoTransmogEvent.ID,
-                pseudoTransmogItem.ID,
-                eventFlagId
-            )
-        );
-        initializeEvent.Instructions.Add(
-            TransmogEMEVDUtils.InitializeEvent(
-                i,
-                (int)applyPseudoTransmogEvent.ID,
-                eventFlagId,
-                pseudoTransmogEffect.ID
-            )
-        );
-
-        undoTransmogEvent.Instructions.AddRange(
-            new List<EMEVD.Instruction>()
-            {
-                TransmogEMEVDUtils.SkipIfEventFlag(
-                    2,
-                    TransmogEMEVDUtils.OFF,
-                    TransmogEMEVDUtils.EVENT_FLAG,
-                    eventFlagId
-                ),
-                TransmogEMEVDUtils.SetEventFlag(
-                    TransmogEMEVDUtils.EVENT_FLAG,
-                    eventFlagId,
-                    TransmogEMEVDUtils.OFF
-                ),
-                TransmogEMEVDUtils.InitializeEvent(
-                    i,
-                    (int)postUndoTransmogEvent.ID,
-                    baseProtectorCategory
-                ),
-                TransmogEMEVDUtils.WaitFixedTimeFrames(0)
-            }
-        );
     }
 
     // Empty slots aren't obtainable as items, so they can't be the base armor
