@@ -2,7 +2,7 @@
 
 string gamePath = @"C:\Program Files (x86)\Steam\steamapps\common\ELDEN RING\Game";
 string inputPath = Path.GetFullPath(args.Length > 0 ? args[0] : gamePath);
-string modPath = Path.GetFullPath(args.Length > 1 ? args[1] : "mods/ertransmog");
+string modPath = Path.GetFullPath(args.Length > 1 ? args[1] : "mods/ertransmogrify");
 
 bool isInputVanilla = gamePath == inputPath;
 bool isInputConvergence = inputPath.ToUpper().Contains("CONVERGENCE");
@@ -435,7 +435,7 @@ roundtableTalk.StateGroups[transmogStateGroupID] = transmogStateGroup;
 TransmogTalkUtils.AddTransmogMenuOption(
     roundtableTalk.StateGroups,
     (int)transmogStateGroupID,
-    -1, // TODO
+    26080000, // "Apply cosmetics"
     transmogTalkTextId // "Transmogrify armor"
 );
 

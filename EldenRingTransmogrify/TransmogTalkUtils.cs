@@ -14,8 +14,9 @@ using SoulsFormats;
  */
 class TransmogTalkUtils
 {
-    private static readonly int ADD_TALK_LIST_DATA_BANK = 1;
+    private static readonly int TALK_LIST_DATA_BANK = 1;
     private static readonly int ADD_TALK_LIST_DATA_COMMAND = 19;
+    private static readonly int CLEAR_TALK_LIST_DATA_COMMAND = 20;
     private static readonly int CUSTOM_BANK = 6;
 
     public static void AddTransmogMenuOption(
@@ -34,42 +35,57 @@ class TransmogTalkUtils
                     state.EntryCommands.Any(command => IsAddTalkListData(command, targetTalkTextID))
             );
 
-            if (talkListState != null)
+            // The if/else chain is identified by looking for a state with multitple conditions
+            var nextMenuState = stateGroup.Values.FirstOrDefault(
+                state =>
+                    state.Conditions.Count >= 2
+                    && state.Conditions[0].Evaluator.Length >= 2
+                    && state.Conditions[0].Evaluator[0] == 0x57
+                    && state.Conditions[0].Evaluator[1] == 0x84
+                    && state.Conditions[^1].Evaluator.Length >= 2
+                    && state.Conditions[^1].Evaluator[0] == 0x41
+                    && state.Conditions[^1].Evaluator[1] == 0xa1
+            );
+
+            var (returnStateID, returnState) = stateGroup.FirstOrDefault(
+                state => state.Value.EntryCommands.Any(IsClearTalkListData)
+            );
+
+            if (talkListState != null && nextMenuState != null && returnState != null)
             {
                 var transmogMenuOptionID = 69;
                 var transmogStateID = 0x100;
-                var initialStateID = 0x01;
 
                 // Add a new option to the menu that opens the Transmogrify Armor menu specified
                 // in transmogStateGroupID
-                talkListState.EntryCommands.Add(
-                    AddTalkListData(transmogMenuOptionID, transmogTalkTextID, -1)
-                );
-                stateGroup[0x08].Conditions.Add(
+                var addTalkListData = AddTalkListData(transmogMenuOptionID, transmogTalkTextID, -1);
+                if (
+                    IsAddTalkListData(talkListState.EntryCommands[^1], 20000009) // Leave
+                    || IsAddTalkListData(talkListState.EntryCommands[^1], 26080001) // Leave
+                )
+                {
+                    talkListState.EntryCommands.Insert(
+                        talkListState.EntryCommands.Count - 1,
+                        addTalkListData
+                    );
+                }
+                else
+                {
+                    talkListState.EntryCommands.Add(addTalkListData);
+                }
+
+                nextMenuState.Conditions.Insert(
+                    nextMenuState.Conditions.Count - 2,
                     TalkListEntryResultCondition(transmogMenuOptionID, transmogStateID)
                 );
-                stateGroup[transmogStateID] = AwaitCall(transmogStateGroupID, initialStateID);
+
+                stateGroup[transmogStateID] = AwaitCall(transmogStateGroupID, (int)returnStateID);
 
                 return;
             }
         }
 
         throw new Exception("Couldn't find state to add menu option to");
-    }
-
-    private static bool IsAddTalkListData(ESD.CommandCall command, int talkTextId)
-    {
-        if (
-            command.CommandBank == ADD_TALK_LIST_DATA_BANK
-            && command.CommandID == ADD_TALK_LIST_DATA_COMMAND
-        )
-        {
-            BinaryReaderEx talkTextIdArg = new(false, command.Arguments[1]);
-            talkTextIdArg.Skip(1);
-            return talkTextId == talkTextIdArg.ReadInt32();
-        }
-
-        return false;
     }
 
     private static ESD.CommandCall AddTalkListData(int menuId, int talkTextId, int unk)
@@ -90,12 +106,33 @@ class TransmogTalkUtils
         unkArg.WriteByte(0xa1);
 
         return new(
-            ADD_TALK_LIST_DATA_BANK,
+            TALK_LIST_DATA_BANK,
             ADD_TALK_LIST_DATA_COMMAND,
             menuOptionIdArg.FinishBytes(),
             talkTextIdArg.FinishBytes(),
             unkArg.FinishBytes()
         );
+    }
+
+    private static bool IsAddTalkListData(ESD.CommandCall command, int talkTextId)
+    {
+        if (
+            command.CommandBank == TALK_LIST_DATA_BANK
+            && command.CommandID == ADD_TALK_LIST_DATA_COMMAND
+        )
+        {
+            BinaryReaderEx talkTextIdArg = new(false, command.Arguments[1]);
+            talkTextIdArg.Skip(1);
+            return talkTextId == talkTextIdArg.ReadInt32();
+        }
+
+        return false;
+    }
+
+    private static bool IsClearTalkListData(ESD.CommandCall command)
+    {
+        return command.CommandBank == TALK_LIST_DATA_BANK
+            && command.CommandID == CLEAR_TALK_LIST_DATA_COMMAND;
     }
 
     private static ESD.Condition TalkListEntryResultCondition(int menuOptionID, int stateID)
