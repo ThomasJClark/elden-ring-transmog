@@ -370,6 +370,13 @@ PARAM.Row AddPseudoTransmogEffect(PARAM.Row armorRow)
         spEffects.AppliedParamdef
     );
     transmogEffect["vfxId"].Value = transmogVfx.ID;
+    transmogEffect["equipWeightChangeRate"].Value = 1.0f;
+    transmogEffect["hpRecoverRate"].Value = 1.0f;
+    transmogEffect["soulRate"].Value = 1.0f;
+    transmogEffect["fallDamageRate"].Value = 1.0f;
+    transmogEffect["allItemWeightChangeRate"].Value = 1.0f;
+    transmogEffect["grabityRate"].Value = 1.0f;
+    transmogEffect["soulStealRate"].Value = 1.0f;
     transmogEffect["effectEndurance"].Value = -1.0f;
     transmogEffect["effectTargetSelf"].Value = (byte)1;
     transmogEffect["effectTargetFriend"].Value = (byte)1;
@@ -551,7 +558,7 @@ void AddPseudoTransmogs()
         var pseudoTransmogEffect = AddPseudoTransmogEffect(armorRow);
 
         // Add a placeholder item that the player can buy in a fake shop to activate the transmog
-        var pseudoTransmogItem = AddPseudoTransmogItem(690000 + armorIndex, armorRow);
+        var pseudoTransmogItem = AddPseudoTransmogItem(690000 + index, armorRow);
         AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, armorRow);
 
         pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
