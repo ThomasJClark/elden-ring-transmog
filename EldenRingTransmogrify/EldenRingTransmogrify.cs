@@ -16,14 +16,6 @@ string shopLineupFileName = @"N:\GR\data\Param\param\GameParam\ShopLineupParam.p
 string spEffectFileName = @"N:\GR\data\Param\param\GameParam\SpEffectParam.param";
 string spEffectVfxFileName = @"N:\GR\data\Param\param\GameParam\SpEffectVfxParam.param";
 string armorNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorName.fmg";
-string armorInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorInfo.fmg";
-string armorCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\ProtectorCaption.fmg";
-string itemNameFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GoodsName.fmg";
-string itemInfoFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GoodsInfo.fmg";
-string itemCaptionFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GoodsCaption.fmg";
-string talkTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForTalk.fmg";
-string mapTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\EventTextForMap.fmg";
-string menuTextFileName = @"N:\GR\data\INTERROOT_win64\msg\engUS\GR_MenuText.fmg";
 string commonTalkFileName = @"N:\GR\data\INTERROOT_win64\script\talk\m00_00_00_00\t000001000.esd";
 string roundtableTalkFileName =
     @"N:\GR\data\INTERROOT_win64\script\talk\m11_10_00_00\t608001110.esd";
@@ -42,26 +34,38 @@ var paramDefs = Directory
 
 // Read the input data from the unpacked game folder
 Console.WriteLine($"  Reading item names...");
-BND4 itemMsgBnd = BND4.Read(Path.Combine(inputPath, "msg", "engus", "item.msgbnd.dcx"));
-FMG armorNames = FMG.Read(GetBinderFile(itemMsgBnd, armorNameFileName).Bytes);
-FMG armorInfos = FMG.Read(GetBinderFile(itemMsgBnd, armorInfoFileName).Bytes);
-FMG armorCaptions = FMG.Read(GetBinderFile(itemMsgBnd, armorCaptionFileName).Bytes);
-FMG itemNames = FMG.Read(GetBinderFile(itemMsgBnd, itemNameFileName).Bytes);
-FMG itemInfos = FMG.Read(GetBinderFile(itemMsgBnd, itemInfoFileName).Bytes);
-FMG itemCaptions = FMG.Read(GetBinderFile(itemMsgBnd, itemCaptionFileName).Bytes);
 
-BND4 vanillaItemMsgBnd = isInputVanilla
-    ? itemMsgBnd
-    : BND4.Read(Path.Combine(gamePath, "msg", "engus", "item.msgbnd.dcx"));
-FMG vanillaArmorNames = isInputVanilla
-    ? armorNames
-    : FMG.Read(GetBinderFile(vanillaItemMsgBnd, armorNameFileName).Bytes);
+BND4 vanillaItemMsgBnd = BND4.Read(Path.Combine(gamePath, "msg", "engus", "item.msgbnd.dcx"));
+FMG vanillaArmorNames = FMG.Read(GetBinderFile(vanillaItemMsgBnd, armorNameFileName).Bytes);
+
+Dictionary<string, TransmogMessageUtils.TransmogMessages> itemMessagesByLang =
+    TransmogMessageUtils.ReadLocalizedMessages(
+        inputPath,
+        "item.msgbnd.dcx",
+        new[]
+        {
+            TransmogMessageUtils.ArmorNameFileName,
+            TransmogMessageUtils.ArmorInfoFileName,
+            TransmogMessageUtils.ArmorCaptionFileName,
+            TransmogMessageUtils.ItemNameFileName,
+            TransmogMessageUtils.ItemInfoFileName,
+            TransmogMessageUtils.ItemCaptionFileName
+        }
+    );
 
 Console.WriteLine($"  Reading menu text...");
-BND4 menuMsgBnd = BND4.Read(Path.Combine(inputPath, "msg", "engus", "menu.msgbnd.dcx"));
-FMG talkTexts = FMG.Read(GetBinderFile(menuMsgBnd, talkTextFileName).Bytes);
-FMG mapTexts = FMG.Read(GetBinderFile(menuMsgBnd, mapTextFileName).Bytes);
-FMG menuTexts = FMG.Read(GetBinderFile(menuMsgBnd, menuTextFileName).Bytes);
+
+Dictionary<string, TransmogMessageUtils.TransmogMessages> menuMessagesByLang =
+    TransmogMessageUtils.ReadLocalizedMessages(
+        inputPath,
+        "menu.msgbnd.dcx",
+        new[]
+        {
+            TransmogMessageUtils.TalkTextFileName,
+            TransmogMessageUtils.MapTextFileName,
+            TransmogMessageUtils.MenuTextFileName
+        }
+    );
 
 Console.WriteLine($"  Reading params...");
 BND4 paramBnd = SFUtil.DecryptERRegulation(Path.Combine(inputPath, "regulation.bin"));
@@ -150,25 +154,48 @@ int[] skippedArmorIds = new int[] { 610000, 610100, 610200, 610300 };
 
 // Add the menu text used to open the transmogrify screen
 int transmogTalkTextId = 69000000;
-talkTexts[transmogTalkTextId] = isInputReforged
-    ? "<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> Transmogrify armor"
-    : "Transmogrify armor";
-talkTexts[69000010] = "Transmogrify Head";
-talkTexts[69000011] = "Transmogrify Body";
-talkTexts[69000012] = "Transmogrify Arms";
-talkTexts[69000013] = "Transmogrify Legs";
-talkTexts[69000020] = "Untransmogrify equipped armor";
-
 int transmogHeadMenuTextId = 690000;
 int transmogBodyMenuTextId = 690001;
 int transmogArmsMenuTextId = 690002;
 int transmogLegsMenuTextId = 690003;
-menuTexts[transmogHeadMenuTextId] = "Transmogrify Head";
-menuTexts[transmogBodyMenuTextId] = "Transmogrify Body";
-menuTexts[transmogArmsMenuTextId] = "Transmogrify Arms";
-menuTexts[transmogLegsMenuTextId] = "Transmogrify Legs";
 
-mapTexts[690000] = "Untransmogrified armor has been returned to your inventory";
+foreach (var (_, FMGs, Messages) in menuMessagesByLang.Values)
+{
+    var talkTexts = FMGs[TransmogMessageUtils.TalkTextFileName];
+    if (isInputReforged)
+    {
+        talkTexts[transmogTalkTextId] =
+            $"<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> {Messages["Transmogrify armor"]}";
+        talkTexts[69000010] =
+            $"<img src='img://SB_ERR_A_Mind' height='32' width='32' vspace='-16'/> {Messages["Transmogrify head"]}";
+        talkTexts[69000011] =
+            $"<img src='img://SB_ERR_A_Vigor' height='32' width='32' vspace='-16'/> {Messages["Transmogrify body"]}";
+        talkTexts[69000012] =
+            $"<img src='img://SB_ERR_A_Strength' height='32' width='32' vspace='-16'/> {Messages["Transmogrify arms"]}";
+        talkTexts[69000013] =
+            $"<img src='img://SB_ERR_A_Endurance' height='32' width='32' vspace='-16'/> {Messages["Transmogrify legs"]}";
+        talkTexts[69000020] =
+            $"<img src='img://SB_ERR_Grace_AlterGarments.png' height='32' width='32' vspace='-16'/> {Messages["Untransmogrify equipped armor"]}";
+    }
+    else
+    {
+        talkTexts[transmogTalkTextId] = Messages["Transmogrify armor"];
+        talkTexts[69000010] = Messages["Transmogrify head"];
+        talkTexts[69000011] = Messages["Transmogrify body"];
+        talkTexts[69000012] = Messages["Transmogrify arms"];
+        talkTexts[69000013] = Messages["Transmogrify legs"];
+        talkTexts[69000020] = Messages["Untransmogrify equipped armor"];
+    }
+
+    var menuTexts = FMGs[TransmogMessageUtils.MenuTextFileName];
+    menuTexts[transmogHeadMenuTextId] = Messages["Transmogrify Head"];
+    menuTexts[transmogBodyMenuTextId] = Messages["Transmogrify Body"];
+    menuTexts[transmogArmsMenuTextId] = Messages["Transmogrify Arms"];
+    menuTexts[transmogLegsMenuTextId] = Messages["Transmogrify Legs"];
+
+    var mapTexts = FMGs[TransmogMessageUtils.MapTextFileName];
+    mapTexts[690000] = Messages["Untransmogrified armor has been returned to your inventory"];
+}
 
 /**
  * Add a new armor piece with the stats of the first armor and the appearance of the second
@@ -204,69 +231,76 @@ PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
     if (isInvisible)
     {
         armorRow[armorIconIdIdx].Value = invisibleIconId;
-        armorNames[armorRow.ID] = $"Invisible {armorNames[baseArmorRow.ID]}";
-        armorInfos[armorRow.ID] = armorInfos[baseArmorRow.ID];
-        armorCaptions[armorRow.ID] = armorCaptions[baseArmorRow.ID];
     }
-    else
-    {
-        armorNames[armorRow.ID] =
-            $"{armorNames[targetArmorRow.ID]} (Transmogrified {armorNames[baseArmorRow.ID]})";
-        armorInfos[armorRow.ID] = armorInfos[targetArmorRow.ID];
 
-        // Armor pieces in The Convergence and Elden Ring Reforged have effects in the description.
-        // Copy that over to the new armor, so the description is still accurate.
-        if (isInputConvergence || isInputReforged)
+    TransmogMessageUtils.SetArmorText(
+        itemMessagesByLang,
+        armorRow.ID,
+        (lang, messages) =>
         {
-            Predicate<string> isEffect = (line) =>
-                line.StartsWith("Increases ")
-                || line.StartsWith("Decreases ")
-                || line.StartsWith("Reduces ")
-                || line.StartsWith("Strengthens ")
-                || line.StartsWith("Raises ");
+            var (baseArmorName, baseArmorInfo, baseArmorCaption) =
+                TransmogMessageUtils.GetArmorText(messages.FMGs, baseArmorRow.ID);
 
-            var baseDescription = armorCaptions[baseArmorRow.ID].Split("\n");
-            var targetDescription = armorCaptions[targetArmorRow.ID].Split("\n");
+            var (targetArmorName, targetArmorInfo, targetArmorCaption) =
+                TransmogMessageUtils.GetArmorText(messages.FMGs, targetArmorRow.ID);
 
-            armorCaptions[armorRow.ID] =
-                String.Join("\n", targetDescription.TakeWhile(line => !isEffect(line))).Trim()
-                + "\n\n"
-                + String
-                    .Join(
-                        "\n",
-                        baseDescription
-                            .SkipWhile(line => !isEffect(line))
-                            .TakeWhile(line => isEffect(line))
-                    )
-                    .Trim()
-                + "\n\n"
-                + String
-                    .Join(
-                        "\n",
-                        targetDescription
-                            .SkipWhile(line => !isEffect(line))
-                            .SkipWhile(line => isEffect(line))
-                    )
-                    .Trim();
-        }
-        // Similarly, Detailed Item Descriptions adds explicit passive effects to armor descriptions
-        else if (isInputDetailedItemDescriptions)
-        {
-            var baseDescription = armorCaptions[baseArmorRow.ID].Split("\n");
-            var targetDescription = armorCaptions[targetArmorRow.ID].Split("\n");
+            if (isInvisible)
+            {
+                return (
+                    lang == "engus"
+                        ? $"Invisible {baseArmorName}"
+                        : $"{baseArmorName} [{messages.Messages["Invisible"]}]",
+                    baseArmorInfo,
+                    baseArmorCaption
+                );
+            }
 
-            armorCaptions[armorRow.ID] =
-                String
-                    .Join("\n", targetDescription.TakeWhile(line => !line.StartsWith("<font")))
-                    .TrimEnd()
-                + "\n\n"
-                + String.Join("\n", baseDescription.SkipWhile(line => !line.StartsWith("<font")));
+            string armorName =
+                lang == "engus"
+                    ? $"{targetArmorName} (Transmogrified {baseArmorName})"
+                    : $"{targetArmorName} [{baseArmorName}]";
+            string armorInfo = targetArmorCaption;
+            string armorCaption = targetArmorCaption;
+
+            // Armor pieces in The Convergence and Elden Ring Reforged have effects in the description.
+            // Copy that over to the new armor, so the description is still accurate.
+            if (isInputConvergence || isInputReforged)
+            {
+                Predicate<string> isEffect = (line) =>
+                    line.StartsWith("Increases ")
+                    || line.StartsWith("Decreases ")
+                    || line.StartsWith("Reduces ")
+                    || line.StartsWith("Strengthens ")
+                    || line.StartsWith("Raises ");
+
+                var baseDescription = baseArmorCaption.Split("\n");
+                var targetDescription = targetArmorCaption.Split("\n");
+
+                armorCaption =
+                    String.Join("\n", targetDescription.TakeWhile(line => !isEffect(line))).Trim()
+                    + "\n\n"
+                    + String
+                        .Join(
+                            "\n",
+                            baseDescription
+                                .SkipWhile(line => !isEffect(line))
+                                .TakeWhile(line => isEffect(line))
+                        )
+                        .Trim()
+                    + "\n\n"
+                    + String
+                        .Join(
+                            "\n",
+                            targetDescription
+                                .SkipWhile(line => !isEffect(line))
+                                .SkipWhile(line => isEffect(line))
+                        )
+                        .Trim();
+            }
+
+            return (armorName, armorInfo, armorCaption);
         }
-        else
-        {
-            armorCaptions[armorRow.ID] = armorCaptions[targetArmorRow.ID];
-        }
-    }
+    );
 
     armor.Rows.Add(armorRow);
     return armorRow;
@@ -356,19 +390,11 @@ PARAM.Row AddPseudoTransmogShopLineup(int itemId, PARAM.Row armorRow)
 
 PARAM.Row AddPseudoTransmogEffect(PARAM.Row armorRow)
 {
-    var transmogVfx = new PARAM.Row(
-        nextSpEffectVfxId++,
-        $"[Transmog] {armorNames[armorRow.ID]}",
-        spEffectVfx.AppliedParamdef
-    );
+    var transmogVfx = new PARAM.Row(nextSpEffectVfxId++, null, spEffectVfx.AppliedParamdef);
     transmogVfx["transformProtectorId"].Value = armorRow.ID;
     spEffectVfx.Rows.Add(transmogVfx);
 
-    var transmogEffect = new PARAM.Row(
-        nextSpEffectId++,
-        $"[Transmog] {armorNames[armorRow.ID]}",
-        spEffects.AppliedParamdef
-    );
+    var transmogEffect = new PARAM.Row(nextSpEffectId++, null, spEffects.AppliedParamdef);
     transmogEffect["vfxId"].Value = transmogVfx.ID;
     transmogEffect["equipWeightChangeRate"].Value = 1.0f;
     transmogEffect["hpRecoverRate"].Value = 1.0f;
@@ -399,29 +425,26 @@ PARAM.Row AddPseudoTransmogEffect(PARAM.Row armorRow)
 
 PARAM.Row AddPseudoTransmogItem(int itemId, PARAM.Row armorRow)
 {
-    var transmogItem = new PARAM.Row(
-        itemId,
-        $"[Transmog] {armorNames[armorRow.ID]}",
-        items.AppliedParamdef
-    );
+    var transmogItem = new PARAM.Row(itemId, null, items.AppliedParamdef);
 
     transmogItem[itemGoodsTypeIdx].Value = 1; // key item
     transmogItem[itemSaleValueIdx].Value = 0;
     transmogItem[itemMaxNumIdx].Value = 1;
     items.Rows.Add(transmogItem);
 
-    if (bareArmorIds.Contains(armorRow.ID))
-    {
-        itemNames[transmogItem.ID] = "Invisible";
-        itemInfos[transmogItem.ID] = "";
-        itemCaptions[transmogItem.ID] = "";
-    }
-    else
-    {
-        itemNames[transmogItem.ID] = armorNames[armorRow.ID];
-        itemInfos[transmogItem.ID] = armorInfos[armorRow.ID];
-        itemCaptions[transmogItem.ID] = armorCaptions[armorRow.ID];
-    }
+    TransmogMessageUtils.SetItemText(
+        itemMessagesByLang,
+        transmogItem.ID,
+        (lang, messages) =>
+        {
+            if (bareArmorIds.Contains(armorRow.ID))
+            {
+                return ("Invisible", "", "");
+            }
+
+            return TransmogMessageUtils.GetArmorText(messages.FMGs, armorRow.ID);
+        }
+    );
 
     return transmogItem;
 }
@@ -502,14 +525,19 @@ foreach (var row in vanillaArmor.Rows)
 // armor, to keep IDs of vanilla transmogs compatible with previous version of this mod
 foreach (var row in armor.Rows)
 {
+    var (armorName, armorInfo, armorCaption) = TransmogMessageUtils.GetArmorText(
+        itemMessagesByLang["engus"].FMGs,
+        row.ID
+    );
+
     if (
         row.ID >= 10000
         && vanillaArmor[row.ID] == null
-        && armorNames[row.ID] != null
-        && !armorNames[row.ID].StartsWith("[ERROR]")
-        && !armorNames[row.ID].EndsWith(" (Altered)")
-        && armorInfos[row.ID] != null
-        && armorCaptions[row.ID] != null
+        && armorName != null
+        && !armorName.StartsWith("[ERROR]")
+        && !armorName.EndsWith(" (Altered)")
+        && armorInfo != null
+        && armorCaption != null
     )
     {
         validArmorRows.Add(row);
@@ -771,19 +799,10 @@ Console.WriteLine($"Writing mod data to \"{modPath}\"...");
 
 // Write the modified data to the mod folder
 Console.WriteLine($"  Writing item names...");
-GetBinderFile(itemMsgBnd, armorNameFileName).Bytes = armorNames.Write();
-GetBinderFile(itemMsgBnd, armorInfoFileName).Bytes = armorInfos.Write();
-GetBinderFile(itemMsgBnd, armorCaptionFileName).Bytes = armorCaptions.Write();
-GetBinderFile(itemMsgBnd, itemNameFileName).Bytes = itemNames.Write();
-GetBinderFile(itemMsgBnd, itemInfoFileName).Bytes = itemInfos.Write();
-GetBinderFile(itemMsgBnd, itemCaptionFileName).Bytes = itemCaptions.Write();
-itemMsgBnd.Write(Path.Combine(modPath, "msg", "engus", "item.msgbnd.dcx"));
+TransmogMessageUtils.WriteLocalizedMessages(modPath, "item.msgbnd.dcx", itemMessagesByLang);
 
 Console.WriteLine($"  Writing menu text...");
-GetBinderFile(menuMsgBnd, talkTextFileName).Bytes = talkTexts.Write();
-GetBinderFile(menuMsgBnd, mapTextFileName).Bytes = mapTexts.Write();
-GetBinderFile(menuMsgBnd, menuTextFileName).Bytes = menuTexts.Write();
-menuMsgBnd.Write(Path.Combine(modPath, "msg", "engus", "menu.msgbnd.dcx"));
+TransmogMessageUtils.WriteLocalizedMessages(modPath, "menu.msgbnd.dcx", menuMessagesByLang);
 
 Console.WriteLine($"  Writing params...");
 foreach (var param in allParams)
