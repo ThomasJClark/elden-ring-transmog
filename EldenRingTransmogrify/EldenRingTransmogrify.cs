@@ -270,23 +270,21 @@ PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
                 // Copy that over to the new armor, so the description is still accurate.
                 if (isInputConvergence || isInputReforged)
                 {
-                    Predicate<string> isEffect = (line) =>
+                    bool isEffect(string line) =>
                         line.StartsWith("Increases ")
                         || line.StartsWith("Decreases ")
                         || line.StartsWith("Reduces ")
                         || line.StartsWith("Strengthens ")
                         || line.StartsWith("Raises ");
 
-                    var baseDescription = baseArmorCaption.Split("\n");
-                    var targetDescription = targetArmorCaption.Split("\n");
+                    var baseDescription = (baseArmorCaption ?? "").Split("\n");
+                    var targetDescription = (targetArmorCaption ?? "").Split("\n");
 
                     armorCaption =
-                        String
-                            .Join("\n", targetDescription.TakeWhile(line => !isEffect(line)))
+                        string.Join("\n", targetDescription.TakeWhile(line => !isEffect(line)))
                             .Trim()
                         + "\n\n"
-                        + String
-                            .Join(
+                        + string.Join(
                                 "\n",
                                 baseDescription
                                     .SkipWhile(line => !isEffect(line))
@@ -294,8 +292,7 @@ PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
                             )
                             .Trim()
                         + "\n\n"
-                        + String
-                            .Join(
+                        + string.Join(
                                 "\n",
                                 targetDescription
                                     .SkipWhile(line => !isEffect(line))
