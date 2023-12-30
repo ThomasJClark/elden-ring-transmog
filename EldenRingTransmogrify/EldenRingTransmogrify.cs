@@ -147,12 +147,30 @@ int itemGoodsTypeIdx = items.GetCellIndex("goodsType");
 int itemSaleValueIdx = items.GetCellIndex("saleValue");
 int itemMaxNumIdx = items.GetCellIndex("maxNum");
 
-// Bare head/body/arms/legs
-int[] bareArmorIds = new int[] { 10000, 10100, 10200, 10300 };
+List<int> bareArmorIds =
+    new()
+    {
+        10000, // Head
+        10100, // Body
+        10200, // Arms
+        10300, // Legs
+    };
 
 // Cut armor to generate IDs for, but not include in the mod. These were included in previous
 // versions of the mod, so their IDs need to be skipped so save files remain compatible.
-int[] skippedArmorIds = new int[] { 610000, 610100, 610200, 610300 };
+List<int> skippedArmorIds =
+    new()
+    {
+        610000, // Ragged Hat
+        610100, // Ragged Armor
+        610200, // Ragged Gloves
+        610300 // Ragged Loincloth
+    };
+
+if (isInputConvergence)
+{
+    skippedArmorIds.Add(963200); // Bloodsoaked Manchettes (given a new ID in The Convergence)
+}
 
 // Add the menu text used to open the transmogrify screen
 int transmogTalkTextId = 69000000;
