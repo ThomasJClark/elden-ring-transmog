@@ -50,6 +50,7 @@ $Event(9007103, Default, function(X0_4, X4_4) {
     WaitFor(PlayerHasItem(ItemType.Goods, X0_4));
     RemoveItemFromPlayer(ItemType.Goods, X0_4, 1);
     BatchSetEventFlags(690000, 690999, OFF);
+    SetEventFlag(TargetEventFlagType.EventFlag, 68505, OFF); // Convergence "hide helmet" flag 
     SetEventFlag(TargetEventFlagType.EventFlag, X4_4, ON);
     SaveRequest();
     RestartEvent();

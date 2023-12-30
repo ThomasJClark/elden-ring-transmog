@@ -532,6 +532,29 @@ undoTransmogEvent.Instructions.Add(
     )
 );
 
+if (isInputConvergence)
+{
+    int hideHeadgearFlagId = 68505;
+    undoTransmogEvent.Instructions.AddRange(
+        new List<EMEVD.Instruction>()
+        {
+            TransmogEventUtils.SkipIfEventFlag(
+                2,
+                TransmogEventUtils.OFF,
+                TransmogEventUtils.EVENT_FLAG,
+                hideHeadgearFlagId
+            ),
+            TransmogEventUtils.SetEventFlag(
+                TransmogEventUtils.EVENT_FLAG,
+                hideHeadgearFlagId,
+                TransmogEventUtils.OFF
+            ),
+            TransmogEventUtils.InitializeEvent(9999, (int)postUndoTransmogEvent.ID, 0),
+            TransmogEventUtils.WaitFixedTimeFrames(0)
+        }
+    );
+}
+
 Console.WriteLine("Generating transmogrified armor...");
 
 List<PARAM.Row> validArmorRows = new();
