@@ -204,7 +204,7 @@ foreach (var (_, FMGs, Messages) in menuMessagesByLang.Values)
  */
 PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
 {
-    var armorRow = new PARAM.Row(baseArmorRow) { ID = id };
+    var armorRow = new PARAM.Row(baseArmorRow) { ID = id, Name = null };
 
     // Is the target armor bare head/body/etc.? If so, instead of a transmogrified armor this is
     // an invisible version of the base armor
