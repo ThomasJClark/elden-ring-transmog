@@ -275,7 +275,9 @@ PARAM.Row AddArmor(int id, PARAM.Row baseArmorRow, PARAM.Row targetArmorRow)
                         || line.StartsWith("Decreases ")
                         || line.StartsWith("Reduces ")
                         || line.StartsWith("Strengthens ")
-                        || line.StartsWith("Raises ");
+                        || line.StartsWith("Raises ")
+                        || line.Contains("If you ")
+                        || line.Contains("When you ");
 
                     var baseDescription = (baseArmorCaption ?? "").Split("\n");
                     var targetDescription = (targetArmorCaption ?? "").Split("\n");
