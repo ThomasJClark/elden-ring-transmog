@@ -416,6 +416,7 @@ PARAM.Row AddPseudoTransmogEffect(PARAM.Row armorRow)
 {
     var transmogVfx = new PARAM.Row(nextSpEffectVfxId++, null, spEffectVfx.AppliedParamdef);
     transmogVfx["transformProtectorId"].Value = armorRow.ID;
+    transmogVfx["isVisibleDeadChr"].Value = (byte)1;
     spEffectVfx.Rows.Add(transmogVfx);
 
     var transmogEffect = new PARAM.Row(nextSpEffectId++, null, spEffects.AppliedParamdef);
