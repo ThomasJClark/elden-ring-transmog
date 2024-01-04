@@ -23,6 +23,31 @@ class TransmogEventUtils
     public static readonly uint ENTITY_PLAYER = 10000;
     public static readonly byte EVENT_FLAG = 0;
 
+    public static EMEVD.Instruction IfPlayerHasdoesntHaveItem(
+        sbyte resultConditionGroup,
+        byte itemType,
+        int itemId,
+        byte desiredPossessionState
+    )
+    {
+        var binaryWriter = new BinaryWriterEx(false);
+        binaryWriter.WriteSByte(resultConditionGroup);
+        binaryWriter.WriteByte(itemType);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteInt32(itemId);
+        binaryWriter.WriteByte(desiredPossessionState);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        binaryWriter.WriteByte(0);
+        return new()
+        {
+            Bank = 3,
+            ID = 4,
+            ArgData = binaryWriter.FinishBytes()
+        };
+    }
+
     public static EMEVD.Instruction IfPlayerHasArmorEquipped(
         sbyte resultConditionGroup,
         byte armorType,

@@ -549,10 +549,6 @@ undoTransmogEvent.Instructions.Add(
     )
 );
 
-undoTransmogEvent.Instructions.Add(
-    TransmogEventUtils.InitializeEvent(0, (int)undoPseudoTransmogEvent.ID, 0)
-);
-
 if (isInputConvergence)
 {
     int hideHeadgearFlagId = 68505;
@@ -686,14 +682,43 @@ void AddPseudoTransmogs()
                 )
             );
 
-            // Remove the placeholder item when the "Untransmogrify equipped armor" menu item is
-            // selected, or when a different pseudo-transmog is applied
+            // Remove the placeholder item when a different pseudo-transmog is applied
             undoPseudoTransmogEvent.Instructions.Add(
                 TransmogEventUtils.RemoveItemFromPlayer(
                     TransmogEventUtils.ITEM_TYPE_GOOD,
                     pseudoTransmogEffectItem.ID,
                     1
                 )
+            );
+
+            // Remove the placeholder item when the "Untransmogrify equipped armor" menu item is
+            // selected
+            undoTransmogEvent.Instructions.AddRange(
+                new List<EMEVD.Instruction>()
+                {
+                    TransmogEventUtils.IfPlayerHasdoesntHaveItem(
+                        TransmogEventUtils.OR_01,
+                        TransmogEventUtils.ITEM_TYPE_GOOD,
+                        pseudoTransmogEffectItem.ID,
+                        1
+                    ),
+                    TransmogEventUtils.SkipIfConditionGroupStateUncompiled(
+                        2,
+                        TransmogEventUtils.CONDITION_STATE_FAIL,
+                        TransmogEventUtils.OR_01
+                    ),
+                    TransmogEventUtils.RemoveItemFromPlayer(
+                        TransmogEventUtils.ITEM_TYPE_GOOD,
+                        pseudoTransmogEffectItem.ID,
+                        1
+                    ),
+                    TransmogEventUtils.InitializeEvent(
+                        armorRow.ID,
+                        (int)postUndoTransmogEvent.ID,
+                        protectorCategory
+                    ),
+                    TransmogEventUtils.WaitFixedTimeFrames(0)
+                }
             );
         }
     }
