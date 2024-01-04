@@ -467,7 +467,7 @@ PARAM.Row AddPseudoTransmogShopItem(int itemId, PARAM.Row armorRow)
             {
                 if (bareArmorIds.Contains(armorRow.ID))
                 {
-                    return ("Invisible", "", "");
+                    return (messages.Messages["Invisible"], "", "");
                 }
 
                 return TransmogMessageUtils.GetArmorText(messages.FMGs, armorRow.ID);
