@@ -7,11 +7,16 @@
 // @version    3.4.1
 // ==/EMEVD==
 
+const postUndoTransmogEvent = 9007102;
+const buyPseudoTransmogEvent = 9007103;
+const applyPseudoTransmogEvent = 9007104;
+const undoPseudoTransmogEvent = 9007105;
+
 /**
  * Spawn SFX on the player after undoing a transmog. This event handler is automatically appended
  * to common.emevd.dcx when the mod is generated.
  */
-$Event(9007102, Default, function (X0_4) {
+$Event(postUndoTransmogEvent, Default, function (X0_4) {
     const soundId = 302061;
     const armorPieceSfxId = 302603;
     const characterSfxId = 643041;
@@ -44,26 +49,33 @@ $Event(9007102, Default, function (X0_4) {
 });
 
 /**
- * Give the player an event flag when they "buy" a pseudo-transmog placeholder item
+ * Give the player a placeholder item when they "buy" a pseudo-transmog
  */
-$Event(9007103, Default, function(X0_4, X4_4) {
+$Event(buyPseudoTransmogEvent, Default, function(X0_4, X4_4) {
     WaitFor(PlayerHasItem(ItemType.Goods, X0_4));
+ 
+    // Remove any existing placeholder items
+    InitializeEvent(0, undoPseudoTransmogEvent, 0);
+    WaitFor(ElapsedFrames(1));
+
+    // Unset the Convergence "hide helmet" flag 
+    SetEventFlag(TargetEventFlagType.EventFlag, 68505, OFF);
+    
+    // Exchange the shop item for the pseudo-transmog placeholder item
     RemoveItemFromPlayer(ItemType.Goods, X0_4, 1);
-    BatchSetEventFlags(690000, 690999, OFF);
-    SetEventFlag(TargetEventFlagType.EventFlag, 68505, OFF); // Convergence "hide helmet" flag 
-    SetEventFlag(TargetEventFlagType.EventFlag, X4_4, ON);
+    DirectlyGivePlayerItem(ItemType.Goods, X4_4, 6001, 1);
+
     SaveRequest();
     RestartEvent();
 });
 
 /**
- * Assign a speffect to the player to pseudo-transmogrify their head based on the above
- * event flag
+ * Assign a speffect to the player to pseudo-transmogrify their head
  */
-$Event(9007104, Default, function(X0_4, X4_4) {
-    WaitForEventFlag(ON, TargetEventFlagType.EventFlag, X0_4);
+$Event(applyPseudoTransmogEvent, Default, function(X0_4, X4_4) {
+    WaitFor(PlayerHasItem(ItemType.Goods, X0_4));
     SetSpEffect(10000, X4_4);
-    WaitForEventFlag(OFF, TargetEventFlagType.EventFlag, X0_4);
+    WaitFor(!PlayerHasItem(ItemType.Goods, X0_4));
     ClearSpEffect(10000, X4_4);
     RestartEvent();
 });

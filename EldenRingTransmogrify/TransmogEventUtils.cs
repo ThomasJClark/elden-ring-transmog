@@ -18,6 +18,7 @@ class TransmogEventUtils
     public static readonly byte CONDITION_STATE_FAIL = 0;
     public static readonly sbyte EXECUTION_END_TYPE_RESTART = 1;
     public static readonly byte ITEM_TYPE_ARMOR = 1;
+    public static readonly byte ITEM_TYPE_GOOD = 3;
     public static readonly int ENTITY_TYPE_CHARACTER = 2;
     public static readonly uint ENTITY_PLAYER = 10000;
     public static readonly byte EVENT_FLAG = 0;

@@ -146,6 +146,7 @@ int armorIconIdIdx = armor.GetCellIndex("iconIdM");
 int itemGoodsTypeIdx = items.GetCellIndex("goodsType");
 int itemSaleValueIdx = items.GetCellIndex("saleValue");
 int itemMaxNumIdx = items.GetCellIndex("maxNum");
+int itemIconIdIdx = items.GetCellIndex("iconId");
 
 List<int> bareArmorIds =
     new()
@@ -448,7 +449,7 @@ PARAM.Row AddPseudoTransmogEffect(PARAM.Row armorRow)
     return transmogEffect;
 }
 
-PARAM.Row AddPseudoTransmogItem(int itemId, PARAM.Row armorRow)
+PARAM.Row AddPseudoTransmogShopItem(int itemId, PARAM.Row armorRow)
 {
     var transmogItem = new PARAM.Row(itemId, null, items.AppliedParamdef);
 
@@ -473,6 +474,18 @@ PARAM.Row AddPseudoTransmogItem(int itemId, PARAM.Row armorRow)
             }
         );
     }
+
+    return transmogItem;
+}
+
+PARAM.Row AddPseudoTransmogEffectItem(int itemId)
+{
+    var transmogItem = new PARAM.Row(itemId, null, items.AppliedParamdef);
+
+    transmogItem[itemGoodsTypeIdx].Value = 13; // None
+    transmogItem[itemSaleValueIdx].Value = 0;
+    transmogItem[itemMaxNumIdx].Value = 2;
+    items.Rows.Add(transmogItem);
 
     return transmogItem;
 }
@@ -508,19 +521,22 @@ undoTransmogEffect["effectTargetSelfTarget"].Value = (byte)1;
 spEffects.Rows.Add(undoTransmogEffect);
 
 EMEVD.Event initializeEvent = commonEmevd.Events.Find(evt => evt.ID == 0)!;
-EMEVD.Event undoTransmogEvent = new(9007101);
 EMEVD.Event postUndoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 9007102)!;
 EMEVD.Event buyPseudoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 9007103)!;
 EMEVD.Event applyPseudoTransmogEvent = transmogFuncEmevd.Events.Find(evt => evt.ID == 9007104)!;
+EMEVD.Event undoPseudoTransmogEvent = new(9007105);
+EMEVD.Event undoTransmogEvent = new(9007106);
 
-initializeEvent.Instructions.Add(
+var initializeInstructions = new List<EMEVD.Instruction>
+{
     TransmogEventUtils.InitializeEvent(0, (int)undoTransmogEvent.ID, 0)
-);
+};
 
-commonEmevd.Events.Add(undoTransmogEvent);
 commonEmevd.Events.Add(postUndoTransmogEvent);
 commonEmevd.Events.Add(buyPseudoTransmogEvent);
 commonEmevd.Events.Add(applyPseudoTransmogEvent);
+commonEmevd.Events.Add(undoPseudoTransmogEvent);
+commonEmevd.Events.Add(undoTransmogEvent);
 
 undoTransmogEvent.Instructions.Add(
     TransmogEventUtils.IfCharacterHasSpEffect(
@@ -531,6 +547,10 @@ undoTransmogEvent.Instructions.Add(
         TransmogEventUtils.EQUAL,
         1.0f
     )
+);
+
+undoTransmogEvent.Instructions.Add(
+    TransmogEventUtils.InitializeEvent(0, (int)undoPseudoTransmogEvent.ID, 0)
 );
 
 if (isInputConvergence)
@@ -597,8 +617,6 @@ foreach (var row in armor.Rows)
 
 Dictionary<int, PARAM.Row> armorById = armor.Rows.ToDictionary(row => row.ID);
 
-Dictionary<int, int> pseudoTransmogEffectsByItemId = new();
-
 /**
  * For helmets only, transmogrification is implemented by adding an effect to the player
  * that changes the visual appearance of their head. Generating actual transmogs for
@@ -637,56 +655,45 @@ void AddPseudoTransmogs()
         var pseudoTransmogEffect = AddPseudoTransmogEffect(armorRow);
 
         // Add a placeholder item that the player can buy in a fake shop to activate the transmog
-        var pseudoTransmogItem = AddPseudoTransmogItem(690000 + index, armorRow);
-        AddPseudoTransmogShopLineup(pseudoTransmogItem.ID, armorRow);
+        var pseudoTransmogShopItem = AddPseudoTransmogShopItem(690000 + index, armorRow);
+        AddPseudoTransmogShopLineup(pseudoTransmogShopItem.ID, armorRow);
 
-        pseudoTransmogEffectsByItemId[pseudoTransmogItem.ID] = pseudoTransmogEffect.ID;
-
-        // When the player aquires the item, remove it and set an event flag.
-        var eventFlagId = 690000 + index;
-        initializeEvent.Instructions.Add(
-            TransmogEventUtils.InitializeEvent(
-                index,
-                (int)buyPseudoTransmogEvent.ID,
-                pseudoTransmogItem.ID,
-                eventFlagId
-            )
-        );
-
+        // Add a persistent item stored in the player's inventory to indicate their transmog
+        // selection. Event flags accomplish the same thing, but they don't work with Seamless
+        // Co-op or during pseudo-mutliplayer missions
+        var pseudoTransmogEffectItem = AddPseudoTransmogEffectItem(49000 + index);
         if (!options.SkipEvents)
         {
-            // When the above event is set, apply the speffect that transmogrifies the player's head.
-            initializeEvent.Instructions.Add(
+            // When the player buys the key item, exchange it for the effect item and remove any
+            // other effect items
+            initializeInstructions.Add(
+                TransmogEventUtils.InitializeEvent(
+                    index,
+                    (int)buyPseudoTransmogEvent.ID,
+                    pseudoTransmogShopItem.ID,
+                    pseudoTransmogEffectItem.ID
+                )
+            );
+
+            // When the player has the effect item in their inventory, apply the speffect that
+            // transforms their head
+            initializeInstructions.Add(
                 TransmogEventUtils.InitializeEvent(
                     index,
                     (int)applyPseudoTransmogEvent.ID,
-                    eventFlagId,
+                    pseudoTransmogEffectItem.ID,
                     pseudoTransmogEffect.ID
                 )
             );
 
-            // Remove the event flag in the undo transmog event
-            undoTransmogEvent.Instructions.AddRange(
-                new List<EMEVD.Instruction>()
-                {
-                    TransmogEventUtils.SkipIfEventFlag(
-                        2,
-                        TransmogEventUtils.OFF,
-                        TransmogEventUtils.EVENT_FLAG,
-                        eventFlagId
-                    ),
-                    TransmogEventUtils.SetEventFlag(
-                        TransmogEventUtils.EVENT_FLAG,
-                        eventFlagId,
-                        TransmogEventUtils.OFF
-                    ),
-                    TransmogEventUtils.InitializeEvent(
-                        armorIndex,
-                        (int)postUndoTransmogEvent.ID,
-                        protectorCategory
-                    ),
-                    TransmogEventUtils.WaitFixedTimeFrames(0)
-                }
+            // Remove the placeholder item when the "Untransmogrify equipped armor" menu item is
+            // selected, or when a different pseudo-transmog is applied
+            undoPseudoTransmogEvent.Instructions.Add(
+                TransmogEventUtils.RemoveItemFromPlayer(
+                    TransmogEventUtils.ITEM_TYPE_GOOD,
+                    pseudoTransmogEffectItem.ID,
+                    1
+                )
             );
         }
     }
@@ -843,6 +850,12 @@ AddTransmogs();
 undoTransmogEvent.Instructions.Add(
     TransmogEventUtils.EndUnconditionally(TransmogEventUtils.EXECUTION_END_TYPE_RESTART)
 );
+
+// Initialize our events at the start of the init event, so they're before the
+// "EndIf(!PlayerIsInOwnWorld());". This allows the events to run in pseudo-multiplayer invasions
+// (and maybe Seamless Co-op?)
+initializeInstructions.AddRange(initializeEvent.Instructions);
+initializeEvent.Instructions = initializeInstructions;
 
 Console.WriteLine("Summary (after):");
 Console.WriteLine($"  Armor: {armor.Rows.Count}");
