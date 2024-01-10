@@ -113,8 +113,8 @@ int startTransmogArmsShopLineupId = 4200000;
 int nextTransmogArmsShopLineupId = startTransmogArmsShopLineupId;
 int startTransmogLegsShopLineupId = 4300000;
 int nextTransmogLegsShopLineupId = startTransmogLegsShopLineupId;
-int nextSpEffectId = 690000;
-int nextSpEffectVfxId = 690000;
+int nextSpEffectId = 690001;
+int nextSpEffectVfxId = 690001;
 
 Console.WriteLine("  Reading events...");
 var commonEmevdPath = Path.Combine(options.InputPath, "event/common.emevd.dcx");
