@@ -575,6 +575,7 @@ if (isInputConvergence)
 Console.WriteLine("Generating transmogrified armor...");
 
 List<PARAM.Row> validArmorRows = new();
+List<int> vanillaArmorIds = new();
 foreach (var row in vanillaArmor.Rows)
 {
     if (
@@ -584,30 +585,75 @@ foreach (var row in vanillaArmor.Rows)
         && !vanillaArmorNames[row.ID].EndsWith(" (Altered)")
     )
     {
+        vanillaArmorIds.Add(row.ID);
         validArmorRows.Add(armor[row.ID]);
     }
 }
 
 // Generate transmogs for modded armor sets (e.g. new sets added in The Convergence) after vanilla
 // armor, to keep IDs of vanilla transmogs compatible with previous version of this mod
-foreach (var row in armor.Rows)
+if (!isInputVanilla)
 {
-    var (armorName, armorInfo, armorCaption) = TransmogMessageUtils.GetArmorText(
-        itemMessagesByLang["engus"].FMGs,
-        row.ID
-    );
-
-    if (
-        row.ID >= 10000
-        && vanillaArmor[row.ID] == null
-        && armorName != null
-        && !armorName.StartsWith("[ERROR]")
-        && !armorName.EndsWith(" (Altered)")
-        && armorInfo != null
-        && armorCaption != null
-    )
+    foreach (var row in armor.Rows)
     {
-        validArmorRows.Add(row);
+        var (armorName, armorInfo, armorCaption) = TransmogMessageUtils.GetArmorText(
+            itemMessagesByLang["engus"].FMGs,
+            row.ID
+        );
+
+        if (
+            row.ID >= 10000
+            && vanillaArmor[row.ID] == null
+            && armorName != null
+            && !armorName.StartsWith("[ERROR]")
+            && !armorName.EndsWith(" (Altered)")
+            && armorInfo != null
+            && armorCaption != null
+        )
+        {
+            validArmorRows.Add(row);
+        }
+    }
+
+    // Generate transmogs for cut armor sets restored by mods last, to keep IDs of vanilla transmogs
+    // compatible with previous version of this mod
+    var restoredArmorIds = Array.Empty<int>();
+    if (isInputConvergence)
+    {
+        restoredArmorIds = new[]
+        {
+            1930300, // Deathbed Smalls
+            1950100, // Millicent's Robe
+            1950200, // Millicent's Gloves
+            1950300, // Millicent's Boots
+            1970100, // Millicent's Tunic
+            1970200, // Golden Prosthetic
+        };
+    }
+    else if (isInputReforged)
+    {
+        restoredArmorIds = new[]
+        {
+            700000, // Brave's Cord Circlet
+            700100, // Brave's Battlewear
+            700200, // Brave's Bracer
+            700300, // Brave's Legwraps
+            701000, // Brave's Leather Helm
+            920000, // Grass Hair Ornament
+            1930300, // Deathbed Smalls
+            1950100, // Millicent's Clothes
+            1950200, // Millicent's Gloves
+            1950300, // Millicent's Boots
+            1970200, // Valkyrie's Prosthesis
+        };
+    }
+
+    foreach (var row in armor.Rows)
+    {
+        if (restoredArmorIds.Contains(row.ID))
+        {
+            validArmorRows.Add(row);
+        }
     }
 }
 
@@ -644,7 +690,7 @@ void AddPseudoTransmogs()
             continue;
         }
 
-        var isModded = vanillaArmor[armorRow.ID] == null;
+        var isModded = !vanillaArmorIds.Contains(armorRow.ID);
         var index = isModded ? moddedArmorIndex++ : armorIndex++;
 
         // Add a speffect that makes the player character appear to be wearing the target armor
@@ -753,7 +799,7 @@ void AddTransmogs()
 
         var baseProtectorCategory = (byte)baseArmorRow[armorProtectorCategoryIdx].Value;
         var isPseudoTransmog = baseProtectorCategory == 0;
-        var isBaseModded = vanillaArmor[baseArmorRow.ID] == null;
+        var isBaseModded = !vanillaArmorIds.Contains(baseArmorRow.ID);
         var baseIndex = isBaseModded ? moddedBaseArmorIndex++ : baseArmorIndex++;
 
         var baseMaterialSet = AddMaterialSet(itemTypeArmor, baseArmorRow.ID);
@@ -777,7 +823,7 @@ void AddTransmogs()
                 continue;
             }
 
-            var isTargetModded = vanillaArmor[targetArmorRow.ID] == null;
+            var isTargetModded = !vanillaArmorIds.Contains(targetArmorRow.ID);
             var targetIndex = isTargetModded ? moddedTargetArmorIndex++ : targetArmorIndex++;
 
             if (
