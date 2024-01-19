@@ -16,6 +16,7 @@
     <ProjectGuid>{e3954f7f-7d56-47e1-a321-82319015ce00}</ProjectGuid>
     <RootNamespace>eldenringloadoutmod</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <NoWarn>C4200</NoWarn>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -79,12 +80,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
-    <ClInclude Include="EldenRingLoadoutMod.h" />
-    <ClCompile Include="EldenRingLoadoutMod.cpp" />
-    <ClInclude Include="GameHook.h" />
-    <ClCompile Include="GameHook.cpp" />
-    <ClInclude Include="parms.h" />
+    <ClCompile Include="src\dllmain.cpp" />
+    <ClInclude Include="src\EldenRingLoadoutMod.hpp" />
+    <ClCompile Include="src\EldenRingLoadoutMod.cpp" />
+    <ClInclude Include="src\GameHook.hpp" />
+    <ClCompile Include="src\GameHook.cpp" />
+    <ClInclude Include="src\ParamDefs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

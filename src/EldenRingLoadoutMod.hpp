@@ -2,14 +2,14 @@
 
 #include <atomic>
 
-#include "GameHook.h"
+#include "GameHook.hpp"
 
 class EldenRingLoadoutMod
 {
   public:
     void start();
-    std::atomic<bool> running;
+    std::atomic<bool> running = true;
 
   private:
-    GameHook game_hook;
+    GameHook gameHook;
 };

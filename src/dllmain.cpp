@@ -4,23 +4,23 @@
 #include <thread>
 #include <windows.h>
 
-#include "EldenRingLoadoutMod.h"
+#include "EldenRingLoadoutMod.hpp"
 
 using namespace std::chrono_literals;
 
 static std::thread modThread;
 static EldenRingLoadoutMod mod;
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reasonForCall, LPVOID lpReserved)
 {
-    if (ul_reason_for_call == DLL_PROCESS_ATTACH)
+    if (reasonForCall == DLL_PROCESS_ATTACH)
     {
         modThread = std::thread([]() {
             std::this_thread::sleep_for(15s);
             mod.start();
         });
     }
-    else if (ul_reason_for_call == DLL_PROCESS_DETACH)
+    else if (reasonForCall == DLL_PROCESS_DETACH)
     {
         mod.running = false;
         modThread.join();
