@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-struct ParamBank;
+struct ParamList;
 
 /**
  * Scans the main game executable memory
@@ -14,9 +14,9 @@ struct ParamBank;
 class GameHook
 {
   public:
-    void initialize(char const *moduleName);
+    void initialize(char const *module_name);
     void *scan(std::vector<int> aob,
-               std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relativeOffsets = {});
+               std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {});
 
     struct Param
     {
@@ -24,11 +24,9 @@ class GameHook
         std::map<uint64_t, void *> rows;
     };
 
-    std::unique_ptr<Param> getParam(std::wstring const &name);
+    std::unique_ptr<Param> get_param(std::wstring const &name);
 
   private:
-    std::span<std::byte> gameModule;
-    ParamBank *paramBank;
-
-    static const size_t paramCount = 185;
+    std::span<std::byte> game_module;
+    ParamList *param_list;
 };
