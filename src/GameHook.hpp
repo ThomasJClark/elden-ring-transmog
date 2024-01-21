@@ -1,10 +1,13 @@
 #pragma once
+#pragma pack(1)
 
 #include <map>
 #include <memory>
 #include <span>
 #include <string>
 #include <vector>
+
+#include "WorldChrMan.hpp"
 
 struct ParamList;
 
@@ -25,8 +28,10 @@ class GameHook
     };
 
     std::unique_ptr<Param> get_param(std::wstring const &name);
+    Player *get_player(int index);
 
   private:
     std::span<std::byte> game_module;
     ParamList *param_list;
+    WorldChrMan **world_chr_man_address;
 };

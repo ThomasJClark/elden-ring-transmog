@@ -15,7 +15,8 @@ add_library(EldenRingLoadoutMod
   src/BaseMod.cpp
   src/BaseMod.hpp
   src/GameHook.cpp
-  src/GameHook.hpp)
+  src/GameHook.hpp
+  src/WorldChrMan.hpp)
 
 add_library(ConvergenceSpellScalingMod
   SHARED

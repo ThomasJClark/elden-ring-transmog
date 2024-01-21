@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <algorithm>
+#include <iostream>
 #include <stdexcept>
 #include <tga/dl_types.h>
 #include <tga/param_containers.h>
@@ -8,6 +9,13 @@
 #include <windows.h>
 
 #include "Gamehook.hpp"
+
+static const std::vector<int> g_world_chr_man_aob = {
+    0x48, 0x8B, 0x05, -1, -1, -1, -1, 0x48, 0x85, 0xC0, 0x74, 0x0F, 0x48, 0x39, 0x88,
+};
+
+static const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> g_world_chr_man_aob_relative_offset = {
+    {0x03, 0x07}};
 
 // https://github.com/soulsmods/DSMapStudio/blob/master/src/StudioCore/Assets/GameOffsets/ER/CoreOffsets.txt
 static const std::vector<int> g_param_base_aob = {0x48, 0x8B, 0x0D, -1,   -1,   -1,   -1,
@@ -68,6 +76,14 @@ void GameHook::initialize(char const *module_name)
     }
 
     param_list = *param_list_addr;
+
+    world_chr_man_address = reinterpret_cast<WorldChrMan **>(
+        scan(g_world_chr_man_aob, g_world_chr_man_aob_relative_offset));
+
+    if (world_chr_man_address == nullptr)
+    {
+        throw std::runtime_error("Couldn't find WorldChrMan address");
+    }
 }
 
 void *GameHook::scan(std::vector<int> aob,
@@ -124,4 +140,21 @@ std::unique_ptr<GameHook::Param> GameHook::get_param(std::wstring const &name)
     }
 
     throw std::runtime_error("Couldn't find param");
+}
+
+Player *GameHook::get_player(int index)
+{
+    auto world_chr_man = *world_chr_man_address;
+    if (world_chr_man == nullptr)
+    {
+        return nullptr;
+    }
+
+    auto players = world_chr_man->players;
+    if (players == nullptr)
+    {
+        return nullptr;
+    }
+
+    return players[index];
 }
