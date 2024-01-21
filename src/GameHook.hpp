@@ -32,6 +32,6 @@ class GameHook
 
   private:
     std::span<std::byte> game_module;
-    ParamList *param_list;
+    ParamList **param_list_address;
     WorldChrMan **world_chr_man_address;
 };

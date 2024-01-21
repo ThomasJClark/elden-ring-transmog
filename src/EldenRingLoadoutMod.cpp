@@ -1,7 +1,46 @@
+#include <iomanip>
 #include <iostream>
 
 #include "BaseMod.hpp"
 #include "GameHook.hpp"
+
+#pragma pack(1)
+
+static const std::vector<int> g_msg_repository_aob = {0x48, 0x8B, 0x3D, -1,   -1,   -1,   -1,  0x44,
+                                                      0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF, 0x75};
+
+typedef const wchar_t *getMessage_t(void *MsgRepository, uint32_t unk, uint32_t bndId, int msgId);
+static getMessage_t *getMessage = nullptr;
+
+extern "C" struct MsgRepositoryCategory
+{
+};
+
+extern "C" struct MsgRepository
+{
+    void **vftable_ptr;
+    void *categories;
+    std::uint32_t version_count;
+    std::uint32_t category_capacity;
+    std::byte unknown[8];
+};
+
+void simple_hex_dump(void *addr, size_t count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (i % 16 == 0)
+            std::cout << std::hex << std::setfill('0') << std::setw(4) << i << " ";
+        std::cout << std::hex << std::setfill('0') << std::setw(2)
+                  << (int)reinterpret_cast<std::byte *>(addr)[i];
+        if (i % 16 == 15)
+            std::cout << std::endl;
+        else if (i % 8 == 7)
+            std::cout << "  ";
+        else
+            std::cout << " ";
+    }
+}
 
 class EldenRingLoadoutMod : public BaseMod
 {
@@ -9,47 +48,30 @@ class EldenRingLoadoutMod : public BaseMod
     void initialize()
     {
         game_hook.initialize("eldenring.exe");
+        msg_repository_address =
+            reinterpret_cast<MsgRepository **>(game_hook.scan(g_msg_repository_aob, {{3, 7}}));
     }
 
     void update()
     {
-        std::string cmd;
-        std::cin >> cmd;
+        std::cout << "msg_repository_address " << msg_repository_address << std::endl;
+        if (msg_repository_address == nullptr)
+        {
+            return;
+        }
 
-        if (cmd == "p")
+        auto msg_repository = *msg_repository_address;
+        std::cout << "msg_repository " << msg_repository << std::endl;
+        if (msg_repository == nullptr)
         {
-            auto player = game_hook.get_player(0);
-            if (player)
-            {
-                auto character_data = player->character_data;
-                std::wcout << character_data->name << " " << character_data->head_armor
-                           << std::endl;
-            }
-            else
-            {
-                std::cout << "player is null" << std::endl;
-            }
+            return;
         }
-        else if (cmd == "s")
-        {
-            auto player = game_hook.get_player(0);
-            if (player)
-            {
-                auto character_data = player->character_data;
-                if (character_data->head_armor == 1060000)
-                {
-                    character_data->head_armor = 760000;
-                }
-                else
-                {
-                    character_data->head_armor = 1060000;
-                }
-            }
-            else
-            {
-                std::cout << "player is null" << std::endl;
-            }
-        }
+
+        std::cout << "msg_repository.categories " << msg_repository->categories << std::endl;
+        std::cout << "msg_repository.version_count " << msg_repository->version_count << std::endl;
+        std::cout << "msg_repository.category_capacity " << msg_repository->category_capacity
+                  << std::endl;
+        std::cout << std::endl;
     }
 
     void deinitialize()
@@ -58,6 +80,7 @@ class EldenRingLoadoutMod : public BaseMod
 
   private:
     GameHook game_hook;
+    MsgRepository **msg_repository_address;
 };
 
 EXPORT_MOD(EldenRingLoadoutMod);
