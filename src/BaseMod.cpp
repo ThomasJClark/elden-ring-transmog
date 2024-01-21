@@ -45,6 +45,16 @@ void BaseMod::start()
                 return;
             }
         }
+
+        try
+        {
+            deinitialize();
+        }
+        catch (std::runtime_error const &e)
+        {
+            std::cerr << "Error deinitializing mod (" << e.what() << ")" << std::endl;
+            return;
+        }
     });
 }
 

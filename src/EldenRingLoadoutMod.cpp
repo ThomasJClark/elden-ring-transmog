@@ -3,6 +3,7 @@
 
 #include "BaseMod.hpp"
 #include "GameHook.hpp"
+#include "MinHook.h"
 
 #pragma pack(1)
 
@@ -50,6 +51,9 @@ class EldenRingLoadoutMod : public BaseMod
         game_hook.initialize("eldenring.exe");
         msg_repository_address =
             reinterpret_cast<MsgRepository **>(game_hook.scan(g_msg_repository_aob, {{3, 7}}));
+
+        auto mh_status = MH_Initialize();
+        std::cout << "mh_status " << mh_status << std::endl;
     }
 
     void update()
