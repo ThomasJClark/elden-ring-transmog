@@ -10,24 +10,6 @@
 
 #include "Gamehook.hpp"
 
-static const std::vector<int> g_world_chr_man_aob = {
-    0x48, 0x8B, 0x05, -1, -1, -1, -1, 0x48, 0x85, 0xC0, 0x74, 0x0F, 0x48, 0x39, 0x88,
-};
-
-static const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> g_world_chr_man_aob_relative_offset = {
-    {0x03, 0x07}};
-
-static const std::vector<int> g_msg_repository_aob = {0x48, 0x8B, 0x3D, -1,   -1,   -1,   -1,  0x44,
-                                                      0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF, 0x75};
-
-// https://github.com/soulsmods/DSMapStudio/blob/master/src/StudioCore/Assets/GameOffsets/ER/CoreOffsets.txt
-static const std::vector<int> g_param_base_aob = {0x48, 0x8B, 0x0D, -1,   -1,   -1,   -1,
-                                                  0x48, 0x85, 0xC9, 0x0F, 0x84, -1,   -1,
-                                                  -1,   -1,   0x45, 0x33, 0xC0, 0xBA, 0x90};
-
-static const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> g_param_base_aob_relative_offset = {
-    {0x03, 0x07}};
-
 static const size_t g_param_count = 185;
 
 extern "C" struct ParamListEntry
@@ -70,24 +52,43 @@ void GameHook::initialize(char const *module_name)
         throw std::runtime_error("Couldn't find game module");
     }
 
-    param_list_address =
-        reinterpret_cast<ParamList **>(scan(g_param_base_aob, g_param_base_aob_relative_offset));
-
+    auto param_list_aob = {0x48, 0x8B, 0x0D, -1, -1, -1,   -1,   0x48, 0x85, 0xC9, 0x0F,
+                           0x84, -1,   -1,   -1, -1, 0x45, 0x33, 0xC0, 0xBA, 0x90};
+    param_list_address = reinterpret_cast<ParamList **>(scan(param_list_aob, 0, {{0x03, 0x07}}));
     if (param_list_address == nullptr)
     {
         throw std::runtime_error("Couldn't find param base address");
     }
 
-    world_chr_man_address = reinterpret_cast<WorldChrMan **>(
-        scan(g_world_chr_man_aob, g_world_chr_man_aob_relative_offset));
-
+    auto world_chr_man_aob = {0x48, 0x8B, 0x05, -1,   -1,   -1,   -1,  0x48,
+                              0x85, 0xC0, 0x74, 0x0F, 0x48, 0x39, 0x88};
+    world_chr_man_address =
+        reinterpret_cast<WorldChrMan **>(scan(world_chr_man_aob, 0, {{0x03, 0x07}}));
     if (world_chr_man_address == nullptr)
     {
         throw std::runtime_error("Couldn't find WorldChrMan address");
     }
+
+    auto msg_repository_aob = {0x48, 0x8B, 0x3D, -1,   -1,   -1,   -1,  0x44,
+                               0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF, 0x75};
+    msg_repository_address =
+        reinterpret_cast<MsgRepository **>(scan(msg_repository_aob, 0, {{0x03, 0x07}}));
+    if (msg_repository_address == nullptr)
+    {
+        throw std::runtime_error("Couldn't find MsgRepository address");
+    }
+
+    auto get_message_aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2,
+                            0x48, 0x8B, 0xF9, 0x44, 0x8D, 0x42, 0x6F};
+    get_message = reinterpret_cast<GetMessageFn *>(scan(get_message_aob, 14, {{0x01, 0x05}}));
+    if (get_message == nullptr)
+    {
+
+        throw std::runtime_error("Couldn't find getMessage() address");
+    }
 }
 
-void *GameHook::scan(std::vector<int> aob,
+void *GameHook::scan(std::vector<int> aob, ptrdiff_t offset,
                      std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets)
 {
     auto start = game_module.begin();
@@ -104,6 +105,8 @@ void *GameHook::scan(std::vector<int> aob,
     {
         return nullptr;
     }
+
+    match += offset;
 
     for (auto [first, second] : relative_offsets)
     {

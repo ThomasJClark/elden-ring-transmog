@@ -1,3 +1,4 @@
+#include <functional>
 #include <iomanip>
 #include <iostream>
 
@@ -7,41 +8,7 @@
 
 #pragma pack(1)
 
-static const std::vector<int> g_msg_repository_aob = {0x48, 0x8B, 0x3D, -1,   -1,   -1,   -1,  0x44,
-                                                      0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF, 0x75};
-
-typedef const wchar_t *getMessage_t(void *MsgRepository, uint32_t unk, uint32_t bndId, int msgId);
-static getMessage_t *getMessage = nullptr;
-
-extern "C" struct MsgRepositoryCategory
-{
-};
-
-extern "C" struct MsgRepository
-{
-    void **vftable_ptr;
-    void *categories;
-    std::uint32_t version_count;
-    std::uint32_t category_capacity;
-    std::byte unknown[8];
-};
-
-void simple_hex_dump(void *addr, size_t count)
-{
-    for (int i = 0; i < count; i++)
-    {
-        if (i % 16 == 0)
-            std::cout << std::hex << std::setfill('0') << std::setw(4) << i << " ";
-        std::cout << std::hex << std::setfill('0') << std::setw(2)
-                  << (int)reinterpret_cast<std::byte *>(addr)[i];
-        if (i % 16 == 15)
-            std::cout << std::endl;
-        else if (i % 8 == 7)
-            std::cout << "  ";
-        else
-            std::cout << " ";
-    }
-}
+static GetMessageFn *get_message_original;
 
 class EldenRingLoadoutMod : public BaseMod
 {
@@ -49,42 +16,59 @@ class EldenRingLoadoutMod : public BaseMod
     void initialize()
     {
         game_hook.initialize("eldenring.exe");
-        msg_repository_address =
-            reinterpret_cast<MsgRepository **>(game_hook.scan(g_msg_repository_aob, {{3, 7}}));
 
         auto mh_status = MH_Initialize();
-        std::cout << "mh_status " << mh_status << std::endl;
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(MH_StatusToString(mh_status));
+        }
+
+        mh_status = MH_CreateHook(game_hook.get_message, &get_message_override,
+                                  reinterpret_cast<void **>(&get_message_original));
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(MH_StatusToString(mh_status));
+        }
+
+        mh_status = MH_EnableHook(game_hook.get_message);
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(MH_StatusToString(mh_status));
+        }
     }
 
-    void update()
+    static wchar_t const *get_message_override(MsgRepository *msg_repository, std::uint32_t unknown,
+                                               MsgBndId bnd_id, std::int32_t msg_id)
     {
-        std::cout << "msg_repository_address " << msg_repository_address << std::endl;
-        if (msg_repository_address == nullptr)
+        if (bnd_id == MsgBndId::weapon_name)
         {
-            return;
+            return L"WEAPON NAME";
+        }
+        else if (bnd_id == MsgBndId::weapon_caption)
+        {
+            return L"WEAPON CAPTION";
         }
 
-        auto msg_repository = *msg_repository_address;
-        std::cout << "msg_repository " << msg_repository << std::endl;
-        if (msg_repository == nullptr)
-        {
-            return;
-        }
-
-        std::cout << "msg_repository.categories " << msg_repository->categories << std::endl;
-        std::cout << "msg_repository.version_count " << msg_repository->version_count << std::endl;
-        std::cout << "msg_repository.category_capacity " << msg_repository->category_capacity
-                  << std::endl;
-        std::cout << std::endl;
+        return get_message_original(msg_repository, unknown, bnd_id, msg_id);
     }
 
     void deinitialize()
     {
+        auto mh_status = MH_DisableHook(game_hook.get_message);
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(MH_StatusToString(mh_status));
+        }
+
+        mh_status = MH_RemoveHook(game_hook.get_message);
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(MH_StatusToString(mh_status));
+        }
     }
 
   private:
     GameHook game_hook;
-    MsgRepository **msg_repository_address;
 };
 
 EXPORT_MOD(EldenRingLoadoutMod);

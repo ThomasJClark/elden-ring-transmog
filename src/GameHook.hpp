@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "MsgRepository.hpp"
 #include "WorldChrMan.hpp"
 
 struct ParamList;
@@ -18,7 +19,7 @@ class GameHook
 {
   public:
     void initialize(char const *module_name);
-    void *scan(std::vector<int> aob,
+    void *scan(std::vector<int> aob, std::ptrdiff_t offset = 0,
                std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {});
 
     struct Param
@@ -29,9 +30,11 @@ class GameHook
 
     std::unique_ptr<Param> get_param(std::wstring const &name);
     Player *get_player(int index);
+    GetMessageFn *get_message;
 
   private:
     std::span<std::byte> game_module;
     ParamList **param_list_address;
     WorldChrMan **world_chr_man_address;
+    MsgRepository **msg_repository_address;
 };

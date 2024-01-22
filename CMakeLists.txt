@@ -29,6 +29,7 @@ add_library(EldenRingLoadoutMod SHARED
   src/BaseMod.hpp
   src/GameHook.cpp
   src/GameHook.hpp
+  src/MsgRepository.hpp
   src/WorldChrMan.hpp)
 target_link_libraries(EldenRingLoadoutMod minhook ertga)
   
@@ -37,5 +38,6 @@ add_library(ConvergenceSpellScalingMod SHARED
   src/BaseMod.cpp
   src/BaseMod.hpp
   src/GameHook.cpp
-  src/GameHook.hpp)  
+  src/GameHook.hpp
+  src/MsgRepository.hpp)  
 target_link_libraries(ConvergenceSpellScalingMod minhook ertga)
