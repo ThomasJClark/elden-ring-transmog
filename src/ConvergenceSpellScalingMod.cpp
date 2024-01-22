@@ -6,20 +6,21 @@
 
 #include "tga/paramdefs.h"
 
-#include "BaseMod.hpp"
+#include "ExportMod.hpp"
 #include "GameHook.hpp"
 
 using namespace std::chrono_literals;
+
+static GameHook game_hook;
+static std::thread thread;
 
 /**
  * Experimental mod to fix the spell scaling display in The Convergence (mostly for testing that
  * the calculator works)
  */
-class ConvergenceSpellScalingMod : public BaseMod
+static void initialize_mod()
 {
-  public:
-    void initialize()
-    {
+    thread = std::thread([] {
         std::this_thread::sleep_for(15s);
 
         game_hook.initialize("eldenring.exe");
@@ -100,10 +101,12 @@ class ConvergenceSpellScalingMod : public BaseMod
                 std::wcout << "Patched " << atkParamPc->name << " " << id << std::endl;
             }
         }
-    }
+    });
+}
 
-  private:
-    GameHook game_hook;
-};
+static void deinitialize_mod()
+{
+    thread.join();
+}
 
-EXPORT_MOD(ConvergenceSpellScalingMod);
+export_mod(initialize_mod, deinitialize_mod);

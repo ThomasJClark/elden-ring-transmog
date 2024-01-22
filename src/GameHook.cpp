@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 
+#include <MinHook.h>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -86,6 +87,12 @@ void GameHook::initialize(char const *module_name)
 
         throw std::runtime_error("Couldn't find getMessage() address");
     }
+
+    auto mh_status = MH_Initialize();
+    if (mh_status != MH_OK)
+    {
+        throw std::runtime_error(MH_StatusToString(mh_status));
+    }
 }
 
 void *GameHook::scan(std::vector<int> aob, ptrdiff_t offset,
@@ -161,4 +168,45 @@ Player *GameHook::get_player(int index)
     }
 
     return players[index];
+}
+
+template <typename F> void hook(F *function, F *override_function, F **original_function)
+{
+    auto status =
+        MH_CreateHook(function, override_function, reinterpret_cast<void **>(original_function));
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("MH_CreateHook: ") + MH_StatusToString(status));
+    }
+
+    status = MH_EnableHook(function);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("MH_EnableHook: ") + MH_StatusToString(status));
+    }
+}
+
+template <typename F> static void unhook(F *function)
+{
+    auto status = MH_DisableHook(function);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("MH_DisableHook: ") + MH_StatusToString(status));
+    }
+
+    status = MH_RemoveHook(function);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("MH_RemoveHook: ") + MH_StatusToString(status));
+    }
+}
+
+void GameHook::hook_get_message(GetMessageFn get_message_override)
+{
+    hook(get_message, get_message_override, &get_message_original);
+}
+
+void GameHook::unhook_get_message()
+{
+    unhook(get_message);
 }

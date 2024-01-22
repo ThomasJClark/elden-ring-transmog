@@ -30,11 +30,14 @@ class GameHook
 
     std::unique_ptr<Param> get_param(std::wstring const &name);
     Player *get_player(int index);
-    GetMessageFn *get_message;
+    void hook_get_message(GetMessageFn *get_message_override);
+    void unhook_get_message();
+    GetMessageFn *get_message_original;
 
   private:
     std::span<std::byte> game_module;
     ParamList **param_list_address;
     WorldChrMan **world_chr_man_address;
     MsgRepository **msg_repository_address;
+    GetMessageFn *get_message;
 };

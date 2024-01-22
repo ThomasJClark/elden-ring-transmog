@@ -25,8 +25,7 @@ target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include
 
 add_library(EldenRingLoadoutMod SHARED
   src/EldenRingLoadoutMod.cpp
-  src/BaseMod.cpp
-  src/BaseMod.hpp
+  src/ExportMod.hpp
   src/GameHook.cpp
   src/GameHook.hpp
   src/MsgRepository.hpp
@@ -35,8 +34,7 @@ target_link_libraries(EldenRingLoadoutMod minhook ertga)
   
 add_library(ConvergenceSpellScalingMod SHARED
   src/ConvergenceSpellScalingMod.cpp
-  src/BaseMod.cpp
-  src/BaseMod.hpp
+  src/ExportMod.hpp
   src/GameHook.cpp
   src/GameHook.hpp
   src/MsgRepository.hpp)  
