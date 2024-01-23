@@ -2,7 +2,6 @@
 
 #include <MinHook.h>
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 #include <tga/dl_types.h>
 #include <tga/param_containers.h>
@@ -117,40 +116,64 @@ void *GameHook::scan(std::vector<int> aob, ptrdiff_t offset,
 
     for (auto [first, second] : relative_offsets)
     {
-        ptrdiff_t offset = *reinterpret_cast<uint32_t *>(&match[first]) + second;
+        ptrdiff_t offset = *reinterpret_cast<std::uint32_t *>(&match[first]) + second;
         match += offset;
     }
 
     return &match[0];
 }
 
-std::unique_ptr<GameHook::Param> GameHook::get_param(std::wstring const &name)
+bool GameHook::try_initialize_params()
 {
-    auto param_list_entries = (*param_list_address)->entries;
+    auto param_list = *param_list_address;
+    if (param_list == nullptr)
+    {
+        return false;
+    }
+    auto param_list_entries = param_list->entries;
     for (int i = 0; i <= g_param_count; i++)
     {
         auto param_res_cap = param_list_entries[i].param_res_cap;
-        if (name == dlw_c_str(&param_res_cap->param_name))
+        if (param_res_cap == nullptr)
         {
-            auto param_table = param_res_cap->param_header->param_table;
-            auto param_table_num_rows = param_table->num_rows;
-            auto param_table_rows = param_table->rows;
-            auto param_row_base_addr = reinterpret_cast<std::byte *>(param_table);
+            return false;
+        }
 
-            auto param = std::make_unique<Param>();
-            param->name = name;
+        auto param_table = param_res_cap->param_header->param_table;
+        auto param_table_num_rows = param_table->num_rows;
+        auto param_table_rows = param_table->rows;
+        auto param_row_base_addr = reinterpret_cast<std::byte *>(param_table);
 
-            for (int i = 0; i < param_table_num_rows; i++)
-            {
-                auto row_info = param_table_rows[i];
-                param->rows[row_info.row_id] = param_row_base_addr + row_info.param_offset;
-            }
+        auto param = std::make_shared<Param>(dlw_c_str(&param_res_cap->param_name));
+        for (int i = 0; i < param_table_num_rows; i++)
+        {
+            auto row_info = param_table_rows[i];
+            param->rows[row_info.row_id] = param_row_base_addr + row_info.param_offset;
+        }
+        params[param->name] = param;
+    }
+    return true;
+}
 
-            return param;
+ParamHeader *GameHook::get_param_header(std::wstring const &name)
+{
+    auto param_list = *param_list_address;
+    if (param_list == nullptr)
+    {
+        return nullptr;
+    }
+
+    auto param_list_entries = param_list->entries;
+    for (int i = 0; i <= g_param_count; i++)
+    {
+        auto param_res_cap = param_list_entries[i].param_res_cap;
+        if (param_res_cap != nullptr && name == dlw_c_str(&param_res_cap->param_name))
+        {
+            return param_res_cap->param_header;
         }
     }
 
-    throw std::runtime_error("Couldn't find param");
+    return nullptr;
 }
 
 Player *GameHook::get_player(int index)

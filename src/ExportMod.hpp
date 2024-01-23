@@ -1,6 +1,7 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 
+#include <stdexcept>
 #include <windows.h>
 
 #if _DEBUG
@@ -19,11 +20,25 @@
         if (fdwReason == DLL_PROCESS_ATTACH)                                                       \
         {                                                                                          \
             ENABLE_DEBUG_CONSOLE;                                                                  \
-            initialize_mod();                                                                      \
+            try                                                                                    \
+            {                                                                                      \
+                initialize_mod();                                                                  \
+            }                                                                                      \
+            catch (std::runtime_error const &e)                                                    \
+            {                                                                                      \
+                std::cerr << "Error initializing mod " << e.what() << std::endl;                   \
+            }                                                                                      \
         }                                                                                          \
         else if (fdwReason == DLL_PROCESS_DETACH && lpvReserved != nullptr)                        \
         {                                                                                          \
-            deinitialize();                                                                        \
+            try                                                                                    \
+            {                                                                                      \
+                deinitialize_mod();                                                                \
+            }                                                                                      \
+            catch (std::runtime_error const &e)                                                    \
+            {                                                                                      \
+                std::cerr << "Error deinitializing mod " << e.what() << std::endl;                 \
+            }                                                                                      \
         }                                                                                          \
         return TRUE;                                                                               \
     }

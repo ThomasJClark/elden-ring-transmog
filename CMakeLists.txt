@@ -23,19 +23,19 @@ FetchContent_MakeAvailable(minhook ertga)
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
 
-add_library(EldenRingLoadoutMod SHARED
-  src/EldenRingLoadoutMod.cpp
+set(SHARED_SRC
   src/ExportMod.hpp
   src/GameHook.cpp
   src/GameHook.hpp
   src/MsgRepository.hpp
   src/WorldChrMan.hpp)
-target_link_libraries(EldenRingLoadoutMod minhook ertga)
   
 add_library(ConvergenceSpellScalingMod SHARED
   src/ConvergenceSpellScalingMod.cpp
-  src/ExportMod.hpp
-  src/GameHook.cpp
-  src/GameHook.hpp
-  src/MsgRepository.hpp)  
+  ${SHARED_SRC})  
 target_link_libraries(ConvergenceSpellScalingMod minhook ertga)
+
+add_library(EldenRingTransmogMod SHARED
+  src/EldenRingTransmogMod.cpp
+  ${SHARED_SRC})
+target_link_libraries(EldenRingTransmogMod minhook ertga)

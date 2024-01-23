@@ -5,6 +5,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <tga/param_containers.h>
 #include <vector>
 
 #include "MsgRepository.hpp"
@@ -28,11 +29,13 @@ class GameHook
         std::map<uint64_t, void *> rows;
     };
 
-    std::unique_ptr<Param> get_param(std::wstring const &name);
+    bool try_initialize_params();
+    ParamHeader *get_param_header(std::wstring const &name);
     Player *get_player(int index);
     void hook_get_message(GetMessageFn *get_message_override);
     void unhook_get_message();
     GetMessageFn *get_message_original;
+    std::map<std::wstring, std::shared_ptr<Param>> params;
 
   private:
     std::span<std::byte> game_module;
