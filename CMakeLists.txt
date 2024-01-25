@@ -27,6 +27,7 @@ set(SHARED_SRC
   src/ExportMod.hpp
   src/GameHook.cpp
   src/GameHook.hpp
+  src/ItemGib.hpp
   src/MsgRepository.hpp
   src/WorldChrMan.hpp)
   

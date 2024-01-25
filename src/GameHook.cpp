@@ -87,6 +87,13 @@ void GameHook::initialize(char const *module_name)
         throw std::runtime_error("Couldn't find getMessage() address");
     }
 
+    auto item_gib_aob = {0x8B, 0x02, 0x83, 0xF8, 0x0A};
+    item_gib = reinterpret_cast<ItemGibFn *>(scan(item_gib_aob, -0x52));
+    if (item_gib == nullptr)
+    {
+        throw std::runtime_error("Couldn't find itemGib() address");
+    }
+
     auto mh_status = MH_Initialize();
     if (mh_status != MH_OK)
     {
@@ -232,4 +239,14 @@ void GameHook::hook_get_message(GetMessageFn get_message_override)
 void GameHook::unhook_get_message()
 {
     unhook(get_message);
+}
+
+void GameHook::hook_item_gib(ItemGibFn item_gib_override)
+{
+    hook(item_gib, item_gib_override, &item_gib_original);
+}
+
+void GameHook::unhook_item_gib()
+{
+    unhook(item_gib);
 }

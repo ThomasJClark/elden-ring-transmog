@@ -1,5 +1,4 @@
 #pragma once
-#pragma pack(1)
 
 #include <map>
 #include <memory>
@@ -8,6 +7,7 @@
 #include <tga/param_containers.h>
 #include <vector>
 
+#include "ItemGib.hpp"
 #include "MsgRepository.hpp"
 #include "WorldChrMan.hpp"
 
@@ -31,11 +31,17 @@ class GameHook
 
     bool try_initialize_params();
     ParamHeader *get_param_header(std::wstring const &name);
+    std::map<std::wstring, std::shared_ptr<Param>> params;
+
     Player *get_player(int index);
+
     void hook_get_message(GetMessageFn *get_message_override);
     void unhook_get_message();
     GetMessageFn *get_message_original;
-    std::map<std::wstring, std::shared_ptr<Param>> params;
+
+    void hook_item_gib(ItemGibFn *item_gib_override);
+    void unhook_item_gib();
+    ItemGibFn *item_gib_original;
 
   private:
     std::span<std::byte> game_module;
@@ -43,4 +49,5 @@ class GameHook
     WorldChrMan **world_chr_man_address;
     MsgRepository **msg_repository_address;
     GetMessageFn *get_message;
+    ItemGibFn *item_gib;
 };

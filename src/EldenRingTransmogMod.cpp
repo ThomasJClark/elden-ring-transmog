@@ -1,3 +1,4 @@
+#include <MinHook.h>
 #include <iostream>
 #include <tga/paramdefs.h>
 #include <thread>
@@ -36,14 +37,73 @@ static wchar_t const *get_message_override(MsgRepository *msg_repository, std::u
     return game_hook.get_message_original(msg_repository, unknown, bnd_id, msg_id);
 }
 
-std::uint64_t get_transmog_good_id_for_protector_id(std::uint64_t protector_id)
+static std::uint64_t get_transmog_good_id_for_protector_id(std::uint64_t protector_id)
 {
     return 6900000 + protector_id / 100;
 }
 
-std::uint64_t get_protector_id_for_transmog_good_id(std::uint64_t transmog_good_id)
+static std::uint64_t get_protector_id_for_transmog_good_id(std::uint64_t transmog_good_id)
 {
     return 100 * (transmog_good_id - 6900000);
+}
+
+typedef void SetEventFlagFn(void *, std::uint32_t, bool);
+typedef bool GetEventFlagFn(void *, std::uint32_t);
+
+SetEventFlagFn *set_event_flag;
+GetEventFlagFn *get_event_flag;
+SetEventFlagFn *set_event_flag_original;
+
+static void set_event_flag_override(void *unknown, std::uint32_t event_flag_id, bool state)
+{
+    // if (state != get_event_flag(unknown, event_flag_id))
+    // {
+    std::cout << "set_event_flag " << event_flag_id << " " << (state ? "on" : "off") << std::endl;
+    // }
+    set_event_flag_original(unknown, event_flag_id, state);
+}
+
+static void hook_set_event_flag()
+{
+    set_event_flag = reinterpret_cast<SetEventFlagFn *>(
+        game_hook.scan({0x48, 0x89, 0x5C, 0x24, -1,   0x44, 0x8B, 0x49, -1,   0x44,
+                        0x8B, 0xD2, 0x33, 0xD2, 0x41, 0x8B, 0xC2, 0x41, 0xF7, 0xF1}));
+    if (set_event_flag == nullptr)
+    {
+        throw std::runtime_error("Failed to find set_event_flag");
+    }
+
+    get_event_flag = reinterpret_cast<GetEventFlagFn *>(
+        game_hook.scan({0x48, 0x83, 0xEC, 0x28, 0x8B, 0x12, 0x85, 0xD2}, 16));
+    if (get_event_flag == nullptr)
+    {
+        throw std::runtime_error("Failed to find get_event_flag");
+    }
+
+    auto status = MH_CreateHook(set_event_flag, set_event_flag_override,
+                                reinterpret_cast<void **>(&set_event_flag_original));
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error creating set_event_flag hook ") +
+                                 MH_StatusToString(status));
+    }
+
+    status = MH_EnableHook(set_event_flag);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error enabling set_event_flag hook ") +
+                                 MH_StatusToString(status));
+    }
+}
+
+static void unhook_set_event_flag()
+{
+    auto status = MH_RemoveHook(set_event_flag);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error removing set_event_flag hook ") +
+                                 MH_StatusToString(status));
+    }
 }
 
 std::thread mod_thread;
@@ -51,7 +111,6 @@ std::thread mod_thread;
 static void initialize_mod()
 {
     game_hook.initialize("eldenring.exe");
-    game_hook.hook_get_message(get_message_override);
 
     mod_thread = std::thread([]() {
         std::cout << "Waiting for params" << std::endl;
@@ -96,7 +155,7 @@ static void initialize_mod()
         transmog_body_vfx->transformProtectorId = transmog_head_id;
         transmog_body_vfx->isFullBodyTransformProtectorId = true;
 
-        std::cout << "transmog initialized" << std::endl;
+        std::cout << "Initialized transmog params" << std::endl;
 
         *transmog_head =
             *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[1060000]);
@@ -106,11 +165,18 @@ static void initialize_mod()
             *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[910200]);
         *transmog_legs =
             *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[320300]);
+
+        game_hook.hook_get_message(get_message_override);
+        std::cout << "Hooked get_message" << std::endl;
+
+        hook_set_event_flag();
+        std::cout << "Hooked set_event_flag" << std::endl;
     });
 }
 
 static void deinitialize_mod()
 {
+    unhook_set_event_flag();
     game_hook.unhook_get_message();
     mod_thread.join();
 }
