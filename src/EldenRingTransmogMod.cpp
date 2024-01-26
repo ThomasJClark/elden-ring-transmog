@@ -51,19 +51,33 @@ typedef void SetEventFlagFn(void *, std::uint32_t, bool);
 typedef bool GetEventFlagFn(void *, std::uint32_t);
 
 SetEventFlagFn *set_event_flag;
-GetEventFlagFn *get_event_flag;
 SetEventFlagFn *set_event_flag_original;
+GetEventFlagFn *get_event_flag;
+GetEventFlagFn *get_event_flag_original;
 
 static void set_event_flag_override(void *unknown, std::uint32_t event_flag_id, bool state)
 {
-    // if (state != get_event_flag(unknown, event_flag_id))
-    // {
-    std::cout << "set_event_flag " << event_flag_id << " " << (state ? "on" : "off") << std::endl;
-    // }
+    if (event_flag_id >= 6900000 && event_flag_id < 7000000)
+    {
+        std::cout << "set_event_flag " << event_flag_id << " " << (state ? "on" : "off")
+                  << std::endl;
+    }
     set_event_flag_original(unknown, event_flag_id, state);
 }
 
-static void hook_set_event_flag()
+static bool get_event_flag_override(void *unknown, std::uint32_t event_flag_id)
+{
+    bool state = get_event_flag_original(unknown, event_flag_id);
+    if (event_flag_id >= 6900000 && event_flag_id < 7000000)
+    {
+
+        std::cout << "get_event_flag " << event_flag_id << " " << (state ? "on" : "off")
+                  << std::endl;
+    }
+    return state;
+}
+
+static void hook_event_flag()
 {
     set_event_flag = reinterpret_cast<SetEventFlagFn *>(
         game_hook.scan({0x48, 0x89, 0x5C, 0x24, -1,   0x44, 0x8B, 0x49, -1,   0x44,
@@ -74,7 +88,7 @@ static void hook_set_event_flag()
     }
 
     get_event_flag = reinterpret_cast<GetEventFlagFn *>(
-        game_hook.scan({0x48, 0x83, 0xEC, 0x28, 0x8B, 0x12, 0x85, 0xD2}, 16));
+        game_hook.scan({0x48, 0x83, 0xEC, 0x28, 0x8B, 0x12, 0x85, 0xD2})); // step = 0x10
     if (get_event_flag == nullptr)
     {
         throw std::runtime_error("Failed to find get_event_flag");
@@ -94,9 +108,24 @@ static void hook_set_event_flag()
         throw std::runtime_error(std::string("Error enabling set_event_flag hook ") +
                                  MH_StatusToString(status));
     }
+
+    status = MH_CreateHook(get_event_flag, get_event_flag_override,
+                           reinterpret_cast<void **>(&get_event_flag_original));
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error creating get_event_flag hook ") +
+                                 MH_StatusToString(status));
+    }
+
+    status = MH_EnableHook(get_event_flag);
+    if (status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error enabling get_event_flag hook ") +
+                                 MH_StatusToString(status));
+    }
 }
 
-static void unhook_set_event_flag()
+static void unhook_event_flag()
 {
     auto status = MH_RemoveHook(set_event_flag);
     if (status != MH_OK)
@@ -169,14 +198,14 @@ static void initialize_mod()
         game_hook.hook_get_message(get_message_override);
         std::cout << "Hooked get_message" << std::endl;
 
-        hook_set_event_flag();
-        std::cout << "Hooked set_event_flag" << std::endl;
+        hook_event_flag();
+        std::cout << "Hooked set_event_flag and get_event_flag" << std::endl;
     });
 }
 
 static void deinitialize_mod()
 {
-    unhook_set_event_flag();
+    unhook_event_flag();
     game_hook.unhook_get_message();
     mod_thread.join();
 }
