@@ -3,211 +3,206 @@
 #include <tga/paramdefs.h>
 #include <thread>
 
-#include "ExportMod.hpp"
-#include "GameHook.hpp"
-#include "TransmogUtils.hpp"
+#include "AOBs.hpp"
+#include "DefaultParams.hpp"
+#include "GameDataMan.hpp"
+#include "GameMemory.hpp"
+#include "Params.hpp"
 
-static GameHook game_hook;
+static GameMemory game_memory;
+static ParamMap params;
 
-static const std::uint64_t transmog_speffect_id = 501220; // Deathsbane Jerkey (unused)
-static const std::uint64_t transmog_head_vfx_id = 5366;   // Deathsbane Jerkey VFX (unused)
-static const std::uint64_t transmog_body_vfx_id = 5200;   // Unknown VFX (unused?)
-static const std::int64_t transmog_head_id = 912000;      // Unused?
-static const std::int64_t transmog_body_id = 912100;      // Unused?
-static const std::int64_t transmog_arms_id = 912200;      // Unused?
-static const std::int64_t transmog_legs_id = 912300;      // Unused?
+// Unused IDs we can yoink
+static const std::uint64_t transmog_speffect_id = 501220; // Deathsbane Jerkey
+static const std::uint64_t transmog_head_vfx_id = 5366;   // Deathsbane Jerkey VFX
+static const std::uint64_t transmog_body_vfx_id = 5200;   // Unknown VFX
+static const std::int64_t transmog_head_id = 912000;      // Unknown protector
+static const std::int64_t transmog_body_id = 912100;      // Unknown protector
+static const std::int64_t transmog_arms_id = 912200;      // Unknown protector
+static const std::int64_t transmog_legs_id = 912300;      // Unknown protector
 
-// SpEffect that applies the transmog VFX
 static SpEffectParam *transmog_speffect;
 
-// VFX that abuse the dragon head and body system to make a placeholder armor set appear on the
-// player
 static SpEffectVfxParam *transmog_head_vfx;
 static SpEffectVfxParam *transmog_body_vfx;
 
-// Protectors used as placeholders for the transmog VFX
 static EquipParamProtector *transmog_head;
 static EquipParamProtector *transmog_body;
 static EquipParamProtector *transmog_arms;
 static EquipParamProtector *transmog_legs;
 
-static wchar_t const *get_message_override(MsgRepository *msg_repository, std::uint32_t unknown,
-                                           MsgBndId bnd_id, std::int32_t msg_id)
+template <typename F> void create_and_enable_hook(F *original, F &detour, F *&trampoline)
 {
-    return game_hook.get_message_original(msg_repository, unknown, bnd_id, msg_id);
-}
-
-static std::uint64_t get_transmog_good_id_for_protector_id(std::uint64_t protector_id)
-{
-    return 6900000 + protector_id / 100;
-}
-
-static std::uint64_t get_protector_id_for_transmog_good_id(std::uint64_t transmog_good_id)
-{
-    return 100 * (transmog_good_id - 6900000);
-}
-
-typedef void SetEventFlagFn(void *, std::uint32_t, bool);
-typedef bool GetEventFlagFn(void *, std::uint32_t);
-
-SetEventFlagFn *set_event_flag;
-SetEventFlagFn *set_event_flag_original;
-GetEventFlagFn *get_event_flag;
-GetEventFlagFn *get_event_flag_original;
-
-static void set_event_flag_override(void *unknown, std::uint32_t event_flag_id, bool state)
-{
-    if (event_flag_id >= 6900000 && event_flag_id < 7000000)
+    auto mh_status = MH_CreateHook(original, &detour, (void **)&trampoline);
+    if (mh_status != MH_OK)
     {
-        std::cout << "set_event_flag " << event_flag_id << " " << (state ? "on" : "off")
-                  << std::endl;
+        throw std::runtime_error(std::string("Error creating hook: ") +
+                                 MH_StatusToString(mh_status));
     }
-    set_event_flag_original(unknown, event_flag_id, state);
-}
-
-static bool get_event_flag_override(void *unknown, std::uint32_t event_flag_id)
-{
-    bool state = get_event_flag_original(unknown, event_flag_id);
-    if (event_flag_id >= 6900000 && event_flag_id < 7000000)
+    mh_status = MH_EnableHook(original);
+    if (mh_status != MH_OK)
     {
-
-        std::cout << "get_event_flag " << event_flag_id << " " << (state ? "on" : "off")
-                  << std::endl;
-    }
-    return state;
-}
-
-static void hook_event_flag()
-{
-    set_event_flag = reinterpret_cast<SetEventFlagFn *>(
-        game_hook.scan({0x48, 0x89, 0x5C, 0x24, -1,   0x44, 0x8B, 0x49, -1,   0x44,
-                        0x8B, 0xD2, 0x33, 0xD2, 0x41, 0x8B, 0xC2, 0x41, 0xF7, 0xF1}));
-    if (set_event_flag == nullptr)
-    {
-        throw std::runtime_error("Failed to find set_event_flag");
-    }
-
-    get_event_flag = reinterpret_cast<GetEventFlagFn *>(
-        game_hook.scan({0x48, 0x83, 0xEC, 0x28, 0x8B, 0x12, 0x85, 0xD2})); // step = 0x10
-    if (get_event_flag == nullptr)
-    {
-        throw std::runtime_error("Failed to find get_event_flag");
-    }
-
-    auto status = MH_CreateHook(set_event_flag, set_event_flag_override,
-                                reinterpret_cast<void **>(&set_event_flag_original));
-    if (status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error creating set_event_flag hook ") +
-                                 MH_StatusToString(status));
-    }
-
-    status = MH_EnableHook(set_event_flag);
-    if (status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error enabling set_event_flag hook ") +
-                                 MH_StatusToString(status));
-    }
-
-    status = MH_CreateHook(get_event_flag, get_event_flag_override,
-                           reinterpret_cast<void **>(&get_event_flag_original));
-    if (status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error creating get_event_flag hook ") +
-                                 MH_StatusToString(status));
-    }
-
-    status = MH_EnableHook(get_event_flag);
-    if (status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error enabling get_event_flag hook ") +
-                                 MH_StatusToString(status));
+        throw std::runtime_error(std::string("Error enabling hook: ") +
+                                 MH_StatusToString(mh_status));
     }
 }
 
-static void unhook_event_flag()
+struct ItemInfo
 {
-    auto status = MH_RemoveHook(set_event_flag);
-    if (status != MH_OK)
+    std::uint32_t id;
+    std::uint32_t quantity;
+    std::uint32_t relay_value;
+    std::uint32_t ash_of_war;
+};
+
+struct ItemInfoList
+{
+    uint32_t count;
+    ItemInfo items[10];
+};
+
+typedef const std::int32_t *ItemGibFn(void *unknown1, ItemInfoList *item_info_list, void *unknown2,
+                                      std::int32_t unknown3);
+
+ItemGibFn *item_gib;
+ItemGibFn *item_gib_trampoline;
+
+const std::int32_t *item_gib_detour(void *unknown1, ItemInfoList *item_info_list, void *unknown2,
+                                    std::int32_t unknown3)
+{
+    if (item_info_list == nullptr)
     {
-        throw std::runtime_error(std::string("Error removing set_event_flag hook ") +
-                                 MH_StatusToString(status));
+        std::cout << "item_gib: null" << std::endl;
     }
+    else
+    {
+        std::cout << "item_gib:" << std::endl;
+        for (int i = 0; i < item_info_list->count; i++)
+        {
+            std::cout << "  - id: " << item_info_list->items[i].id << std::endl;
+            std::cout << "    quantity: " << item_info_list->items[i].quantity << std::endl;
+            std::cout << "    relay_value: " << item_info_list->items[i].relay_value << std::endl;
+            std::cout << "    ash_of_war: " << item_info_list->items[i].ash_of_war << std::endl;
+        }
+    }
+    std::cout << std::endl;
+
+    return item_gib_trampoline(unknown1, item_info_list, unknown2, unknown3);
 }
 
 std::thread mod_thread;
 
-static void initialize_mod()
+void initialize_mod()
 {
-    game_hook.initialize("eldenring.exe");
+    std::cout << "Initializing mod..." << std::endl;
+
+    game_memory.initialize();
+
+    auto mh_status = MH_Initialize();
+    if (mh_status != MH_OK)
+    {
+        throw std::runtime_error(std::string("Error initializing MinHook: ") +
+                                 MH_StatusToString(mh_status));
+    }
+
+    std::cout << "Hooking item_gib..." << std::endl;
+
+    item_gib = game_memory.scan(
+        GameMemory::ScanArgs<ItemGibFn>({.aob = {0x8B, 0x02, 0x83, 0xF8, 0x0A}, .offset = -0x52}));
+
+    create_and_enable_hook(item_gib, item_gib_detour, item_gib_trampoline);
 
     mod_thread = std::thread([]() {
-        std::cout << "Waiting for params" << std::endl;
+        std::cout << "Waiting for params..." << std::endl;
 
-        // Wait until params are initialized
-        while (!game_hook.try_initialize_params())
+        auto param_list_address = game_memory.scan(param_list_aob);
+        while (!try_get_params(param_list_address, params))
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        std::cout << "Initializing transmog" << std::endl;
 
-        auto speffect_param = game_hook.params[L"SpEffectParam"];
-        auto speffect_vfx_param = game_hook.params[L"SpEffectVfxParam"];
-        auto equip_param_protector = game_hook.params[L"EquipParamProtector"];
+        std::cout << "Patching params..." << std::endl;
 
-        transmog_speffect =
-            reinterpret_cast<SpEffectParam *>(speffect_param->rows[transmog_speffect_id]);
-        transmog_head_vfx =
-            reinterpret_cast<SpEffectVfxParam *>(speffect_vfx_param->rows[transmog_head_vfx_id]);
-        transmog_body_vfx =
-            reinterpret_cast<SpEffectVfxParam *>(speffect_vfx_param->rows[transmog_body_vfx_id]);
+        auto equip_param_protector = params[L"EquipParamProtector"];
+        auto speffect_vfx_param = params[L"SpEffectVfxParam"];
+        auto speffect_param = params[L"SpEffectParam"];
+
+        // Add placeholder protectors for the player's head, body, arms, and legs. We'll patch
+        // these params with whatever armor pieces the player picks.
         transmog_head =
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[transmog_head_id]);
+            reinterpret_cast<EquipParamProtector *>(equip_param_protector[transmog_head_id]);
+        *transmog_head = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[1060000]);
+
         transmog_body =
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[transmog_body_id]);
+            reinterpret_cast<EquipParamProtector *>(equip_param_protector[transmog_body_id]);
+        *transmog_body = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[140100]);
+
         transmog_arms =
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[transmog_arms_id]);
+            reinterpret_cast<EquipParamProtector *>(equip_param_protector[transmog_arms_id]);
+        *transmog_arms = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[910200]);
+
         transmog_legs =
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[transmog_legs_id]);
+            reinterpret_cast<EquipParamProtector *>(equip_param_protector[transmog_legs_id]);
+        *transmog_legs = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[320300]);
 
-        *transmog_speffect = base_speffect;
-        transmog_speffect->vfxId1 = transmog_head_vfx_id;
-        transmog_speffect->vfxId2 = transmog_body_vfx_id;
-
-        *transmog_head_vfx = base_speffect_vfx;
+        // Add a VFX that transforms the player's head into the chosen transmog helm
+        transmog_head_vfx =
+            reinterpret_cast<SpEffectVfxParam *>(speffect_vfx_param[transmog_head_vfx_id]);
+        *transmog_head_vfx = default_speffect_vfx;
         transmog_head_vfx->transformProtectorId = transmog_head_id;
-        transmog_head_vfx->isFullBodyTransformProtectorId = 0;
+        transmog_head_vfx->isFullBodyTransformProtectorId = false;
         transmog_head_vfx->initSfxId = 523412;
         transmog_head_vfx->initDmyId = 220;
 
-        *transmog_body_vfx = base_speffect_vfx;
+        // Add a VFX that transforms the player's body, arms, and legs into the rest of the
+        // chosen transmog pieces
+        transmog_body_vfx =
+            reinterpret_cast<SpEffectVfxParam *>(speffect_vfx_param[transmog_body_vfx_id]);
+        *transmog_body_vfx = default_speffect_vfx;
         transmog_body_vfx->transformProtectorId = transmog_head_id;
         transmog_body_vfx->isFullBodyTransformProtectorId = true;
 
-        std::cout << "Initialized transmog params" << std::endl;
+        // Initialize a SpEffect that applies both transmog VFX
+        transmog_speffect = reinterpret_cast<SpEffectParam *>(speffect_param[transmog_speffect_id]);
+        *transmog_speffect = default_speffect;
+        transmog_speffect->vfxId1 = transmog_head_vfx_id;
+        transmog_speffect->vfxId2 = transmog_body_vfx_id;
 
-        *transmog_head =
-            *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[1060000]);
-        *transmog_body =
-            *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[140100]);
-        *transmog_arms =
-            *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[910200]);
-        *transmog_legs =
-            *reinterpret_cast<EquipParamProtector *>(equip_param_protector->rows[320300]);
+        std::cout << "Patched transmog params" << std::endl;
 
-        game_hook.hook_get_message(get_message_override);
-        std::cout << "Hooked get_message" << std::endl;
+        // for (;;)
+        // {
+        //     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        hook_event_flag();
-        std::cout << "Hooked set_event_flag and get_event_flag" << std::endl;
+        //     auto game_data_man_address = game_memory.scan(game_data_man_aob);
+        //     if (game_data_man_address == nullptr)
+        //     {
+        //         continue;
+        //     }
+        //     auto game_data_man = *game_data_man_address;
+        //     if (game_data_man == nullptr)
+        //     {
+        //         continue;
+        //     }
+
+        //     auto &inventory = game_data_man->player_game_data->equip_inventory_data;
+
+        //     std::cout << "inventory:" << std::endl;
+        //     for (int i = 0; i < inventory.inventory_count; i++)
+        //     {
+        //         std::cout << "  - item_id: " << inventory.inventory_list[i].item_id << std::endl;
+        //         std::cout << "    quantity: " << inventory.inventory_list[i].quantity <<
+        //         std::endl;
+        //     }
+        //     std::cout << std::endl;
+        // }
     });
 }
 
-static void deinitialize_mod()
+void deinitialize_mod()
 {
-    unhook_event_flag();
-    game_hook.unhook_get_message();
+    MH_RemoveHook(item_gib);
+    MH_Uninitialize();
+
     mod_thread.join();
 }
-
-export_mod(initialize_mod, deinitialize_mod);

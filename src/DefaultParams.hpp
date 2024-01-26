@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <tga/paramdefs.h>
 
-static const SpEffectParam base_speffect = {
+static const SpEffectParam default_speffect = {
     .iconId = -1,
     .conditionHp = -1,
     .effectEndurance = -1,
@@ -178,7 +177,7 @@ static const SpEffectParam base_speffect = {
     .unk2 = 1,
 };
 
-static const SpEffectVfxParam base_speffect_vfx = {
+static const SpEffectVfxParam default_speffect_vfx = {
     .transformProtectorId = -1,
     .isVisibleDeadChr = 1,
 };

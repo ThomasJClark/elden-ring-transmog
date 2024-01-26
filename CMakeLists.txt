@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28.1)
 
-project(TomEldenRingMods
+project(EldenRingTransmogMod
   VERSION   0.0.0
   LANGUAGES CXX)
 
@@ -23,20 +23,13 @@ FetchContent_MakeAvailable(minhook ertga)
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
 
-set(SHARED_SRC
-  src/ExportMod.hpp
-  src/GameHook.cpp
-  src/GameHook.hpp
-  src/ItemGib.hpp
-  src/MsgRepository.hpp
-  src/WorldChrMan.hpp)
-  
-add_library(ConvergenceSpellScalingMod SHARED
-  src/ConvergenceSpellScalingMod.cpp
-  ${SHARED_SRC})  
-target_link_libraries(ConvergenceSpellScalingMod minhook ertga)
-
 add_library(EldenRingTransmogMod SHARED
+  src/AOBs.hpp
+  src/DefaultParams.hpp
   src/EldenRingTransmogMod.cpp
-  ${SHARED_SRC})
+  src/GameDataMan.hpp
+  src/GameMemory.hpp
+  src/Params.hpp
+  src/dllmain.cpp)
+
 target_link_libraries(EldenRingTransmogMod minhook ertga)
