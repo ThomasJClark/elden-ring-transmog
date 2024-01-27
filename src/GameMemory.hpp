@@ -1,6 +1,7 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 
+#include <MinHook.h>
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -39,6 +40,18 @@ class GameMemory
             memory = {(std::byte *)memory_info.AllocationBase,
                       nt_headers->OptionalHeader.SizeOfImage};
         }
+
+        auto mh_status = MH_Initialize();
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(std::string("Error initializing MinHook: ") +
+                                     MH_StatusToString(mh_status));
+        }
+    }
+
+    void deinitialize()
+    {
+        MH_Uninitialize();
     }
 
     template <typename ReturnType, typename AlignmentType = std::byte> struct ScanArgs
@@ -53,7 +66,7 @@ class GameMemory
      * Scans a span of memory for a matching array of bytes, then apply an optional offset and list
      * of relative offsets
      */
-    template <typename ReturnType, typename AlignmentType>
+    template <typename ReturnType, typename AlignmentType = std::byte>
     ReturnType *scan(const ScanArgs<ReturnType, AlignmentType> &args)
     {
         const auto &aob = args.aob;
@@ -80,5 +93,38 @@ class GameMemory
         }
 
         return nullptr;
+    }
+
+    /**
+     * Scans for a function in the game, and hooks it with an override using MinHook
+     */
+    template <typename FunctionType, typename AlignmentType = std::byte>
+    FunctionType *hook(const ScanArgs<FunctionType, AlignmentType> &args, FunctionType &detour,
+                       FunctionType *&trampoline)
+    {
+        auto original = scan(scan_args);
+        if (original == nullptr)
+        {
+            throw std::runtime_error(std::string("Error looking up original function"));
+        }
+
+        auto mh_status = MH_CreateHook(original, &detour, (void **)&trampoline);
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(std::string("Error creating hook: ") +
+                                     MH_StatusToString(mh_status));
+        }
+        mh_status = MH_EnableHook(original);
+        if (mh_status != MH_OK)
+        {
+            throw std::runtime_error(std::string("Error enabling hook: ") +
+                                     MH_StatusToString(mh_status));
+        }
+        return original;
+    }
+
+    template <typename FunctionType> void unhook(FunctionType *hook)
+    {
+        MH_RemoveHook(item_gib);
     }
 };

@@ -1,4 +1,3 @@
-#include <MinHook.h>
 #include <iostream>
 #include <tga/paramdefs.h>
 #include <thread>
@@ -7,10 +6,13 @@
 #include "DefaultParams.hpp"
 #include "GameDataMan.hpp"
 #include "GameMemory.hpp"
+#include "MsgRepository.hpp"
 #include "Params.hpp"
+#include "TransmogI18n.hpp"
 
 static GameMemory game_memory;
 static ParamMap params;
+static MsgRepository *msg_repository;
 
 // Unused IDs we can yoink
 static const std::uint64_t transmog_speffect_id = 501220; // Deathsbane Jerkey
@@ -30,22 +32,6 @@ static EquipParamProtector *transmog_head;
 static EquipParamProtector *transmog_body;
 static EquipParamProtector *transmog_arms;
 static EquipParamProtector *transmog_legs;
-
-template <typename F> void create_and_enable_hook(F *original, F &detour, F *&trampoline)
-{
-    auto mh_status = MH_CreateHook(original, &detour, (void **)&trampoline);
-    if (mh_status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error creating hook: ") +
-                                 MH_StatusToString(mh_status));
-    }
-    mh_status = MH_EnableHook(original);
-    if (mh_status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error enabling hook: ") +
-                                 MH_StatusToString(mh_status));
-    }
-}
 
 struct ItemInfo
 {
@@ -94,27 +80,22 @@ std::thread mod_thread;
 
 void initialize_mod()
 {
-    std::cout << "Initializing mod..." << std::endl;
-
-    game_memory.initialize();
-
-    auto mh_status = MH_Initialize();
-    if (mh_status != MH_OK)
-    {
-        throw std::runtime_error(std::string("Error initializing MinHook: ") +
-                                 MH_StatusToString(mh_status));
-    }
-
-    std::cout << "Hooking item_gib..." << std::endl;
-
-    item_gib = game_memory.scan(
-        GameMemory::ScanArgs<ItemGibFn>({.aob = {0x8B, 0x02, 0x83, 0xF8, 0x0A}, .offset = -0x52}));
-
-    create_and_enable_hook(item_gib, item_gib_detour, item_gib_trampoline);
-
     mod_thread = std::thread([]() {
-        std::cout << "Waiting for params..." << std::endl;
+        std::cout << "Initializing mod..." << std::endl;
+        game_memory.initialize();
 
+        std::cout << "Hooking item_gib..." << std::endl;
+        item_gib = game_memory.hook({.aob = {0x8B, 0x02, 0x83, 0xF8, 0x0A}, .offset = -0x52},
+                                    item_gib_detour, item_gib_trampoline);
+
+        std::cout << "Hooking get_message..." << std::endl;
+        get_message = game_memory.hook({.aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2, 0x48,
+                                                0x8B, 0xF9, 0x44, 0x8D, 0x42, 0x6F},
+                                        .offset = 0xe,
+                                        .relative_offsets = {{0x1, 0x5}}},
+                                       get_message_detour, get_message_trampoline);
+
+        std::cout << "Waiting for params..." << std::endl;
         auto param_list_address = game_memory.scan(param_list_aob);
         while (!try_get_params(param_list_address, params))
         {
@@ -122,7 +103,6 @@ void initialize_mod()
         }
 
         std::cout << "Patching params..." << std::endl;
-
         auto equip_param_protector = params[L"EquipParamProtector"];
         auto speffect_vfx_param = params[L"SpEffectVfxParam"];
         auto speffect_param = params[L"SpEffectParam"];
@@ -170,39 +150,22 @@ void initialize_mod()
 
         std::cout << "Patched transmog params" << std::endl;
 
-        // for (;;)
-        // {
-        //     std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "Waiting for messages..." << std::endl;
+        auto msg_repository_address = game_memory.scan(msg_repository_aob);
+        while (*msg_repository_address == nullptr)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
 
-        //     auto game_data_man_address = game_memory.scan(game_data_man_aob);
-        //     if (game_data_man_address == nullptr)
-        //     {
-        //         continue;
-        //     }
-        //     auto game_data_man = *game_data_man_address;
-        //     if (game_data_man == nullptr)
-        //     {
-        //         continue;
-        //     }
+        setup_transmog_messages(*msg_repository_address);
 
-        //     auto &inventory = game_data_man->player_game_data->equip_inventory_data;
-
-        //     std::cout << "inventory:" << std::endl;
-        //     for (int i = 0; i < inventory.inventory_count; i++)
-        //     {
-        //         std::cout << "  - item_id: " << inventory.inventory_list[i].item_id << std::endl;
-        //         std::cout << "    quantity: " << inventory.inventory_list[i].quantity <<
-        //         std::endl;
-        //     }
-        //     std::cout << std::endl;
-        // }
+        std::cout << "Set up messages" << std::endl;
     });
 }
 
 void deinitialize_mod()
 {
-    MH_RemoveHook(item_gib);
-    MH_Uninitialize();
-
+    game_memory.unhook(get_message);
+    game_memory.unhook(item_gib);
     mod_thread.join();
 }

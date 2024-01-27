@@ -29,6 +29,8 @@ add_library(EldenRingTransmogMod SHARED
   src/EldenRingTransmogMod.cpp
   src/GameDataMan.hpp
   src/GameMemory.hpp
+  src/MsgRepository.hpp
+  src/TransmogI18n.hpp
   src/Params.hpp
   src/dllmain.cpp)
 
