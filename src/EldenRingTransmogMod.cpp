@@ -104,6 +104,44 @@ void find_equip_param_goods_detour(EquipParamGoodsResult *result, std::uint32_t 
     }
 }
 
+typedef void *LookupParamFn(void *param_repo, std::int32_t param_index, std::uint32_t unknown);
+
+LookupParamFn *lookup_param;
+LookupParamFn *lookup_param_trampoline;
+
+std::int64_t param_accesses[0xba] = {0L};
+
+void *lookup_param_detour(void *param_repo, std::int32_t param_index, std::uint32_t unknown)
+{
+    if (param_index == 0x01)
+    {
+        /* EquipParamProtector */
+        param_accesses[param_index]++;
+    }
+    else if (param_index == 0x03)
+    {
+        /* EquipParamGoods */
+        param_accesses[param_index]++;
+    }
+    else if (param_index == 0x10)
+    {
+        /* SpEffectParam */
+        param_accesses[param_index]++;
+    }
+    else if (param_index == 0x11)
+    {
+        /* SpEffectVfxParam */
+        param_accesses[param_index]++;
+    }
+    else if (param_index == 0x1b)
+    {
+        /* ShopLineupParam */
+        param_accesses[param_index]++;
+    }
+
+    return lookup_param_trampoline(param_repo, param_index, unknown);
+}
+
 std::thread mod_thread;
 
 void initialize_mod()
@@ -133,6 +171,11 @@ void initialize_mod()
                  },
              .offset = -0x67},
             find_equip_param_goods_detour, find_equip_param_goods_trampoline);
+
+        std::cout << "Hooking lookup_param..." << std::endl;
+        lookup_param = game_memory.hook<LookupParamFn>(
+            {.aob = {0x81, 0xfa, 0xba, 0x00, 0x00, 0x00, 0x7d, 0x24, 0x48, 0x63, 0xd2}},
+            lookup_param_detour, lookup_param_trampoline);
 
         std::cout << "Waiting for params..." << std::endl;
         auto param_list_address = game_memory.scan(param_list_aob);
@@ -203,6 +246,19 @@ void initialize_mod()
         setup_transmog_messages(*msg_repository_address);
 
         std::cout << "Set up messages" << std::endl;
+
+        for (;;)
+        {
+            for (int i = 0; i < sizeof(param_accesses) / sizeof(param_accesses[0]); i++)
+            {
+                if (param_accesses[i])
+                {
+                    std::cout << i << " " << param_accesses[i] << std::endl;
+                }
+            }
+            std::cout << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
     });
 }
 
