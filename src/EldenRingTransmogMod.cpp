@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <tga/paramdefs.h>
 #include <thread>
@@ -76,6 +77,33 @@ const std::int32_t *item_gib_detour(void *unknown1, ItemInfoList *item_info_list
     return item_gib_trampoline(unknown1, item_info_list, unknown2, unknown3);
 }
 
+struct EquipParamGoodsResult
+{
+    std::int64_t item_id;
+    EquipParamGoods *row;
+};
+
+typedef void FindEquipParamGoodsEntryFn(EquipParamGoodsResult *result, std::uint32_t row_id);
+
+static EquipParamGoods *throwing_dagger;
+
+FindEquipParamGoodsEntryFn *find_equip_param_goods;
+FindEquipParamGoodsEntryFn *find_equip_param_goods_trampoline;
+
+void find_equip_param_goods_detour(EquipParamGoodsResult *result, std::uint32_t row_id)
+{
+    if (row_id == 1769)
+    {
+        std::cout << row_id << std::endl;
+        result->item_id = 0x300000000 + row_id;
+        result->row = throwing_dagger;
+    }
+    else
+    {
+        find_equip_param_goods_trampoline(result, row_id);
+    }
+}
+
 std::thread mod_thread;
 
 void initialize_mod()
@@ -94,6 +122,17 @@ void initialize_mod()
                                         .offset = 0xe,
                                         .relative_offsets = {{0x1, 0x5}}},
                                        get_message_detour, get_message_trampoline);
+
+        std::cout << "Hooking find_equip_param_goods..." << std::endl;
+        find_equip_param_goods = game_memory.hook<FindEquipParamGoodsEntryFn>(
+            {.aob =
+                 {
+                     0x45, 0x33, 0xC0, 0x41, 0x8D, 0x50, 0x03, 0xE8, -1,   -1, -1,
+                     -1,   0x48, 0x85, 0xC0, 0x0F, 0x84, -1,   -1,   -1,   -1, 0x48,
+                     0x8B, 0x80, 0x80, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x90,
+                 },
+             .offset = -0x67},
+            find_equip_param_goods_detour, find_equip_param_goods_trampoline);
 
         std::cout << "Waiting for params..." << std::endl;
         auto param_list_address = game_memory.scan(param_list_aob);
@@ -148,6 +187,10 @@ void initialize_mod()
         transmog_speffect->vfxId1 = transmog_head_vfx_id;
         transmog_speffect->vfxId2 = transmog_body_vfx_id;
 
+        auto equip_param_goods = params[L"EquipParamGoods"];
+        throwing_dagger = reinterpret_cast<EquipParamGoods *>(equip_param_goods[1700]);
+        std::cout << "throwing dagger " << throwing_dagger << std::endl;
+
         std::cout << "Patched transmog params" << std::endl;
 
         std::cout << "Waiting for messages..." << std::endl;
@@ -167,5 +210,6 @@ void deinitialize_mod()
 {
     game_memory.unhook(get_message);
     game_memory.unhook(item_gib);
+    game_memory.unhook(find_equip_param_goods);
     mod_thread.join();
 }

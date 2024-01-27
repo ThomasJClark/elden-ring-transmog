@@ -102,7 +102,7 @@ class GameMemory
     FunctionType *hook(const ScanArgs<FunctionType, AlignmentType> &args, FunctionType &detour,
                        FunctionType *&trampoline)
     {
-        auto original = scan(scan_args);
+        auto original = scan(args);
         if (original == nullptr)
         {
             throw std::runtime_error(std::string("Error looking up original function"));
@@ -125,6 +125,6 @@ class GameMemory
 
     template <typename FunctionType> void unhook(FunctionType *hook)
     {
-        MH_RemoveHook(item_gib);
+        MH_RemoveHook(hook);
     }
 };
