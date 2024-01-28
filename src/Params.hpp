@@ -9,17 +9,19 @@
 
 static const size_t g_param_count = 186;
 
-extern "C" struct ParamListEntry
+#pragma pack(push, 1)
+struct ParamListEntry
 {
     ParamResCap *param_res_cap;
     std::byte unknown[64];
 };
 
-extern "C" struct ParamList
+struct ParamList
 {
     std::byte unknown[136];
     ParamListEntry entries[0];
 };
+#pragma pack()
 
 typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
 
