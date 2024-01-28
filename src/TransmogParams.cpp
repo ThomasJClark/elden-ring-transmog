@@ -1,6 +1,4 @@
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
 #include <tga/paramdefs.h>
 
 #include "GameMemory.hpp"
@@ -32,7 +30,13 @@ struct FindSpEffectParamResult
     std::byte unknown;
 };
 
-struct FindSpEffectVfxParamResult; // TODD
+struct FindSpEffectVfxParamResult
+{
+    std::int32_t id;
+    std::byte unused[4];
+    SpEffectVfxParam *row;
+    std::uint16_t unknown;
+};
 
 struct FindEquipParamGoodsResult; // TODD
 
@@ -41,14 +45,14 @@ typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, std::uint32_t 
 typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, std::uint32_t id);
 typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, std::uint32_t id);
 
-static FindEquipParamProtectorFn *find_equip_param_protector_hook;
-static FindEquipParamProtectorFn *find_equip_param_protector;
-static FindSpEffectParamFn *find_speffect_param_hook;
-static FindSpEffectParamFn *find_speffect_param;
-static FindSpEffectVfxParamFn *find_speffect_vfx_param_hook;
-static FindSpEffectVfxParamFn *find_speffect_vfx_param;
-static FindEquipParamGoodsFn *find_equip_param_goods_hook;
-static FindEquipParamGoodsFn *find_equip_param_goods;
+static FindEquipParamProtectorFn *get_equip_param_protector_hook;
+static FindEquipParamProtectorFn *get_equip_param_protector;
+static FindSpEffectParamFn *get_speffect_param_hook;
+static FindSpEffectParamFn *get_speffect_param;
+static FindSpEffectVfxParamFn *get_speffect_vfx_param_hook;
+static FindSpEffectVfxParamFn *get_speffect_vfx_param;
+static FindEquipParamGoodsFn *get_equip_param_goods_hook;
+static FindEquipParamGoodsFn *get_equip_param_goods;
 
 static EquipParamProtector transmog_head = {0};
 static EquipParamProtector transmog_body = {0};
@@ -60,16 +64,15 @@ static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
 /**
- * Override find_equip_param_protector) to return the head/body/arms/legs pieces selected by
+ * Override get_equip_param_protector) to return the head/body/arms/legs pieces selected by
  * the player for transmogrification
  */
-static void find_equip_param_protector_detour(FindEquipParamProtectorResult *result,
-                                              std::uint32_t id)
+static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result,
+                                             std::uint32_t id)
 {
     switch (id)
     {
     case transmog_head_id:
-        std::cout << "find_equip_param_protector_detour " << id << std::endl;
         result->id = transmog_head_id;
         result->row = &transmog_head;
         result->base_id = transmog_head_id;
@@ -77,7 +80,6 @@ static void find_equip_param_protector_detour(FindEquipParamProtectorResult *res
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
     case transmog_body_id:
-        std::cout << "find_equip_param_protector_detour " << id << std::endl;
         result->id = transmog_body_id;
         result->row = &transmog_body;
         result->base_id = transmog_body_id;
@@ -85,7 +87,6 @@ static void find_equip_param_protector_detour(FindEquipParamProtectorResult *res
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
     case transmog_arms_id:
-        std::cout << "find_equip_param_protector_detour " << id << std::endl;
         result->id = transmog_arms_id;
         result->row = &transmog_arms;
         result->base_id = transmog_arms_id;
@@ -93,7 +94,6 @@ static void find_equip_param_protector_detour(FindEquipParamProtectorResult *res
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
     case transmog_legs_id:
-        std::cout << "find_equip_param_protector_detour " << id << std::endl;
         result->id = transmog_legs_id;
         result->row = &transmog_legs;
         result->base_id = transmog_legs_id;
@@ -101,80 +101,57 @@ static void find_equip_param_protector_detour(FindEquipParamProtectorResult *res
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
     default:
-        find_equip_param_protector(result, id);
+        get_equip_param_protector(result, id);
     }
 }
 
 /**
- * Override find_speffect_param() to return the transmogrification effect
+ * Override get_speffect_param() to return the transmogrification effect
  */
-static void find_speffect_param_detour(FindSpEffectParamResult *result, std::uint32_t id)
+static void get_speffect_param_detour(FindSpEffectParamResult *result, std::uint32_t id)
 {
     switch (id)
     {
     case transmog_speffect_id:
-        std::cout << "find_speffect_param_detour " << id << std::endl;
         result->id = transmog_speffect_id;
         result->row = &transmog_speffect;
         result->unknown = std::byte(0x04);
         break;
     default:
-        find_speffect_param(result, id);
+        get_speffect_param(result, id);
     }
 }
 
 /**
- * Override find_speffect_vfx_param() to return the transmogrification VFX
- *
- * TODO never called, need better AOB
+ * Override get_speffect_vfx_param() to return the transmogrification VFX
  */
-static void find_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, std::uint32_t id)
+static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, std::uint32_t id)
 {
-    if (id == transmog_head_vfx_id || id == transmog_body_vfx_id)
+    switch (id)
     {
-        std::byte buffer1[64];
-        std::byte buffer2[64];
-        for (int i = 0; i < sizeof(buffer1); i++)
-        {
-            buffer1[i] = std::byte(0x00);
-            buffer2[i] = std::byte(0xff);
-        }
-
-        find_speffect_vfx_param((FindSpEffectVfxParamResult *)buffer1, id);
-        find_speffect_vfx_param((FindSpEffectVfxParamResult *)buffer2, id);
-
-        std::cout << id << std::endl;
-        for (int i = 0; i < sizeof(buffer1); i++)
-        {
-            if (buffer1[i] == buffer2[i])
-            {
-                std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)buffer1[i];
-            }
-            else
-            {
-                std::cout << "??";
-            }
-            if (i % 16 == 15)
-                std::cout << std::endl;
-            else if (i % 8 == 7)
-                std::cout << "  ";
-            else
-                std::cout << " ";
-        }
-        std::cout << std::dec << std::endl;
+    case transmog_head_vfx_id:
+        result->id = transmog_head_vfx_id;
+        result->row = &transmog_head_vfx;
+        result->unknown = 1;
+        break;
+    case transmog_body_vfx_id:
+        result->id = transmog_body_vfx_id;
+        result->row = &transmog_body_vfx;
+        result->unknown = 1;
+        break;
+    default:
+        get_speffect_vfx_param(result, id);
     }
-
-    find_speffect_vfx_param(result, id);
 }
 
 /**
- * Override find_equip_param_goods() to return items shown in the transmog shop menu
+ * Override get_equip_param_goods() to return items shown in the transmog shop menu
  *
  * TODO
  */
-static void find_equip_param_goods_detour(FindEquipParamGoodsResult *result, std::uint32_t id)
+static void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, std::uint32_t id)
 {
-    find_equip_param_goods(result, id);
+    get_equip_param_goods(result, id);
 }
 
 void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
@@ -220,7 +197,7 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
     transmog_body_vfx.isFullBodyTransformProtectorId = true;
     transmog_body_vfx.isVisibleDeadChr = true;
 
-    find_equip_param_protector_hook = game_memory.hook<>(
+    get_equip_param_protector_hook = game_memory.hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 1]
@@ -233,9 +210,9 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
                  0x0f, 0x84, -1, -1, -1, -1},
             .offset = -0x96,
         },
-        find_equip_param_protector_detour, find_equip_param_protector);
+        get_equip_param_protector_detour, get_equip_param_protector);
 
-    find_speffect_param_hook = game_memory.hook<>(
+    get_speffect_param_hook = game_memory.hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 15]
@@ -248,9 +225,9 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
                  0x0f, 0x84, -1, -1, -1, -1},
             .offset = -0x72,
         },
-        find_speffect_param_detour, find_speffect_param);
+        get_speffect_param_detour, get_speffect_param);
 
-    find_speffect_vfx_param_hook = game_memory.hook<>(
+    get_speffect_vfx_param_hook = game_memory.hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 16]
@@ -260,23 +237,23 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
                  // test rax, rax
                  0x48, 0x85, 0xc0,
                  // jz end_lbl
-                 0x0f, 0x84, -1, -1, -1, -1},
-            .offset = -0x6e,
+                 0x74, -1},
+            .offset = -0x6a,
         },
-        find_speffect_vfx_param_detour, find_speffect_vfx_param);
+        get_speffect_vfx_param_detour, get_speffect_vfx_param);
 
-    // find_equip_param_goods_hook = game_memory.hook<>(
+    // get_equip_param_goods_hook = game_memory.hook<>(
     //     {.aob = {0x41, 0x8d, 0x50, 0x03, 0xe8, -1, -1, -1, -1, 0x48, 0x85, 0xc0},
     //      .offset = -0xb0},
-    //     find_equip_param_goods_detour, find_equip_param_goods);
+    //     get_equip_param_goods_detour, get_equip_param_goods);
 }
 
 void TransmogParams::unhook(GameMemory &game_memory)
 {
-    game_memory.unhook(find_equip_param_protector_hook);
-    game_memory.unhook(find_speffect_param_hook);
-    game_memory.unhook(find_speffect_vfx_param_hook);
-    // game_memory.unhook(find_equip_param_goods_hook);
+    game_memory.unhook(get_equip_param_protector_hook);
+    game_memory.unhook(get_speffect_param_hook);
+    game_memory.unhook(get_speffect_vfx_param_hook);
+    // game_memory.unhook(get_equip_param_goods_hook);
 }
 
 void TransmogParams::set_transmog(EquipParamProtector *equip_param_protector)
