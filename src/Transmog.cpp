@@ -13,10 +13,10 @@ std::thread mod_thread;
 
 void Transmog::initialize()
 {
-    mod_thread = std::thread([]() {
-        std::cout << "Initializing mod..." << std::endl;
-        TransmogUtils::initialize();
+    std::cout << "Initializing mod..." << std::endl;
+    TransmogUtils::initialize();
 
+    mod_thread = std::thread([]() {
         std::cout << "Waiting for params..." << std::endl;
         ParamMap params;
         auto param_list_address = TransmogUtils::scan<ParamList *>({
@@ -65,8 +65,8 @@ void Transmog::initialize()
 
 void Transmog::deinitialize()
 {
+    mod_thread.join();
     TransmogParams::deinitialize();
     TransmogMessages::deinitialize();
     TransmogUtils::deinitialize();
-    mod_thread.join();
 }

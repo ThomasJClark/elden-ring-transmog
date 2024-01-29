@@ -53,22 +53,32 @@ void *TransmogUtils::scan(const std::vector<int> &aob, std::ptrdiff_t alignment,
                           std::ptrdiff_t offset,
                           const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets)
 {
-    for (auto match = &memory.front(); match < &memory.back() - aob.size(); match += alignment)
+    auto begin = &memory.front();
+    auto end = &memory.back() - aob.size();
+    auto aob_size = aob.size();
+
+    for (auto match = begin; match < end; match += alignment)
     {
-        if (std::all_of(aob.begin(), aob.end(), [&aob, &match](const auto &b) {
-                return b == -1 || b == (int)match[&b - &aob[0]];
-            }))
+        for (int i = 0; i < aob_size; i++)
         {
-            match += offset;
-
-            for (auto [first, second] : relative_offsets)
+            if (aob[i] != -1 && aob[i] != (int)match[i])
             {
-                ptrdiff_t offset = *reinterpret_cast<std::uint32_t *>(&match[first]) + second;
-                match += offset;
+                goto next;
             }
-
-            return match;
         }
+
+        match += offset;
+
+        for (auto [first, second] : relative_offsets)
+        {
+            ptrdiff_t offset = *reinterpret_cast<std::uint32_t *>(&match[first]) + second;
+            match += offset;
+        }
+
+        return match;
+
+    next:
+        continue;
     }
 
     return nullptr;

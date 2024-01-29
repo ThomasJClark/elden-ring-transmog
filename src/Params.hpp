@@ -21,7 +21,7 @@ struct ParamList
     std::byte unknown[136];
     ParamListEntry entries[0];
 };
-#pragma pack()
+#pragma pack(pop)
 
 typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
 
