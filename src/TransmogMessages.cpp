@@ -1,8 +1,8 @@
 #include <map>
 #include <string>
 
-#include "GameMemory.hpp"
 #include "TransmogMessages.hpp"
+#include "TransmogUtils.hpp"
 
 using namespace TransmogMessages;
 
@@ -278,9 +278,9 @@ const wchar_t *get_message_detour(MsgRepository *msg_repository, std::uint32_t u
     return get_message(msg_repository, unknown, bnd_id, msg_id);
 }
 
-void TransmogMessages::hook(GameMemory &game_memory, MsgRepository *msg_repository)
+void TransmogMessages::initialize(MsgRepository *msg_repository)
 {
-    get_message_hook = game_memory.hook<>(
+    get_message_hook = TransmogUtils::hook<>(
         {
             .aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2, 0x48, 0x8B, 0xF9, 0x44, 0x8D, 0x42,
                     0x6F},
@@ -292,6 +292,7 @@ void TransmogMessages::hook(GameMemory &game_memory, MsgRepository *msg_reposito
     transmog_messages = autodetect_transmog_messages(msg_repository);
 }
 
-void TransmogMessages::unhook(GameMemory &game_memory)
+void TransmogMessages::deinitialize()
 {
+    TransmogUtils::unhook(get_message_hook);
 }

@@ -1,12 +1,10 @@
 #pragma once
 #include <cstdint>
 
-class GameMemory;
 struct MsgRepository;
 
 namespace TransmogMessages
 {
-
 static const std::int32_t event_text_for_talk_transmog_armor_id = 69000000;
 static const std::int32_t event_text_for_talk_transmog_head_id = 69000010;
 static const std::int32_t event_text_for_talk_transmog_body_id = 69000011;
@@ -23,7 +21,6 @@ static const std::int32_t menu_text_transmog_legs_id = 690003;
  * Determine the player's selected language, then hook the internal get_message() function to
  * return strings for the transmog menu
  */
-void hook(GameMemory &game_memory, MsgRepository *msg_repository);
-
-void unhook(GameMemory &game_memory);
+void initialize(MsgRepository *msg_repository);
+void deinitialize();
 }; // namespace TransmogMessages

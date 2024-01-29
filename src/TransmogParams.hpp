@@ -5,8 +5,6 @@
 #include <string>
 #include <tga/paramdefs.h>
 
-class GameMemory;
-
 typedef std::map<std::wstring, std::map<std::uint64_t, void *>> ParamMap;
 
 namespace TransmogParams
@@ -23,9 +21,8 @@ static const std::int64_t transmog_reinforce_param_id = 0;
 /**
  * Hook the internal get_*_param() functions to return the new params used for transmog
  */
-void hook(GameMemory &game_memory, ParamMap &params);
-
-void unhook(GameMemory &game_memory);
+void initialize(ParamMap &params);
+void deinitialize();
 
 /**
  * Set the given armor piece as the player's appearance

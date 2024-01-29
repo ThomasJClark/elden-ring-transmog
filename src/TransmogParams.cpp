@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <tga/paramdefs.h>
 
-#include "GameMemory.hpp"
 #include "TransmogParams.hpp"
+#include "TransmogUtils.hpp"
 
 using namespace TransmogParams;
 
@@ -154,7 +154,7 @@ static void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, std:
     get_equip_param_goods(result, id);
 }
 
-void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
+void TransmogParams::initialize(ParamMap &params)
 {
     auto equip_param_protector = params[L"EquipParamProtector"];
     auto reinforce_param_protector = params[L"ReinforceParamProtector"];
@@ -197,7 +197,7 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
     transmog_body_vfx.isFullBodyTransformProtectorId = true;
     transmog_body_vfx.isVisibleDeadChr = true;
 
-    get_equip_param_protector_hook = game_memory.hook<>(
+    get_equip_param_protector_hook = TransmogUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 1]
@@ -212,7 +212,7 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
         },
         get_equip_param_protector_detour, get_equip_param_protector);
 
-    get_speffect_param_hook = game_memory.hook<>(
+    get_speffect_param_hook = TransmogUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 15]
@@ -227,7 +227,7 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
         },
         get_speffect_param_detour, get_speffect_param);
 
-    get_speffect_vfx_param_hook = game_memory.hook<>(
+    get_speffect_vfx_param_hook = TransmogUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 16]
@@ -242,18 +242,18 @@ void TransmogParams::hook(GameMemory &game_memory, ParamMap &params)
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
 
-    // get_equip_param_goods_hook = game_memory.hook<>(
+    // get_equip_param_goods_hook = TransmogUtils::hook<>(
     //     {.aob = {0x41, 0x8d, 0x50, 0x03, 0xe8, -1, -1, -1, -1, 0x48, 0x85, 0xc0},
     //      .offset = -0xb0},
     //     get_equip_param_goods_detour, get_equip_param_goods);
 }
 
-void TransmogParams::unhook(GameMemory &game_memory)
+void TransmogParams::deinitialize()
 {
-    game_memory.unhook(get_equip_param_protector_hook);
-    game_memory.unhook(get_speffect_param_hook);
-    game_memory.unhook(get_speffect_vfx_param_hook);
-    // game_memory.unhook(get_equip_param_goods_hook);
+    TransmogUtils::unhook(get_equip_param_protector_hook);
+    TransmogUtils::unhook(get_speffect_param_hook);
+    TransmogUtils::unhook(get_speffect_vfx_param_hook);
+    // TransmogUtils::unhook(get_equip_param_goods_hook);
 }
 
 void TransmogParams::set_transmog(EquipParamProtector *equip_param_protector)

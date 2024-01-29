@@ -24,13 +24,15 @@ add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
 
 add_library(EldenRingTransmogMod SHARED
-  src/EldenRingTransmogMod.cpp
-  src/GameMemory.hpp
+  src/Params.hpp
+  src/Transmog.hpp
+  src/Transmog.cpp
   src/TransmogMessages.hpp
   src/TransmogMessages.cpp
   src/TransmogParams.hpp
   src/TransmogParams.cpp
-  src/Params.hpp
+  src/TransmogUtils.hpp
+  src/TransmogUtils.cpp
   src/dllmain.cpp)
 
 target_link_libraries(EldenRingTransmogMod minhook ertga)

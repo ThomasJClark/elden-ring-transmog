@@ -5,8 +5,7 @@
 #include <stdexcept>
 #include <windows.h>
 
-extern void initialize_mod();
-extern void deinitialize_mod();
+#include "Transmog.hpp"
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -21,7 +20,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 #endif
         try
         {
-            initialize_mod();
+            Transmog::initialize();
         }
         catch (std::runtime_error const &e)
         {
@@ -32,7 +31,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     {
         try
         {
-            deinitialize_mod();
+            Transmog::deinitialize();
         }
         catch (std::runtime_error const &e)
         {
