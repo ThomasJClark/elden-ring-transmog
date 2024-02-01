@@ -482,10 +482,17 @@ PARAM.Row AddPseudoTransmogEffectItem(int itemId)
 {
     var transmogItem = new PARAM.Row(itemId, null, items.AppliedParamdef);
 
-    transmogItem[itemGoodsTypeIdx].Value = 13; // None
+    transmogItem[itemGoodsTypeIdx].Value = 12; // info item
     transmogItem[itemSaleValueIdx].Value = 0;
     transmogItem[itemMaxNumIdx].Value = 2;
+    transmogItem[itemIconIdIdx].Value = 11;
     items.Rows.Add(transmogItem);
+
+    TransmogMessageUtils.SetItemText(
+        itemMessagesByLang,
+        transmogItem.ID,
+        (lang, messages) => ("Transmogrification Orb", "", "")
+    );
 
     return transmogItem;
 }
