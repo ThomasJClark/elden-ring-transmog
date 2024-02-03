@@ -7,6 +7,7 @@
 #include "Transmog.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogParams.hpp"
+#include "TransmogTalkScript.hpp"
 #include "TransmogUtils.hpp"
 
 std::thread mod_thread;
@@ -46,19 +47,27 @@ void Transmog::initialize()
         std::cout << "Hooking transmog messages..." << std::endl;
         TransmogMessages::initialize(*msg_repository_address);
 
+        // std::cout << "Hooking talk scripts..." << std::endl;
+        // TransmogTalkScript::initialize();
+
         std::cout << "Initialized transmog" << std::endl;
 
 #if _DEBUG
         // set up some incredible fashion for testing
-        auto equip_param_protector = params[L"EquipParamProtector"];
         TransmogParams::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector[1060000]));
+            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][1060000]));
         TransmogParams::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector[140100]));
+            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][140100]));
         TransmogParams::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector[910200]));
+            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][910200]));
         TransmogParams::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(equip_param_protector[320300]));
+            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][320300]));
+
+        // make boiled crab activate transmog for testing
+        auto boiled_crab_good =
+            reinterpret_cast<EquipParamGoods *>(params[L"EquipParamGoods"][820]);
+        boiled_crab_good->refId_default = TransmogParams::transmog_speffect_id;
+        boiled_crab_good->goodsUseAnim = 62;
 #endif
     });
 }
@@ -68,5 +77,6 @@ void Transmog::deinitialize()
     mod_thread.join();
     TransmogParams::deinitialize();
     TransmogMessages::deinitialize();
+    // TransmogTalkScript::deinitialize();
     TransmogUtils::deinitialize();
 }

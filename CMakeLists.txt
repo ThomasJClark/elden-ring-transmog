@@ -31,6 +31,8 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogMessages.cpp
   src/TransmogParams.hpp
   src/TransmogParams.cpp
+  src/TransmogTalkScript.hpp
+  src/TransmogTalkScript.cpp
   src/TransmogUtils.hpp
   src/TransmogUtils.cpp
   src/dllmain.cpp)
