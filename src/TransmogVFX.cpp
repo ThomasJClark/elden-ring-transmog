@@ -1,14 +1,11 @@
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
-#include "TransmogMessages.hpp"
-#include "TransmogParams.hpp"
 #include "TransmogUtils.hpp"
+#include "TransmogVFX.hpp"
 
-using namespace TransmogParams;
+using namespace TransmogVFX;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
@@ -43,23 +40,11 @@ struct FindSpEffectVfxParamResult
     std::uint16_t unknown;
 };
 
-struct FindShopMenuResult
-{
-    std::byte shop_type;
-    std::byte padding[3];
-    std::int32_t id;
-    ShopLineupParam *row;
-};
 #pragma pack(pop)
-
-struct FindEquipParamGoodsResult; // TODD
 
 typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, std::uint32_t id);
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, std::uint32_t id);
 typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, std::uint32_t id);
-typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, std::uint32_t id);
-typedef FindShopMenuResult *FindShopMenuFn(FindShopMenuResult *result, std::byte shop_type,
-                                           std::int32_t begin_id, std::int32_t end_id);
 
 static FindEquipParamProtectorFn *get_equip_param_protector_hook;
 static FindEquipParamProtectorFn *get_equip_param_protector;
@@ -67,10 +52,6 @@ static FindSpEffectParamFn *get_speffect_param_hook;
 static FindSpEffectParamFn *get_speffect_param;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param_hook;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param;
-static FindEquipParamGoodsFn *get_equip_param_goods_hook;
-static FindEquipParamGoodsFn *get_equip_param_goods;
-static FindShopMenuFn *get_shop_menu_hook;
-static FindShopMenuFn *get_shop_menu;
 
 static EquipParamProtector transmog_head = {0};
 static EquipParamProtector transmog_body = {0};
@@ -80,15 +61,7 @@ static ReinforceParamProtector transmog_reinforce_param = {0};
 static SpEffectParam transmog_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
-static ShopLineupParam transmog_head_shop_menu = {0};
-static ShopLineupParam transmog_body_shop_menu = {0};
-static ShopLineupParam transmog_arms_shop_menu = {0};
-static ShopLineupParam transmog_legs_shop_menu = {0};
 
-/**
- * Override get_equip_param_protector) to return the head/body/arms/legs pieces selected by
- * the player for transmogrification
- */
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result,
                                              std::uint32_t id)
 {
@@ -127,9 +100,6 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
     }
 }
 
-/**
- * Override get_speffect_param() to return the transmogrification effect
- */
 static void get_speffect_param_detour(FindSpEffectParamResult *result, std::uint32_t id)
 {
     switch (id)
@@ -144,9 +114,6 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, std::uint
     }
 }
 
-/**
- * Override get_speffect_vfx_param() to return the transmogrification VFX
- */
 static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, std::uint32_t id)
 {
     switch (id)
@@ -166,49 +133,7 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, st
     }
 }
 
-FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, std::byte shop_type,
-                                         std::int32_t begin_id, std::int32_t end_id)
-{
-    switch (begin_id)
-    {
-    case transmog_head_shop_menu_id:
-        result->shop_type = (std::byte)0;
-        result->id = transmog_head_shop_menu_id;
-        result->row = &transmog_head_shop_menu;
-        break;
-    case transmog_body_shop_menu_id:
-        result->shop_type = (std::byte)0;
-        result->id = transmog_body_shop_menu_id;
-        result->row = &transmog_body_shop_menu;
-        break;
-    case transmog_arms_shop_menu_id:
-        result->shop_type = (std::byte)0;
-        result->id = transmog_arms_shop_menu_id;
-        result->row = &transmog_arms_shop_menu;
-        break;
-    case transmog_legs_shop_menu_id:
-        result->shop_type = (std::byte)0;
-        result->id = transmog_legs_shop_menu_id;
-        result->row = &transmog_legs_shop_menu;
-        break;
-    default:
-        get_shop_menu(result, shop_type, begin_id, end_id);
-    }
-
-    return result;
-}
-
-/**
- * Override get_equip_param_goods() to return items shown in the transmog shop menu
- *
- * TODO
- */
-static void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, std::uint32_t id)
-{
-    get_equip_param_goods(result, id);
-}
-
-void TransmogParams::initialize(ParamMap &params)
+void TransmogVFX::initialize(ParamMap &params)
 {
     auto equip_param_protector = params[L"EquipParamProtector"];
     auto reinforce_param_protector = params[L"ReinforceParamProtector"];
@@ -224,47 +149,8 @@ void TransmogParams::initialize(ParamMap &params)
     transmog_reinforce_param =
         *reinterpret_cast<ReinforceParamProtector *>(reinforce_param_protector[0]);
 
-    // Initialize the speffect from speffect 2 (basically a no-op effect), and override the VFX
-    transmog_speffect = *reinterpret_cast<SpEffectParam *>(speffect_param[2]);
-    transmog_speffect.vfxId = transmog_head_vfx_id;
-    transmog_speffect.vfxId1 = transmog_body_vfx_id;
-    transmog_speffect.effectEndurance = -1;
-    transmog_speffect.effectTargetSelf = true;
-    transmog_speffect.effectTargetFriend = true;
-    transmog_speffect.effectTargetEnemy = true;
-    transmog_speffect.effectTargetPlayer = true;
-    transmog_speffect.effectTargetOpposeTarget = true;
-    transmog_speffect.effectTargetFriendlyTarget = true;
-    transmog_speffect.effectTargetSelfTarget = true;
-
-    // Add two VFX for transforming the player's head and the rest of their body.
-    // transformProtectorId should always be the ID of the head armor, and if
-    // isFullBodyTransformProtectorId is true the VFX will instead apply the three other armor
-    // pieces.
-    transmog_head_vfx.transformProtectorId = transmog_head_id;
-    transmog_head_vfx.isFullBodyTransformProtectorId = false;
-    transmog_head_vfx.isVisibleDeadChr = true;
-    transmog_head_vfx.initSfxId = 523412;
-    transmog_head_vfx.initDmyId = 220;
-
-    transmog_body_vfx.transformProtectorId = transmog_head_id;
-    transmog_body_vfx.isFullBodyTransformProtectorId = true;
-    transmog_body_vfx.isVisibleDeadChr = true;
-
-    // Add a shop to "buy" armor pieces for each category. Note: these params control the title
-    // and and icon for the shop, but otherwise aren't used for determining shop inventory.
-    transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_head_id;
-    transmog_head_shop_menu.menuIconId = 5;
-
-    transmog_body_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_body_id;
-    transmog_body_shop_menu.menuIconId = 5;
-
-    transmog_arms_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_arms_id;
-    transmog_arms_shop_menu.menuIconId = 5;
-
-    transmog_legs_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_legs_id;
-    transmog_legs_shop_menu.menuIconId = 5;
-
+    // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
+    // protectors are never equipped, but they're referenced by the transmog VFX params.
     get_equip_param_protector_hook = TransmogUtils::hook<>(
         {
             .aob =
@@ -280,6 +166,20 @@ void TransmogParams::initialize(ParamMap &params)
         },
         get_equip_param_protector_detour, get_equip_param_protector);
 
+    // Initialize the speffect from speffect 2 (basically a no-op effect), and override the VFX
+    transmog_speffect = *reinterpret_cast<SpEffectParam *>(speffect_param[2]);
+    transmog_speffect.vfxId = transmog_head_vfx_id;
+    transmog_speffect.vfxId1 = transmog_body_vfx_id;
+    transmog_speffect.effectEndurance = -1;
+    transmog_speffect.effectTargetSelf = true;
+    transmog_speffect.effectTargetFriend = true;
+    transmog_speffect.effectTargetEnemy = true;
+    transmog_speffect.effectTargetPlayer = true;
+    transmog_speffect.effectTargetOpposeTarget = true;
+    transmog_speffect.effectTargetFriendlyTarget = true;
+    transmog_speffect.effectTargetSelfTarget = true;
+
+    // Hook get_speffect_param() to return the above speffect
     get_speffect_param_hook = TransmogUtils::hook<>(
         {
             .aob =
@@ -295,6 +195,21 @@ void TransmogParams::initialize(ParamMap &params)
         },
         get_speffect_param_detour, get_speffect_param);
 
+    // Add two VFX for transforming the player's head and the rest of their body.
+    // transformProtectorId should always be the ID of the head armor, and if
+    // isFullBodyTransformProtectorId is true the VFX will instead apply the three other armor
+    // pieces.
+    transmog_head_vfx.transformProtectorId = transmog_head_id;
+    transmog_head_vfx.isFullBodyTransformProtectorId = false;
+    transmog_head_vfx.isVisibleDeadChr = true;
+    transmog_head_vfx.initSfxId = 523412;
+    transmog_head_vfx.initDmyId = 220;
+
+    transmog_body_vfx.transformProtectorId = transmog_head_id;
+    transmog_body_vfx.isFullBodyTransformProtectorId = true;
+    transmog_body_vfx.isVisibleDeadChr = true;
+
+    // Hook get_speffect_vfx_param() to return the above VFX params
     get_speffect_vfx_param_hook = TransmogUtils::hook<>(
         {
             .aob =
@@ -309,41 +224,16 @@ void TransmogParams::initialize(ParamMap &params)
             .offset = -0x6a,
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
-
-    get_shop_menu_hook = TransmogUtils::hook(
-        {
-            .aob =
-                {// mov r9d,dword ptr [r14 + 0x14]
-                 0x45, 0x8b, 0x4e, 0x14,
-                 // mov r8d,dword ptr [r14 + 0x10]
-                 0x45, 0x8b, 0x46, 0x10,
-                 // xor edx,edx
-                 0x33, 0xd2,
-                 // lea rcx=>local_1d0,[rbp + 0x18]
-                 0x48, 0x8d, 0x4d, 0x18,
-                 // call GetShopMenu
-                 0xe8, -1, -1, -1, -1},
-            .offset = 0xf,
-            .relative_offsets = {{0x1, 0x5}},
-        },
-        get_shop_menu_detour, get_shop_menu);
-
-    // get_equip_param_goods_hook = TransmogUtils::hook<>(
-    //     {.aob = {0x41, 0x8d, 0x50, 0x03, 0xe8, -1, -1, -1, -1, 0x48, 0x85, 0xc0},
-    //      .offset = -0xb0},
-    //     get_equip_param_goods_detour, get_equip_param_goods);
 }
 
-void TransmogParams::deinitialize()
+void TransmogVFX::deinitialize()
 {
     TransmogUtils::unhook(get_equip_param_protector_hook);
     TransmogUtils::unhook(get_speffect_param_hook);
     TransmogUtils::unhook(get_speffect_vfx_param_hook);
-    // TransmogUtils::unhook(get_equip_param_goods_hook);
-    TransmogUtils::unhook(get_shop_menu_hook);
 }
 
-void TransmogParams::set_transmog(EquipParamProtector *equip_param_protector)
+void TransmogVFX::set_transmog(EquipParamProtector *equip_param_protector)
 {
     if (equip_param_protector->protectorCategory == 0)
     {

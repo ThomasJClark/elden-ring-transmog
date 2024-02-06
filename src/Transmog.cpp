@@ -6,9 +6,10 @@
 #include "Params.hpp"
 #include "Transmog.hpp"
 #include "TransmogMessages.hpp"
-#include "TransmogParams.hpp"
+#include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
 #include "TransmogUtils.hpp"
+#include "TransmogVFX.hpp"
 
 std::thread mod_thread;
 
@@ -30,8 +31,11 @@ void Transmog::initialize()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        std::cout << "Hooking transmog params..." << std::endl;
-        TransmogParams::initialize(params);
+        std::cout << "Adding transmog VFX..." << std::endl;
+        TransmogVFX::initialize(params);
+
+        std::cout << "Adding transmog shops..." << std::endl;
+        TransmogShop::initialize(params);
 
         std::cout << "Waiting for messages..." << std::endl;
         auto msg_repository_address = TransmogUtils::scan<MsgRepository *>({
@@ -54,19 +58,19 @@ void Transmog::initialize()
 
 #if _DEBUG
         // set up some incredible fashion for testing
-        TransmogParams::set_transmog(
+        TransmogVFX::set_transmog(
             reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][1060000]));
-        TransmogParams::set_transmog(
+        TransmogVFX::set_transmog(
             reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][140100]));
-        TransmogParams::set_transmog(
+        TransmogVFX::set_transmog(
             reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][910200]));
-        TransmogParams::set_transmog(
+        TransmogVFX::set_transmog(
             reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][320300]));
 
         // make boiled crab activate transmog for testing
         auto boiled_crab_good =
             reinterpret_cast<EquipParamGoods *>(params[L"EquipParamGoods"][820]);
-        boiled_crab_good->refId_default = TransmogParams::transmog_speffect_id;
+        boiled_crab_good->refId_default = TransmogVFX::transmog_speffect_id;
         boiled_crab_good->goodsUseAnim = 62;
 #endif
     });
@@ -75,8 +79,9 @@ void Transmog::initialize()
 void Transmog::deinitialize()
 {
     mod_thread.join();
-    TransmogParams::deinitialize();
     TransmogMessages::deinitialize();
+    TransmogVFX::deinitialize();
+    TransmogShop::deinitialize();
     // TransmogTalkScript::deinitialize();
     TransmogUtils::deinitialize();
 }

@@ -29,12 +29,14 @@ add_library(EldenRingTransmogMod SHARED
   src/Transmog.cpp
   src/TransmogMessages.hpp
   src/TransmogMessages.cpp
-  src/TransmogParams.hpp
-  src/TransmogParams.cpp
+  src/TransmogShop.hpp
+  src/TransmogShop.cpp
   src/TransmogTalkScript.hpp
   src/TransmogTalkScript.cpp
   src/TransmogUtils.hpp
   src/TransmogUtils.cpp
+  src/TransmogVFX.hpp
+  src/TransmogVFX.cpp
   src/dllmain.cpp)
 
 target_link_libraries(EldenRingTransmogMod minhook ertga)

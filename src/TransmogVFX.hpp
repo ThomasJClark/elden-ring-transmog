@@ -7,7 +7,7 @@
 
 typedef std::map<std::wstring, std::map<std::uint64_t, void *>> ParamMap;
 
-namespace TransmogParams
+namespace TransmogVFX
 {
 static const std::int64_t transmog_speffect_id = 690001;
 static const std::int64_t transmog_head_vfx_id = 690001;
@@ -17,13 +17,9 @@ static const std::int64_t transmog_body_id = 69000100;
 static const std::int64_t transmog_arms_id = 69000200;
 static const std::int64_t transmog_legs_id = 69000300;
 static const std::int64_t transmog_reinforce_param_id = 0;
-static const std::int64_t transmog_head_shop_menu_id = 4000000;
-static const std::int64_t transmog_body_shop_menu_id = 4100000;
-static const std::int64_t transmog_arms_shop_menu_id = 4200000;
-static const std::int64_t transmog_legs_shop_menu_id = 4300000;
 
 /**
- * Hook the internal get_*_param() functions to return the new params used for transmog
+ * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
  */
 void initialize(ParamMap &params);
 void deinitialize();
@@ -32,4 +28,4 @@ void deinitialize();
  * Set the given armor piece as the player's appearance
  */
 void set_transmog(EquipParamProtector *equip_param_protector);
-} // namespace TransmogParams
+} // namespace TransmogVFX
