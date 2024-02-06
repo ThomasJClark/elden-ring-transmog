@@ -7,8 +7,6 @@
 #include <tga/dl_types.h>
 #include <tga/param_containers.h>
 
-static const size_t g_param_count = 186;
-
 #pragma pack(push, 1)
 struct ParamListEntry
 {
@@ -19,7 +17,7 @@ struct ParamListEntry
 struct ParamList
 {
     std::byte unknown[136];
-    ParamListEntry entries[0];
+    ParamListEntry entries[186];
 };
 #pragma pack(pop)
 
@@ -33,10 +31,9 @@ static bool try_get_params(ParamList **param_list_address, ParamMap &params)
         return false;
     }
 
-    auto param_list_entries = param_list->entries;
-    for (int i = 0; i < g_param_count; i++)
+    for (int i = 0; i < sizeof(param_list->entries) / sizeof(param_list->entries[0]); i++)
     {
-        auto param_res_cap = param_list_entries[i].param_res_cap;
+        auto param_res_cap = param_list->entries[i].param_res_cap;
         if (param_res_cap == nullptr)
         {
             return false;
