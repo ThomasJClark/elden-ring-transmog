@@ -31,12 +31,6 @@ void Transmog::initialize()
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        std::cout << "Adding transmog VFX..." << std::endl;
-        TransmogVFX::initialize(params);
-
-        std::cout << "Adding transmog shops..." << std::endl;
-        TransmogShop::initialize(params);
-
         std::cout << "Waiting for messages..." << std::endl;
         auto msg_repository_address = TransmogUtils::scan<MsgRepository *>({
             .aob = {0x48, 0x8B, 0x3D, -1, -1, -1, -1, 0x44, 0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF,
@@ -50,6 +44,12 @@ void Transmog::initialize()
 
         std::cout << "Hooking transmog messages..." << std::endl;
         TransmogMessages::initialize(*msg_repository_address);
+
+        std::cout << "Adding transmog VFX..." << std::endl;
+        TransmogVFX::initialize(params);
+
+        std::cout << "Adding transmog shops..." << std::endl;
+        TransmogShop::initialize(params, *msg_repository_address);
 
         // std::cout << "Hooking talk scripts..." << std::endl;
         // TransmogTalkScript::initialize();

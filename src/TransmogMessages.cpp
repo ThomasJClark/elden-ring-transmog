@@ -1,7 +1,9 @@
+#include <cwchar>
 #include <map>
 #include <string>
 
 #include "TransmogMessages.hpp"
+#include "TransmogShop.hpp"
 #include "TransmogUtils.hpp"
 
 using namespace TransmogMessages;
@@ -70,6 +72,7 @@ struct Messages
     const wchar_t *menu_text_transmog_body;
     const wchar_t *menu_text_transmog_arms;
     const wchar_t *menu_text_transmog_legs;
+    const wchar_t *protector_name_invisible;
 };
 
 static Messages transmog_messages;
@@ -102,6 +105,7 @@ static const Messages transmog_messages_engus = {
     .menu_text_transmog_body = L"Transmogrify Body",
     .menu_text_transmog_arms = L"Transmogrify Arms",
     .menu_text_transmog_legs = L"Transmogrify Legs",
+    .protector_name_invisible = L"Invisible",
 };
 
 static const Messages transmog_messages_frafr = {
@@ -221,58 +225,80 @@ static Messages const &autodetect_transmog_messages(MsgRepository *msg_repositor
 const wchar_t *get_message_detour(MsgRepository *msg_repository, std::uint32_t unknown,
                                   std::uint32_t bnd_id, std::int32_t msg_id)
 {
-    if (bnd_id == msgbnd_event_text_for_talk)
+    switch (bnd_id)
     {
-        if (msg_id == event_text_for_talk_transmog_armor_id)
+    case msgbnd_event_text_for_talk:
+        switch (msg_id)
         {
+        case event_text_for_talk_transmog_armor_id:
             return transmog_messages.event_text_for_talk_transmog_armor;
-        }
-        else if (msg_id == event_text_for_talk_transmog_head_id)
-        {
+        case event_text_for_talk_transmog_head_id:
             return transmog_messages.event_text_for_talk_transmog_head;
-        }
-        else if (msg_id == event_text_for_talk_transmog_body_id)
-        {
+        case event_text_for_talk_transmog_body_id:
             return transmog_messages.event_text_for_talk_transmog_body;
-        }
-        else if (msg_id == event_text_for_talk_transmog_arms_id)
-        {
+        case event_text_for_talk_transmog_arms_id:
             return transmog_messages.event_text_for_talk_transmog_arms;
-        }
-        else if (msg_id == event_text_for_talk_transmog_legs_id)
-        {
+        case event_text_for_talk_transmog_legs_id:
             return transmog_messages.event_text_for_talk_transmog_legs;
-        }
-        else if (msg_id == event_text_for_talk_undo_transmog_id)
-        {
+        case event_text_for_talk_undo_transmog_id:
             return transmog_messages.event_text_for_talk_undo_transmog;
         }
-    }
-    else if (bnd_id == msgbnd_event_text_for_map)
-    {
+        break;
+
+    case msgbnd_menu_text:
+        switch (msg_id)
+        {
+        case menu_text_transmog_head_id:
+            return transmog_messages.menu_text_transmog_head;
+        case menu_text_transmog_body_id:
+            return transmog_messages.menu_text_transmog_body;
+        case menu_text_transmog_arms_id:
+            return transmog_messages.menu_text_transmog_arms;
+        case menu_text_transmog_legs_id:
+            return transmog_messages.menu_text_transmog_legs;
+        }
+        break;
+
+    case msgbnd_event_text_for_map:
         if (msg_id == event_text_for_map_undo_transmog_alert_id)
         {
             return transmog_messages.event_text_for_map_undo_transmog_alert;
         }
+        break;
+
+    case msgbnd_goods_name: {
+        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        if (protector_id > 0)
+        {
+            if (TransmogShop::is_invisible_protector_id(protector_id))
+            {
+                return transmog_messages.protector_name_invisible;
+            }
+            else
+            {
+                return get_message(msg_repository, unknown, msgbnd_protector_name, protector_id);
+            }
+        }
+        break;
     }
-    else if (bnd_id == msgbnd_menu_text)
-    {
-        if (msg_id == menu_text_transmog_head_id)
+
+    case msgbnd_goods_caption: {
+        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        if (protector_id > 0)
         {
-            return transmog_messages.menu_text_transmog_head;
+            return get_message(msg_repository, unknown, msgbnd_protector_caption, protector_id);
         }
-        else if (msg_id == menu_text_transmog_body_id)
+        break;
+    }
+
+    case msgbnd_goods_info: {
+        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        if (protector_id > 0)
         {
-            return transmog_messages.menu_text_transmog_body;
+            return L"";
         }
-        else if (msg_id == menu_text_transmog_arms_id)
-        {
-            return transmog_messages.menu_text_transmog_arms;
-        }
-        else if (msg_id == menu_text_transmog_legs_id)
-        {
-            return transmog_messages.menu_text_transmog_legs;
-        }
+        break;
+    }
     }
 
     return get_message(msg_repository, unknown, bnd_id, msg_id);
@@ -290,6 +316,11 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
         get_message_detour, get_message);
 
     transmog_messages = autodetect_transmog_messages(msg_repository);
+}
+
+const wchar_t *TransmogMessages::get_protector_name(MsgRepository *msg_repository, std::int32_t id)
+{
+    return get_message_hook(msg_repository, 0, msgbnd_protector_name, id);
 }
 
 void TransmogMessages::deinitialize()

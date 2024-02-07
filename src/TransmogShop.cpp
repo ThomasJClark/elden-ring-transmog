@@ -3,6 +3,7 @@
 #include <iostream>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
+#include <unordered_map>
 
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
@@ -26,22 +27,35 @@ struct FindShopLineupParamResult
     std::int32_t id;
     ShopLineupParam *row;
 };
+
+struct FindEquipParamGoodsResult
+{
+    std::int32_t id;
+    std::int32_t unknown;
+    EquipParamGoods *row;
+};
 #pragma pack(pop)
 
 typedef FindShopMenuResult *FindShopMenuFn(FindShopMenuResult *result, std::byte shop_type,
                                            std::int32_t begin_id, std::int32_t end_id);
 typedef void FindShopLineupParamFn(FindShopLineupParamResult *result, std::byte shop_type,
                                    std::int32_t id);
+typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, std::int32_t id);
 
 static FindShopMenuFn *get_shop_menu_hook;
 static FindShopMenuFn *get_shop_menu;
 static FindShopLineupParamFn *get_shop_lineup_param;
 static FindShopLineupParamFn *get_shop_lineup_param_hook;
+static FindEquipParamGoodsFn *get_equip_param_goods;
+static FindEquipParamGoodsFn *get_equip_param_goods_hook;
 
 static ShopLineupParam transmog_head_shop_menu = {0};
 static ShopLineupParam transmog_body_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
 static ShopLineupParam transmog_legs_shop_menu = {0};
+
+static std::unordered_map<std::int32_t, ShopLineupParam> transmog_shop_lineups;
+static std::unordered_map<std::int32_t, EquipParamGoods> transmog_goods;
 
 FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, std::byte shop_type,
                                          std::int32_t begin_id, std::int32_t end_id)
@@ -75,131 +89,50 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, std::byte s
     return result;
 }
 
-// TODO seems to work for goods only?
-ShopLineupParam testslp1 = {
-    .equipId = 1700,
-    .value = 40,
-    .mtrlId = -1,
-    .eventFlag_forStock = 150070,
-    .eventFlag_forRelease = 0,
-    .sellQuantity = -1,
-    .equipType = 3,
-    .costType = 0,
-    .setNum = 1,
-    .value_Add = 0,
-    .value_Magnification = 1,
-    .iconId = -1,
-    .nameMsgId = -1,
-    .menuTitleMsgId = -1,
-    .menuIconId = -1,
-};
-
-ShopLineupParam testslp2 = {
-    .equipId = 140100,
-    .value = 0,
-    .mtrlId = -1,
-    .sellQuantity = -1,
-    .equipType = 1,
-    .setNum = 1,
-    .value_Add = 0,
-    .value_Magnification = 1,
-    .iconId = -1,
-    .nameMsgId = -1,
-};
-
-ShopLineupParam testslp3 = {
-    .equipId = 910200,
-    .value = 0,
-    .mtrlId = -1,
-    .sellQuantity = -1,
-    .equipType = 1,
-    .setNum = 1,
-    .value_Add = 0,
-    .value_Magnification = 1,
-    .iconId = -1,
-    .nameMsgId = -1,
-};
-
-ShopLineupParam testslp4 = {
-    .equipId = 320300,
-    .value = 0,
-    .mtrlId = -1,
-    .sellQuantity = -1,
-    .equipType = 1,
-    .setNum = 1,
-    .value_Add = 0,
-    .value_Magnification = 1,
-    .iconId = -1,
-    .nameMsgId = -1,
-};
-
 void get_shop_lineup_param_detour(FindShopLineupParamResult *result, std::byte shop_type,
                                   std::int32_t id)
 {
-    if (id == transmog_head_shop_menu_id)
+    if (shop_type == std::byte(0) && id >= transmog_head_shop_menu_id &&
+        id < transmog_legs_shop_menu_id + transmog_shop_max_size)
     {
-        result->shop_type = shop_type;
-        result->id = id;
-        result->row = &testslp1;
-        return;
+        auto entry = transmog_shop_lineups.find(id);
+        if (entry != transmog_shop_lineups.end())
+        {
+            result->shop_type = shop_type;
+            result->id = id;
+            result->row = &entry->second;
+            return;
+        }
+        else
+        {
+            result->row = nullptr;
+            return;
+        }
     }
-    // if (id >= transmog_head_shop_menu_id)
-    // {
-    //     if (id < transmog_head_shop_menu_id + transmog_shop_max_size)
-    //     {
-    //         auto index = id - transmog_head_shop_menu_id;
-    //         if (index == 0)
-    //         {
-    //             std::cout << "result" << std::endl;
-    //             result->shop_type = shop_type;
-    //             result->id = id;
-    //             result->row = &testslp1;
-    //             return;
-    //         }
-    //     }
-    //     else if (id < transmog_body_shop_menu_id + transmog_shop_max_size)
-    //     {
-    //         auto index = id - transmog_body_shop_menu_id;
-    //         if (index == 0)
-    //         {
-    //             result->shop_type = shop_type;
-    //             result->id = id;
-    //             result->row = &testslp1;
-    //             return;
-    //         }
-    //     }
-    //     else if (id < transmog_arms_shop_menu_id + transmog_shop_max_size)
-    //     {
-    //         auto index = id - transmog_arms_shop_menu_id;
-    //         if (index == 0)
-    //         {
-    //             result->shop_type = shop_type;
-    //             result->id = id;
-    //             result->row = &testslp1;
-    //             return;
-    //         }
-    //     }
-    //     else if (id < transmog_legs_shop_menu_id + transmog_shop_max_size)
-    //     {
-    //         auto index = id - transmog_legs_shop_menu_id;
-    //         if (index == 0)
-    //         {
-    //             result->shop_type = shop_type;
-    //             result->id = id;
-    //             result->row = &testslp1;
-    //             return;
-    //         }
-    //     }
-    // }
 
     get_shop_lineup_param(result, shop_type, id);
 }
 
-void TransmogShop::initialize(ParamMap &params)
+bool logged = false;
+
+void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, std::int32_t id)
+{
+    auto transmog_good = transmog_goods.find(id);
+    if (transmog_good != transmog_goods.end())
+    {
+        result->id = transmog_good->first;
+        result->row = &transmog_good->second;
+        result->unknown = 3;
+    }
+    else
+    {
+        get_equip_param_goods(result, id);
+    }
+}
+
+void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
 {
     auto equip_param_protector = params[L"EquipParamProtector"];
-    auto reinforce_param_protector = params[L"ReinforceParamProtector"];
-    auto speffect_param = params[L"SpEffectParam"];
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
@@ -236,9 +169,69 @@ void TransmogShop::initialize(ParamMap &params)
         },
         get_shop_menu_detour, get_shop_menu);
 
-    // Add shop entries for every armor piece the player can buy
-    // TODO: these should map to goods instead of the original armor sets.
+    auto glass_shard = reinterpret_cast<EquipParamGoods *>(params[L"EquipParamGoods"][10000]);
 
+    // Add goods and shop entries for every armor piece the player can buy
+    for (auto entry : equip_param_protector)
+    {
+        auto protector_id = entry.first;
+        auto protector_row = reinterpret_cast<EquipParamProtector *>(entry.second);
+
+        // Skip invalid/cut items
+        auto protector_name = TransmogMessages::get_protector_name(msg_repository, protector_id);
+        if (protector_name == nullptr ||
+            wcsncmp(protector_name, L"[ERROR]", wcslen(L"[ERROR]")) == 0)
+        {
+            continue;
+        }
+
+        auto shop_lineup_param_id =
+            get_transmog_shop_param_id(protector_id, protector_row->protectorCategory);
+
+        auto goods_id = get_transmog_goods_id_for_protector(protector_id);
+
+        transmog_shop_lineups[shop_lineup_param_id] = {
+            .equipId = static_cast<std::int32_t>(goods_id),
+            .value = 40,
+            .mtrlId = -1,
+            .sellQuantity = -1,
+            .equipType = 3,
+            .setNum = 1,
+            .iconId = -1,
+            .nameMsgId = -1,
+        };
+
+        // TODO: initialize this to a placeholder good
+        auto good = *glass_shard;
+        if (is_invisible_protector_id(protector_id))
+        {
+            good.iconId = 3142;
+        }
+        else
+        {
+            good.iconId = protector_row->iconIdM;
+        }
+        transmog_goods[goods_id] = good;
+    }
+
+    // Hook get_equip_param_goods() to return the above items
+    get_equip_param_goods_hook = TransmogUtils::hook(
+        {
+            .aob =
+                {// lea edx, [r8 + 3]
+                 0x41, 0x8d, 0x50, 0x03,
+                 // call SoloParamRepositoryImp::GetParamResCap
+                 0xe8, -1, -1, -1, -1,
+                 // test rax, rax
+                 0x48, 0x85, 0xc0,
+                 // jz end_lbl
+                 0x0f, 0x84, -1, -1, -1, -1},
+            .offset = -0x6a,
+        },
+        get_equip_param_goods_detour, get_equip_param_goods);
+
+    // TODO: AOB
+    // Hook get_shop_lineup_param() to return the above shop entries
     get_shop_lineup_param_hook = TransmogUtils::hook(
         {.offset = 0xd156c0}, get_shop_lineup_param_detour, get_shop_lineup_param);
 }
@@ -247,4 +240,5 @@ void TransmogShop::deinitialize()
 {
     TransmogUtils::unhook(get_shop_menu_hook);
     TransmogUtils::unhook(get_shop_lineup_param_hook);
+    TransmogUtils::unhook(get_equip_param_goods_hook);
 }

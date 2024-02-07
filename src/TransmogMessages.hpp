@@ -22,5 +22,8 @@ static const std::int32_t menu_text_transmog_legs_id = 690003;
  * return strings for the transmog menu
  */
 void initialize(MsgRepository *msg_repository);
+
+const wchar_t *get_protector_name(MsgRepository *msg_repository, std::int32_t id);
+
 void deinitialize();
 }; // namespace TransmogMessages
