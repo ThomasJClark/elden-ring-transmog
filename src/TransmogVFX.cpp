@@ -6,45 +6,46 @@
 #include "TransmogVFX.hpp"
 
 using namespace TransmogVFX;
+using namespace std;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
 {
-    std::int64_t id;
+    int64_t id;
     ReinforceParamProtector *row;
 };
 
 struct FindEquipParamProtectorResult
 {
-    std::int32_t id;
-    std::byte padding1[4];
+    int32_t id;
+    byte padding1[4];
     EquipParamProtector *row;
-    std::int32_t base_id;
-    std::byte padding2[4];
+    int32_t base_id;
+    byte padding2[4];
     FindReinforceParamProtectorResult reinforce_param_protector_result;
-    std::uint32_t unknown;
+    uint32_t unknown;
 };
 
 struct FindSpEffectParamResult
 {
     SpEffectParam *row;
-    std::int32_t id;
-    std::byte unknown;
+    int32_t id;
+    byte unknown;
 };
 
 struct FindSpEffectVfxParamResult
 {
-    std::int32_t id;
-    std::byte padding[4];
+    int32_t id;
+    byte padding[4];
     SpEffectVfxParam *row;
-    std::uint16_t unknown;
+    uint16_t unknown;
 };
 
 #pragma pack(pop)
 
-typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, std::uint32_t id);
-typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, std::uint32_t id);
-typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, std::uint32_t id);
+typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
+typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
+typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, uint32_t id);
 
 static FindEquipParamProtectorFn *get_equip_param_protector_hook;
 static FindEquipParamProtectorFn *get_equip_param_protector;
@@ -62,8 +63,7 @@ static SpEffectParam transmog_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
-static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result,
-                                             std::uint32_t id)
+static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
     switch (id)
     {
@@ -100,21 +100,21 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
     }
 }
 
-static void get_speffect_param_detour(FindSpEffectParamResult *result, std::uint32_t id)
+static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t id)
 {
     switch (id)
     {
     case transmog_speffect_id:
         result->id = transmog_speffect_id;
         result->row = &transmog_speffect;
-        result->unknown = std::byte(0x04);
+        result->unknown = byte(0x04);
         break;
     default:
         get_speffect_param(result, id);
     }
 }
 
-static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, std::uint32_t id)
+static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, uint32_t id)
 {
     switch (id)
     {

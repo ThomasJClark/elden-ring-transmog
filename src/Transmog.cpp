@@ -11,15 +11,17 @@
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
 
-std::thread mod_thread;
+using namespace std;
+
+thread mod_thread;
 
 void Transmog::initialize()
 {
-    std::cout << "Initializing mod..." << std::endl;
+    cout << "Initializing mod..." << endl;
     ModUtils::initialize();
 
-    mod_thread = std::thread([]() {
-        std::cout << "Waiting for params..." << std::endl;
+    mod_thread = thread([]() {
+        cout << "Waiting for params..." << endl;
         ParamMap params;
         auto param_list_address = ModUtils::scan<ParamList *>({
             .aob = {0x48, 0x8B, 0x0D, -1, -1, -1,   -1,   0x48, 0x85, 0xC9, 0x0F,
@@ -28,10 +30,10 @@ void Transmog::initialize()
         });
         while (!try_get_params(param_list_address, params))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(100));
         }
 
-        std::cout << "Waiting for messages..." << std::endl;
+        cout << "Waiting for messages..." << endl;
         auto msg_repository_address = ModUtils::scan<MsgRepository *>({
             .aob = {0x48, 0x8B, 0x3D, -1, -1, -1, -1, 0x44, 0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF,
                     0x75},
@@ -39,22 +41,22 @@ void Transmog::initialize()
         });
         while (*msg_repository_address == nullptr)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(100));
         }
 
-        std::cout << "Hooking transmog messages..." << std::endl;
+        cout << "Hooking transmog messages..." << endl;
         TransmogMessages::initialize(*msg_repository_address);
 
-        std::cout << "Adding transmog VFX..." << std::endl;
+        cout << "Adding transmog VFX..." << endl;
         TransmogVFX::initialize(params);
 
-        std::cout << "Adding transmog shops..." << std::endl;
+        cout << "Adding transmog shops..." << endl;
         TransmogShop::initialize(params, *msg_repository_address);
 
-        // std::cout << "Hooking talk scripts..." << std::endl;
+        // cout << "Hooking talk scripts..." << endl;
         // TransmogTalkScript::initialize();
 
-        std::cout << "Initialized transmog" << std::endl;
+        cout << "Initialized transmog" << endl;
 
 #if _DEBUG
         // set up some incredible fashion for testing

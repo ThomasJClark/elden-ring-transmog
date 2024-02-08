@@ -10,7 +10,7 @@ namespace ModUtils
 void initialize();
 void deinitialize();
 
-void *scan(const std::vector<int> &aob, std::ptrdiff_t alignment, std::ptrdiff_t offset,
+void *scan(const std::vector<int> &aob, ptrdiff_t alignment, ptrdiff_t offset,
            const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets);
 
 void hook(void *function, void *detour, void **trampoline);
@@ -20,8 +20,8 @@ void unhook(void *function);
 template <typename ReturnType> struct ScanArgs
 {
     const std::vector<int> aob;
-    const std::size_t alignment = 1;
-    const std::ptrdiff_t offset = 0;
+    const size_t alignment = 1;
+    const ptrdiff_t offset = 0;
     const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {};
 };
 

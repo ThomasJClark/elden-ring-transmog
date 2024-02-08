@@ -7,16 +7,19 @@
 #include "TransmogMessages.hpp"
 #include "TransmogTalkScript.hpp"
 
+using namespace std;
+using namespace TransmogTalkScript;
+
 struct CSEzStateTalkEvent;
 
 struct EzStateExternalEventTemp;
 
 struct EzStateExternalEventTempArg
 {
-    std::int32_t value;
-    std::byte padding1[4];
-    std::int32_t type;
-    std::byte padding2[4];
+    int32_t value;
+    byte padding1[4];
+    int32_t type;
+    byte padding2[4];
 };
 
 struct EzStateExternalEventTempVtable
@@ -32,13 +35,13 @@ struct EzStateExternalEventTempVtable
 struct EzStateExternalEventTemp
 {
     EzStateExternalEventTempVtable *vftable;
-    std::int32_t command;
-    std::int32_t unk1;
-    std::int32_t unk2;
-    std::int32_t unk3;
+    int32_t command;
+    int32_t unk1;
+    int32_t unk2;
+    int32_t unk3;
     EzStateExternalEventTempArg args[10];
-    std::byte unk4[808];
-    std::int32_t arg_count;
+    byte unk4[808];
+    int32_t arg_count;
 };
 
 // struct EsdResCap
@@ -49,12 +52,12 @@ struct EzStateExternalEventTemp
 // struct EsdRepository
 // {
 //     void **vftable;
-//     std::byte unk1[0x28];
-//     std::uint16_t unk2; // 0x100000000;
-//     std::byte unk3[0x38];
+//     byte unk1[0x28];
+//     uint16_t unk2; // 0x100000000;
+//     byte unk3[0x38];
 //     void *unk4;
-//     std::byte unk5[0xc];
-//     std::uint32_t esd_res_cap_count;
+//     byte unk5[0xc];
+//     uint32_t esd_res_cap_count;
 //     EsdResCap **esd_res_caps;
 // };
 
@@ -64,7 +67,7 @@ struct EzStateExternalEventTemp
 EsdRepository 7FF661122C48
 */
 
-static std::map<int, std::string> esd_command_names = {
+static map<int, string> esd_command_names = {
     {1, "TalkToPlayer"},
     {5, "RemoveMyAggro"},
     {8, "ForceEndTalk"},
@@ -176,19 +179,19 @@ static void log_evt(EzStateExternalEventTemp *evt)
     {
         if (esd_command_names.contains(command_id))
         {
-            std::cout << esd_command_names[command_id];
+            cout << esd_command_names[command_id];
         }
         else
         {
-            std::cout << "UNKNOWN_ESD_COMMAND_" << command_id << std::dec;
+            cout << "UNKNOWN_ESD_COMMAND_" << command_id << dec;
         }
-        std::cout << "(";
+        cout << "(";
         for (int i = 1; i < arg_count; i++)
         {
             auto arg = evt->vftable->GetArg(evt, i);
-            std::cout << "[" << arg->type << "]" << arg->value << (i < arg_count - 1 ? ", " : "");
+            cout << "[" << arg->type << "]" << arg->value << (i < arg_count - 1 ? ", " : "");
         }
-        std::cout << ")" << std::endl;
+        cout << ")" << endl;
     }
 }
 

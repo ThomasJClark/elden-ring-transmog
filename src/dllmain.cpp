@@ -7,6 +7,8 @@
 
 #include "Transmog.hpp"
 
+using namespace std;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     if (fdwReason == DLL_PROCESS_ATTACH)
@@ -22,9 +24,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         {
             Transmog::initialize();
         }
-        catch (std::runtime_error const &e)
+        catch (runtime_error const &e)
         {
-            std::cerr << "Error initializing mod: " << e.what() << std::endl;
+            cerr << "Error initializing mod: " << e.what() << endl;
         }
     }
     else if (fdwReason == DLL_PROCESS_DETACH && lpvReserved != nullptr)
@@ -33,9 +35,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         {
             Transmog::deinitialize();
         }
-        catch (std::runtime_error const &e)
+        catch (runtime_error const &e)
         {
-            std::cerr << "Error deinitializing mod: " << e.what() << std::endl;
+            cerr << "Error deinitializing mod: " << e.what() << endl;
         }
     }
     return TRUE;

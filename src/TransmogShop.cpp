@@ -10,39 +10,39 @@
 #include "TransmogShop.hpp"
 
 using namespace TransmogShop;
+using namespace std;
 
-static constexpr std::uint16_t invisible_icon_id = 3142;
+static constexpr uint16_t invisible_icon_id = 3142;
 
 #pragma pack(push, 1)
 struct FindShopMenuResult
 {
-    std::byte shop_type;
-    std::byte padding[3];
-    std::int32_t id;
+    byte shop_type;
+    byte padding[3];
+    int32_t id;
     ShopLineupParam *row;
 };
 
 struct FindShopLineupParamResult
 {
-    std::byte shop_type;
-    std::byte padding[3];
-    std::int32_t id;
+    byte shop_type;
+    byte padding[3];
+    int32_t id;
     ShopLineupParam *row;
 };
 
 struct FindEquipParamGoodsResult
 {
-    std::int32_t id;
-    std::int32_t unknown;
+    int32_t id;
+    int32_t unknown;
     EquipParamGoods *row;
 };
 #pragma pack(pop)
 
-typedef FindShopMenuResult *FindShopMenuFn(FindShopMenuResult *result, std::byte shop_type,
-                                           std::int32_t begin_id, std::int32_t end_id);
-typedef void FindShopLineupParamFn(FindShopLineupParamResult *result, std::byte shop_type,
-                                   std::int32_t id);
-typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, std::int32_t id);
+typedef FindShopMenuResult *FindShopMenuFn(FindShopMenuResult *result, byte shop_type,
+                                           int32_t begin_id, int32_t end_id);
+typedef void FindShopLineupParamFn(FindShopLineupParamResult *result, byte shop_type, int32_t id);
+typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, int32_t id);
 
 static FindShopMenuFn *get_shop_menu_hook;
 static FindShopMenuFn *get_shop_menu;
@@ -56,31 +56,31 @@ static ShopLineupParam transmog_body_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
 static ShopLineupParam transmog_legs_shop_menu = {0};
 
-static std::unordered_map<std::int32_t, ShopLineupParam> transmog_shop_lineups;
-static std::unordered_map<std::int32_t, EquipParamGoods> transmog_goods;
+static unordered_map<int32_t, ShopLineupParam> transmog_shop_lineups;
+static unordered_map<int32_t, EquipParamGoods> transmog_goods;
 
-FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, std::byte shop_type,
-                                         std::int32_t begin_id, std::int32_t end_id)
+FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_type,
+                                         int32_t begin_id, int32_t end_id)
 {
     switch (begin_id)
     {
     case transmog_head_shop_menu_id:
-        result->shop_type = (std::byte)0;
+        result->shop_type = (byte)0;
         result->id = transmog_head_shop_menu_id;
         result->row = &transmog_head_shop_menu;
         break;
     case transmog_body_shop_menu_id:
-        result->shop_type = (std::byte)0;
+        result->shop_type = (byte)0;
         result->id = transmog_body_shop_menu_id;
         result->row = &transmog_body_shop_menu;
         break;
     case transmog_arms_shop_menu_id:
-        result->shop_type = (std::byte)0;
+        result->shop_type = (byte)0;
         result->id = transmog_arms_shop_menu_id;
         result->row = &transmog_arms_shop_menu;
         break;
     case transmog_legs_shop_menu_id:
-        result->shop_type = (std::byte)0;
+        result->shop_type = (byte)0;
         result->id = transmog_legs_shop_menu_id;
         result->row = &transmog_legs_shop_menu;
         break;
@@ -91,10 +91,9 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, std::byte s
     return result;
 }
 
-void get_shop_lineup_param_detour(FindShopLineupParamResult *result, std::byte shop_type,
-                                  std::int32_t id)
+void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type, int32_t id)
 {
-    if (shop_type == std::byte(0) && id >= transmog_head_shop_menu_id &&
+    if (shop_type == byte(0) && id >= transmog_head_shop_menu_id &&
         id < transmog_legs_shop_menu_id + transmog_shop_max_size)
     {
         auto entry = transmog_shop_lineups.find(id);
@@ -117,7 +116,7 @@ void get_shop_lineup_param_detour(FindShopLineupParamResult *result, std::byte s
 
 bool logged = false;
 
-void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, std::int32_t id)
+void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 {
     auto transmog_good = transmog_goods.find(id);
     if (transmog_good != transmog_goods.end())
@@ -218,7 +217,7 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
         auto shop_lineup_param_id =
             get_transmog_shop_param_id(protector_id, protector_row->protectorCategory);
         transmog_shop_lineups[shop_lineup_param_id] = {
-            .equipId = static_cast<std::int32_t>(goods_id),
+            .equipId = static_cast<int32_t>(goods_id),
             .value = -1,
             .mtrlId = -1,
             .sellQuantity = -1,

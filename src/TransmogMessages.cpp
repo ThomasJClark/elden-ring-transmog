@@ -9,16 +9,17 @@
 #include "messages.hpp"
 
 using namespace TransmogMessages;
+using namespace std;
 
-static const std::uint32_t msgbnd_goods_name = 10;
-static const std::uint32_t msgbnd_protector_name = 12;
-static const std::uint32_t msgbnd_goods_info = 20;
-static const std::uint32_t msgbnd_goods_caption = 24;
-static const std::uint32_t msgbnd_protector_caption = 26;
-static const std::uint32_t msgbnd_event_text_for_talk = 33;
-static const std::uint32_t msgbnd_event_text_for_map = 34;
-static const std::uint32_t msgbnd_menu_text = 200;
-static const std::uint32_t msgbnd_system_message_win64 = 203;
+static const uint32_t msgbnd_goods_name = 10;
+static const uint32_t msgbnd_protector_name = 12;
+static const uint32_t msgbnd_goods_info = 20;
+static const uint32_t msgbnd_goods_caption = 24;
+static const uint32_t msgbnd_protector_caption = 26;
+static const uint32_t msgbnd_event_text_for_talk = 33;
+static const uint32_t msgbnd_event_text_for_map = 34;
+static const uint32_t msgbnd_menu_text = 200;
+static const uint32_t msgbnd_system_message_win64 = 203;
 
 struct ISteamApps;
 extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
@@ -30,23 +31,23 @@ extern "C" __declspec(dllimport) const
  *
  * https://partner.steamgames.com/doc/store/localization/languages
  */
-static std::string get_steam_language()
+static string get_steam_language()
 {
     auto steam_api = SteamAPI_SteamApps_v008();
     auto steam_language = SteamAPI_ISteamApps_GetCurrentGameLanguage(steam_api);
     return steam_language != nullptr ? steam_language : "";
 }
 
-typedef const char16_t *GetMessageFn(MsgRepository *msg_repository, std::uint32_t unknown,
-                                     std::uint32_t bnd_id, std::int32_t msg_id);
+typedef const char16_t *GetMessageFn(MsgRepository *msg_repository, uint32_t unknown,
+                                     uint32_t bnd_id, int32_t msg_id);
 
 static GetMessageFn *get_message_hook;
 static GetMessageFn *get_message;
 
 static Messages transmog_messages;
 
-const char16_t *get_message_detour(MsgRepository *msg_repository, std::uint32_t unknown,
-                                   std::uint32_t bnd_id, std::int32_t msg_id)
+const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unknown, uint32_t bnd_id,
+                                   int32_t msg_id)
 {
     switch (bnd_id)
     {
@@ -131,7 +132,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
 {
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
-    std::cout << "Detected game language: " << language << std::endl;
+    cout << "Detected game language: " << language << endl;
 
     auto messages_iterator = transmog_messages_by_lang.find(language);
     if (messages_iterator == transmog_messages_by_lang.end())
@@ -154,8 +155,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
         get_message_detour, get_message);
 }
 
-const std::u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_repository,
-                                                               std::int32_t id)
+const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_repository, int32_t id)
 {
     auto result = get_message_hook(msg_repository, 0, msgbnd_protector_name, id);
     if (result == nullptr)
