@@ -1,6 +1,4 @@
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 #include <unordered_map>
@@ -244,10 +242,25 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
         },
         get_equip_param_goods_detour, get_equip_param_goods);
 
-    // TODO: AOB
     // Hook get_shop_lineup_param() to return the above shop entries
-    get_shop_lineup_param_hook =
-        ModUtils::hook({.offset = 0xd156c0}, get_shop_lineup_param_detour, get_shop_lineup_param);
+    get_shop_lineup_param_hook = ModUtils::hook(
+        {
+            .aob =
+                {// lea rdx, [shop_lineup_param_indexes]
+                 0x48, 0x8d, 0x15, -1, -1, -1, -1,
+                 // xor r8d, r8d
+                 0x45, 0x33, 0xc0,
+                 // ???
+                 -1, -1, -1,
+                 // call SoloParamRepositoryImp::GetParamResCap
+                 0xe8, -1, -1, -1, -1,
+                 // test rax, rax
+                 0x48, 0x85, 0xc0,
+                 // jz end_lbl
+                 0x74, -1},
+            .offset = -0x81,
+        },
+        get_shop_lineup_param_detour, get_shop_lineup_param);
 }
 
 void TransmogShop::deinitialize()

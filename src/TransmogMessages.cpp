@@ -157,7 +157,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
 
 const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_repository, int32_t id)
 {
-    auto result = get_message_hook(msg_repository, 0, msgbnd_protector_name, id);
+    auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
     if (result == nullptr)
     {
         return u"";
