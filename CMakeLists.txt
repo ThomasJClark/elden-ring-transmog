@@ -23,6 +23,12 @@ FetchContent_MakeAvailable(minhook ertga)
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
 
+add_library(steamapi STATIC IMPORTED GLOBAL)
+set_property(TARGET steamapi APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+set_target_properties(steamapi PROPERTIES
+        IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG CXX
+        IMPORTED_LOCATION_DEBUG steam_api64.lib)
+
 add_library(EldenRingTransmogMod SHARED
   src/Params.hpp
   src/Transmog.hpp
@@ -37,6 +43,10 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogUtils.cpp
   src/TransmogVFX.hpp
   src/TransmogVFX.cpp
-  src/dllmain.cpp)
+  src/dllmain.cpp
+  src/messages.hpp)
 
-target_link_libraries(EldenRingTransmogMod minhook ertga)
+target_link_libraries(EldenRingTransmogMod
+  minhook
+  ertga
+  ${CMAKE_SOURCE_DIR}/steam_api64.lib)

@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <cwchar>
+#include <iostream>
 #include <map>
 #include <string>
 
@@ -19,6 +19,23 @@ static const std::uint32_t msgbnd_event_text_for_talk = 33;
 static const std::uint32_t msgbnd_event_text_for_map = 34;
 static const std::uint32_t msgbnd_menu_text = 200;
 static const std::uint32_t msgbnd_system_message_win64 = 203;
+
+struct ISteamApps;
+extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
+extern "C" __declspec(dllimport) const
+    char *__cdecl SteamAPI_ISteamApps_GetCurrentGameLanguage(ISteamApps *);
+
+/**
+ * Return the player's selected language using the Steamworks SDK
+ *
+ * https://partner.steamgames.com/doc/store/localization/languages
+ */
+static std::string get_steam_language()
+{
+    auto steam_api = SteamAPI_SteamApps_v008();
+    auto steam_language = SteamAPI_ISteamApps_GetCurrentGameLanguage(steam_api);
+    return steam_language != nullptr ? steam_language : "";
+}
 
 typedef const char16_t *GetMessageFn(MsgRepository *msg_repository, std::uint32_t unknown,
                                      std::uint32_t bnd_id, std::int32_t msg_id);
@@ -112,25 +129,21 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, std::uint32_t 
 
 void TransmogMessages::initialize(MsgRepository *msg_repository)
 {
-    // Determine the player's language preference and retreive the corresponding messages for
-    // the mod
-    std::u16string_view controller_vibration =
-        get_message(msg_repository, 0, msgbnd_system_message_win64, 110010);
-    auto messages = std::find_if(transmog_messages_by_lang.begin(), transmog_messages_by_lang.end(),
-                                 [controller_vibration](Messages const &messages) {
-                                     return controller_vibration ==
-                                            messages.system_message_controller_vibration;
-                                 });
+    // Pick the messages to use based on the player's selected language for the game in Steam
+    auto language = get_steam_language();
+    std::cout << "Detected game language: " << language << std::endl;
 
-    if (messages != transmog_messages_by_lang.end())
+    auto messages_iterator = transmog_messages_by_lang.find(language);
+    if (messages_iterator == transmog_messages_by_lang.end())
     {
-        transmog_messages = *messages;
+        transmog_messages = transmog_messages_by_lang.at("english");
     }
     else
     {
-        transmog_messages = transmog_messages_engus;
+        transmog_messages = messages_iterator->second;
     }
 
+    // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
     get_message_hook = TransmogUtils::hook(
         {
             .aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2, 0x48, 0x8B, 0xF9, 0x44, 0x8D, 0x42,
