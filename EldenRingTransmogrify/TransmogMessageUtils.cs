@@ -27,8 +27,8 @@ class TransmogMessageUtils
         // "korkr",
         // "rusru",
         // "thath",
-        // "zhocn",
-        // "zhotw",
+        "zhocn",
+        "zhotw",
     };
 
     // item text
