@@ -11,6 +11,8 @@
 
 using namespace TransmogShop;
 
+static constexpr std::uint16_t invisible_icon_id = 3142;
+
 #pragma pack(push, 1)
 struct FindShopMenuResult
 {
@@ -184,14 +186,40 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
             continue;
         }
 
+        auto goods_id = get_transmog_goods_id_for_protector(protector_id);
+        transmog_goods[goods_id] = {
+            .refId_default = -1,
+            .sfxVariationId = -1,
+            .weight = 1,
+            .replaceItemId = -1,
+            .appearanceReplaceItemId = -1,
+            .yesNoDialogMessageId = -1,
+            .potGroupId = -1,
+            .iconId = is_invisible_protector_id(protector_id) ? invisible_icon_id
+                                                              : protector_row->iconIdM,
+            .compTrophySedId = -1,
+            .trophySeqId = -1,
+            .maxNum = 1,
+            .goodsType = 1,
+            .refId_1 = -1,
+            .refVirtualWepId = -1,
+            .castSfxId = -1,
+            .fireSfxId = -1,
+            .effectSfxId = -1,
+            .showLogCondType = 1,
+            .showDialogCondType = 2,
+            .sortGroupId = 255,
+            .isUseNoAttackRegion = 1,
+            .aiUseJudgeId = -1,
+            .reinforceGoodsId = -1,
+            .reinforceMaterialId = -1,
+        };
+
         auto shop_lineup_param_id =
             get_transmog_shop_param_id(protector_id, protector_row->protectorCategory);
-
-        auto goods_id = get_transmog_goods_id_for_protector(protector_id);
-
         transmog_shop_lineups[shop_lineup_param_id] = {
             .equipId = static_cast<std::int32_t>(goods_id),
-            .value = 40,
+            .value = -1,
             .mtrlId = -1,
             .sellQuantity = -1,
             .equipType = 3,
@@ -199,18 +227,6 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
             .iconId = -1,
             .nameMsgId = -1,
         };
-
-        // TODO: initialize this to a placeholder good
-        auto good = *glass_shard;
-        if (is_invisible_protector_id(protector_id))
-        {
-            good.iconId = 3142;
-        }
-        else
-        {
-            good.iconId = protector_row->iconIdM;
-        }
-        transmog_goods[goods_id] = good;
     }
 
     // Hook get_equip_param_goods() to return the above items
