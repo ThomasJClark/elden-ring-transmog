@@ -3,9 +3,9 @@
 #include <map>
 #include <string>
 
+#include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogTalkScript.hpp"
-#include "TransmogUtils.hpp"
 
 struct CSEzStateTalkEvent;
 
@@ -226,10 +226,10 @@ void TransmogTalkScript::initialize()
 {
     execute_command_hook =
         // TODO aob instead of hardcoded offset
-        TransmogUtils::hook({.offset = 0xe65800}, execute_command_detour, execute_command);
+        ModUtils::hook({.offset = 0xe65800}, execute_command_detour, execute_command);
 }
 
 void TransmogTalkScript::deinitialize()
 {
-    TransmogUtils::unhook(execute_command_hook);
+    ModUtils::unhook(execute_command_hook);
 }

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace TransmogUtils
+namespace ModUtils
 {
 
 void initialize();
@@ -45,4 +45,4 @@ inline FunctionType *hook(const ScanArgs<FunctionType> &args, FunctionType &deto
     return function;
 }
 
-}; // namespace TransmogUtils
+}; // namespace ModUtils

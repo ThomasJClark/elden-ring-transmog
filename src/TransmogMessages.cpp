@@ -3,9 +3,9 @@
 #include <map>
 #include <string>
 
+#include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
-#include "TransmogUtils.hpp"
 #include "messages.hpp"
 
 using namespace TransmogMessages;
@@ -144,7 +144,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     }
 
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
-    get_message_hook = TransmogUtils::hook(
+    get_message_hook = ModUtils::hook(
         {
             .aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2, 0x48, 0x8B, 0xF9, 0x44, 0x8D, 0x42,
                     0x6F},
@@ -167,5 +167,5 @@ const std::u16string_view TransmogMessages::get_protector_name(MsgRepository *ms
 
 void TransmogMessages::deinitialize()
 {
-    TransmogUtils::unhook(get_message_hook);
+    ModUtils::unhook(get_message_hook);
 }

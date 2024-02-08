@@ -8,11 +8,11 @@
 #include <stdexcept>
 #include <windows.h>
 
-#include "TransmogUtils.hpp"
+#include "ModUtils.hpp"
 
 static std::span<std::byte> memory;
 
-void TransmogUtils::initialize()
+void ModUtils::initialize()
 {
     HMODULE module_handle = GetModuleHandleA("eldenring.exe");
     if (!module_handle)
@@ -44,14 +44,13 @@ void TransmogUtils::initialize()
     }
 }
 
-void TransmogUtils::deinitialize()
+void ModUtils::deinitialize()
 {
     MH_Uninitialize();
 }
 
-void *TransmogUtils::scan(const std::vector<int> &aob, std::ptrdiff_t alignment,
-                          std::ptrdiff_t offset,
-                          const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets)
+void *ModUtils::scan(const std::vector<int> &aob, std::ptrdiff_t alignment, std::ptrdiff_t offset,
+                     const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets)
 {
     auto begin = &memory.front();
     auto end = &memory.back() - aob.size();
@@ -84,7 +83,7 @@ void *TransmogUtils::scan(const std::vector<int> &aob, std::ptrdiff_t alignment,
     return nullptr;
 }
 
-void TransmogUtils::hook(void *function, void *detour, void **trampoline)
+void ModUtils::hook(void *function, void *detour, void **trampoline)
 {
     auto mh_status = MH_CreateHook(function, detour, trampoline);
     if (mh_status != MH_OK)
@@ -100,7 +99,7 @@ void TransmogUtils::hook(void *function, void *detour, void **trampoline)
     }
 }
 
-void TransmogUtils::unhook(void *function)
+void ModUtils::unhook(void *function)
 {
     MH_RemoveHook(function);
 }

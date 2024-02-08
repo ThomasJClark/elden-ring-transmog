@@ -30,6 +30,8 @@ set_target_properties(steamapi PROPERTIES
         IMPORTED_LOCATION_DEBUG steam_api64.lib)
 
 add_library(EldenRingTransmogMod SHARED
+  src/ModUtils.hpp
+  src/ModUtils.cpp
   src/Params.hpp
   src/Transmog.hpp
   src/Transmog.cpp
@@ -39,8 +41,6 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogShop.cpp
   src/TransmogTalkScript.hpp
   src/TransmogTalkScript.cpp
-  src/TransmogUtils.hpp
-  src/TransmogUtils.cpp
   src/TransmogVFX.hpp
   src/TransmogVFX.cpp
   src/dllmain.cpp

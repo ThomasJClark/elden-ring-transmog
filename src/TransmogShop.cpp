@@ -5,9 +5,9 @@
 #include <tga/paramdefs.h>
 #include <unordered_map>
 
+#include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
-#include "TransmogUtils.hpp"
 
 using namespace TransmogShop;
 
@@ -153,7 +153,7 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
     // by buying an item from one of these shops for $0, since this is easier than making a custom
     // menu.
-    get_shop_menu_hook = TransmogUtils::hook(
+    get_shop_menu_hook = ModUtils::hook(
         {
             .aob =
                 {// mov r9d,dword ptr [r14 + 0x14]
@@ -230,7 +230,7 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
     }
 
     // Hook get_equip_param_goods() to return the above items
-    get_equip_param_goods_hook = TransmogUtils::hook(
+    get_equip_param_goods_hook = ModUtils::hook(
         {
             .aob =
                 {// lea edx, [r8 + 3]
@@ -247,13 +247,13 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
 
     // TODO: AOB
     // Hook get_shop_lineup_param() to return the above shop entries
-    get_shop_lineup_param_hook = TransmogUtils::hook(
-        {.offset = 0xd156c0}, get_shop_lineup_param_detour, get_shop_lineup_param);
+    get_shop_lineup_param_hook =
+        ModUtils::hook({.offset = 0xd156c0}, get_shop_lineup_param_detour, get_shop_lineup_param);
 }
 
 void TransmogShop::deinitialize()
 {
-    TransmogUtils::unhook(get_shop_menu_hook);
-    TransmogUtils::unhook(get_shop_lineup_param_hook);
-    TransmogUtils::unhook(get_equip_param_goods_hook);
+    ModUtils::unhook(get_shop_menu_hook);
+    ModUtils::unhook(get_shop_lineup_param_hook);
+    ModUtils::unhook(get_equip_param_goods_hook);
 }

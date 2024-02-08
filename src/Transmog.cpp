@@ -3,12 +3,12 @@
 #include <tga/paramdefs.h>
 #include <thread>
 
+#include "ModUtils.hpp"
 #include "Params.hpp"
 #include "Transmog.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
-#include "TransmogUtils.hpp"
 #include "TransmogVFX.hpp"
 
 std::thread mod_thread;
@@ -16,12 +16,12 @@ std::thread mod_thread;
 void Transmog::initialize()
 {
     std::cout << "Initializing mod..." << std::endl;
-    TransmogUtils::initialize();
+    ModUtils::initialize();
 
     mod_thread = std::thread([]() {
         std::cout << "Waiting for params..." << std::endl;
         ParamMap params;
-        auto param_list_address = TransmogUtils::scan<ParamList *>({
+        auto param_list_address = ModUtils::scan<ParamList *>({
             .aob = {0x48, 0x8B, 0x0D, -1, -1, -1,   -1,   0x48, 0x85, 0xC9, 0x0F,
                     0x84, -1,   -1,   -1, -1, 0x45, 0x33, 0xC0, 0xBA, 0x90},
             .relative_offsets = {{0x3, 0x7}},
@@ -32,7 +32,7 @@ void Transmog::initialize()
         }
 
         std::cout << "Waiting for messages..." << std::endl;
-        auto msg_repository_address = TransmogUtils::scan<MsgRepository *>({
+        auto msg_repository_address = ModUtils::scan<MsgRepository *>({
             .aob = {0x48, 0x8B, 0x3D, -1, -1, -1, -1, 0x44, 0x0F, 0xB6, 0x30, 0x48, 0x85, 0xFF,
                     0x75},
             .relative_offsets = {{0x3, 0x7}},
@@ -83,5 +83,5 @@ void Transmog::deinitialize()
     TransmogVFX::deinitialize();
     TransmogShop::deinitialize();
     // TransmogTalkScript::deinitialize();
-    TransmogUtils::deinitialize();
+    ModUtils::deinitialize();
 }

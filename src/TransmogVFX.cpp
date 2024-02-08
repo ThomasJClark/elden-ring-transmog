@@ -2,7 +2,7 @@
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
-#include "TransmogUtils.hpp"
+#include "ModUtils.hpp"
 #include "TransmogVFX.hpp"
 
 using namespace TransmogVFX;
@@ -151,7 +151,7 @@ void TransmogVFX::initialize(ParamMap &params)
 
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
-    get_equip_param_protector_hook = TransmogUtils::hook<>(
+    get_equip_param_protector_hook = ModUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 1]
@@ -180,7 +180,7 @@ void TransmogVFX::initialize(ParamMap &params)
     transmog_speffect.effectTargetSelfTarget = true;
 
     // Hook get_speffect_param() to return the above speffect
-    get_speffect_param_hook = TransmogUtils::hook<>(
+    get_speffect_param_hook = ModUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 15]
@@ -210,7 +210,7 @@ void TransmogVFX::initialize(ParamMap &params)
     transmog_body_vfx.isVisibleDeadChr = true;
 
     // Hook get_speffect_vfx_param() to return the above VFX params
-    get_speffect_vfx_param_hook = TransmogUtils::hook<>(
+    get_speffect_vfx_param_hook = ModUtils::hook<>(
         {
             .aob =
                 {// lea edx, [r8 + 16]
@@ -228,9 +228,9 @@ void TransmogVFX::initialize(ParamMap &params)
 
 void TransmogVFX::deinitialize()
 {
-    TransmogUtils::unhook(get_equip_param_protector_hook);
-    TransmogUtils::unhook(get_speffect_param_hook);
-    TransmogUtils::unhook(get_speffect_vfx_param_hook);
+    ModUtils::unhook(get_equip_param_protector_hook);
+    ModUtils::unhook(get_speffect_param_hook);
+    ModUtils::unhook(get_speffect_vfx_param_hook);
 }
 
 void TransmogVFX::set_transmog(EquipParamProtector *equip_param_protector)
