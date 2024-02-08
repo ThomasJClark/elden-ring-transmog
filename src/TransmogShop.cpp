@@ -179,8 +179,7 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
 
         // Skip invalid/cut items
         auto protector_name = TransmogMessages::get_protector_name(msg_repository, protector_id);
-        if (protector_name == nullptr ||
-            wcsncmp(protector_name, L"[ERROR]", wcslen(L"[ERROR]")) == 0)
+        if (protector_name.empty() || protector_name.starts_with(u"[ERROR]"))
         {
             continue;
         }
