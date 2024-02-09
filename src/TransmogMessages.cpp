@@ -130,20 +130,6 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
 
 void TransmogMessages::initialize(MsgRepository *msg_repository)
 {
-    // Pick the messages to use based on the player's selected language for the game in Steam
-    auto language = get_steam_language();
-    cout << "Detected game language: " << language << endl;
-
-    auto messages_iterator = transmog_messages_by_lang.find(language);
-    if (messages_iterator == transmog_messages_by_lang.end())
-    {
-        transmog_messages = transmog_messages_by_lang.at("english");
-    }
-    else
-    {
-        transmog_messages = messages_iterator->second;
-    }
-
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
     get_message_hook = ModUtils::hook(
         {
@@ -153,6 +139,41 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
             .relative_offsets = {{0x1, 0x5}},
         },
         get_message_detour, get_message);
+
+    // Pick the messages to use based on the player's selected language for the game in Steam
+    auto language = get_steam_language();
+
+    auto messages_iterator = transmog_messages_by_lang.find(language);
+    if (messages_iterator == transmog_messages_by_lang.end())
+    {
+        cout << "Detected game language = " << language << " (not supported)" << endl;
+        transmog_messages = transmog_messages_by_lang.at("english");
+    }
+    else
+    {
+        cout << "Detected game language = " << language << endl;
+        transmog_messages = messages_iterator->second;
+    }
+
+    // For Elden Ring Reforged, add icons to match other menu text
+    u16string_view calibrations_ver = get_message_hook(msg_repository, 0, msgbnd_menu_text, 401322);
+    if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
+    {
+        cout << "Detected ELDEN RING Reforged - enabling menu icons" << endl;
+
+        auto prepend_icon = [](u16string &str, u16string const &icon) {
+            str = u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
+        };
+
+        prepend_icon(transmog_messages.event_text_for_talk_transmog_armor,
+                     u"SB_ERR_Grace_AlterGarments.png");
+        prepend_icon(transmog_messages.event_text_for_talk_transmog_head, u"SB_ERR_A_Mind");
+        prepend_icon(transmog_messages.event_text_for_talk_transmog_body, u"SB_ERR_A_Vigor");
+        prepend_icon(transmog_messages.event_text_for_talk_transmog_arms, u"SB_ERR_A_Strength");
+        prepend_icon(transmog_messages.event_text_for_talk_transmog_legs, u"SB_ERR_A_Endurance");
+        prepend_icon(transmog_messages.event_text_for_talk_undo_transmog,
+                     u"SB_ERR_Grace_AlterGarments.png");
+    }
 }
 
 const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_repository, int32_t id)
