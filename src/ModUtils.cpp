@@ -1,9 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <MinHook.h>
-#include <algorithm>
+#include <Pattern16.h>
 #include <cstdint>
-#include <memory>
 #include <span>
 #include <stdexcept>
 #include <windows.h>
@@ -50,35 +49,21 @@ void ModUtils::deinitialize()
     MH_Uninitialize();
 }
 
-void *ModUtils::scan(const vector<int> &aob, ptrdiff_t alignment, ptrdiff_t offset,
-                     const vector<pair<ptrdiff_t, ptrdiff_t>> relative_offsets)
+void *ModUtils::scan(const ScanArgs &args)
 {
-    auto begin = &memory.front();
-    auto end = &memory.back() - aob.size();
-    auto aob_size = aob.size();
-
-    for (auto match = begin; match < end; match += alignment)
+    auto match =
+        reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
+    if (match != nullptr)
     {
-        for (int i = 0; i < aob_size; i++)
-        {
-            if (aob[i] != -1 && aob[i] != (int)match[i])
-            {
-                goto next;
-            }
-        }
+        match += args.offset;
 
-        match += offset;
-
-        for (auto [first, second] : relative_offsets)
+        for (auto [first, second] : args.relative_offsets)
         {
             ptrdiff_t offset = *reinterpret_cast<uint32_t *>(&match[first]) + second;
             match += offset;
         }
 
         return match;
-
-    next:
-        continue;
     }
 
     return nullptr;

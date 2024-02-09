@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <iostream>
-#include <map>
 #include <string>
 
 #include "ModUtils.hpp"
@@ -133,8 +131,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
     get_message_hook = ModUtils::hook(
         {
-            .aob = {0x8B, 0xDA, 0x44, 0x8B, 0xCA, 0x33, 0xD2, 0x48, 0x8B, 0xF9, 0x44, 0x8D, 0x42,
-                    0x6F},
+            .aob = "8B DA 44 8B CA 33 D2 48 8B F9 44 8D 42 6F",
             .offset = 0xe,
             .relative_offsets = {{0x1, 0x5}},
         },

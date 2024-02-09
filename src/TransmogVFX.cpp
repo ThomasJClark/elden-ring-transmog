@@ -153,15 +153,10 @@ void TransmogVFX::initialize(ParamMap &params)
     // protectors are never equipped, but they're referenced by the transmog VFX params.
     get_equip_param_protector_hook = ModUtils::hook<>(
         {
-            .aob =
-                {// lea edx, [r8 + 1]
-                 0x41, 0x8d, 0x50, 0x01,
-                 // call SoloParamRepositoryImp::GetParamResCap
-                 0xe8, -1, -1, -1, -1,
-                 // test rax, rax
-                 0x48, 0x85, 0xc0,
-                 // jz end_lbl
-                 0x0f, 0x84, -1, -1, -1, -1},
+            .aob = "41 8d 50 01"        // lea edx, [r8 + 1]
+                   "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
+                   "48 85 c0"           // test rax, rax
+                   "0f 84 ?? ?? ?? ??", // jz end_lbl
             .offset = -0x96,
         },
         get_equip_param_protector_detour, get_equip_param_protector);
@@ -182,15 +177,10 @@ void TransmogVFX::initialize(ParamMap &params)
     // Hook get_speffect_param() to return the above speffect
     get_speffect_param_hook = ModUtils::hook<>(
         {
-            .aob =
-                {// lea edx, [r8 + 15]
-                 0x41, 0x8d, 0x50, 0x0f,
-                 // call SoloParamRepositoryImp::GetParamResCap
-                 0xe8, -1, -1, -1, -1,
-                 // test rax, rax
-                 0x48, 0x85, 0xc0,
-                 // jz end_lbl
-                 0x0f, 0x84, -1, -1, -1, -1},
+            .aob = "41 8d 50 0f"        // lea edx, [r8 + 15]
+                   "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
+                   "48 85 c0"           // test rax, rax
+                   "0f 84 ?? ?? ?? ??", // jz end_lbl
             .offset = -0x72,
         },
         get_speffect_param_detour, get_speffect_param);
@@ -212,15 +202,10 @@ void TransmogVFX::initialize(ParamMap &params)
     // Hook get_speffect_vfx_param() to return the above VFX params
     get_speffect_vfx_param_hook = ModUtils::hook<>(
         {
-            .aob =
-                {// lea edx, [r8 + 16]
-                 0x41, 0x8d, 0x50, 0x10,
-                 // call SoloParamRepositoryImp::GetParamResCap
-                 0xe8, -1, -1, -1, -1,
-                 // test rax, rax
-                 0x48, 0x85, 0xc0,
-                 // jz end_lbl
-                 0x74, -1},
+            .aob = "41 8d 50 10"    // lea edx, [r8 + 16]
+                   "e8 ?? ?? ?? ??" // call SoloParamRepositoryImp::GetParamResCap
+                   "48 85 c0"       // test rax, rax
+                   "74 ??",         // jz end_lbl
             .offset = -0x6a,
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);

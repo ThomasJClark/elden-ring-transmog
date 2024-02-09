@@ -152,17 +152,11 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
     // menu.
     get_shop_menu_hook = ModUtils::hook(
         {
-            .aob =
-                {// mov r9d,dword ptr [r14 + 0x14]
-                 0x45, 0x8b, 0x4e, 0x14,
-                 // mov r8d,dword ptr [r14 + 0x10]
-                 0x45, 0x8b, 0x46, 0x10,
-                 // xor edx,edx
-                 0x33, 0xd2,
-                 // lea rcx=>local_1d0,[rbp + 0x18]
-                 0x48, 0x8d, 0x4d, 0x18,
-                 // call GetShopMenu
-                 0xe8, -1, -1, -1, -1},
+            .aob = "45 8b 4e 14"     // mov r9d,dword ptr [r14 + 0x14]
+                   "45 8b 46 10"     // mov r8d,dword ptr [r14 + 0x10]
+                   "33 d2"           // xor edx,edx
+                   "48 8d 4d 18"     // lea rcx=>local_1d0,[rbp + 0x18]
+                   "e8 ?? ?? ?? ??", // call GetShopMenu
             .offset = 0xe,
             .relative_offsets = {{0x1, 0x5}},
         },
@@ -229,15 +223,10 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
     // Hook get_equip_param_goods() to return the above items
     get_equip_param_goods_hook = ModUtils::hook(
         {
-            .aob =
-                {// lea edx, [r8 + 3]
-                 0x41, 0x8d, 0x50, 0x03,
-                 // call SoloParamRepositoryImp::GetParamResCap
-                 0xe8, -1, -1, -1, -1,
-                 // test rax, rax
-                 0x48, 0x85, 0xc0,
-                 // jz end_lbl
-                 0x0f, 0x84, -1, -1, -1, -1},
+            .aob = "41 8d 50 03"        // lea edx, [r8 + 3]
+                   "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
+                   "48 85 c0"           // test rax rax
+                   "0f 84 ?? ?? ?? ??", // jz end_lbl
             .offset = -0x6a,
         },
         get_equip_param_goods_detour, get_equip_param_goods);
@@ -245,19 +234,12 @@ void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
     // Hook get_shop_lineup_param() to return the above shop entries
     get_shop_lineup_param_hook = ModUtils::hook(
         {
-            .aob =
-                {// lea rdx, [shop_lineup_param_indexes]
-                 0x48, 0x8d, 0x15, -1, -1, -1, -1,
-                 // xor r8d, r8d
-                 0x45, 0x33, 0xc0,
-                 // ???
-                 -1, -1, -1,
-                 // call SoloParamRepositoryImp::GetParamResCap
-                 0xe8, -1, -1, -1, -1,
-                 // test rax, rax
-                 0x48, 0x85, 0xc0,
-                 // jz end_lbl
-                 0x74, -1},
+            .aob = "48 8d 15 ?? ?? ?? ??" // lea rdx, [shop_lineup_param_indexes]
+                   "45 33 c0"             // xor r8d, r8d
+                   "?? ?? ??"             // ???
+                   "e8 ?? ?? ?? ??"       // call SoloParamRepositoryImp::GetParamResCap
+                   "48 85 c0"             // test rax, rax
+                   "74 ??",               // jz end_lbl
             .offset = -0x81,
         },
         get_shop_lineup_param_detour, get_shop_lineup_param);

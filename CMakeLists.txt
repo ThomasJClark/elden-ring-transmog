@@ -18,10 +18,19 @@ FetchContent_Declare(ertga
   CONFIGURE_COMMAND     ""
   BUILD_COMMAND         "")
 
-FetchContent_MakeAvailable(minhook ertga)
+FetchContent_Declare(pattern16
+  GIT_REPOSITORY        https://github.com/Dasaav-dsv/Pattern16.git
+  GIT_TAG               728eac543cee7e7bf6fda445d7db06e3dc8a61d0
+  CONFIGURE_COMMAND     ""
+  BUILD_COMMAND         "")
+
+FetchContent_MakeAvailable(minhook ertga pattern16)
 
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
+
+add_library(pattern16 INTERFACE)
+target_include_directories(pattern16 INTERFACE ${pattern16_SOURCE_DIR}/include)
 
 add_library(steamapi STATIC IMPORTED GLOBAL)
 set_property(TARGET steamapi APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
@@ -49,4 +58,5 @@ add_library(EldenRingTransmogMod SHARED
 target_link_libraries(EldenRingTransmogMod
   minhook
   ertga
+  pattern16
   ${CMAKE_SOURCE_DIR}/steam_api64.lib)

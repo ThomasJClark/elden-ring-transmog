@@ -10,32 +10,28 @@ namespace ModUtils
 void initialize();
 void deinitialize();
 
-void *scan(const std::vector<int> &aob, ptrdiff_t alignment, ptrdiff_t offset,
-           const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets);
+struct ScanArgs
+{
+    const std::string aob;
+    const ptrdiff_t offset = 0;
+    const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {};
+};
+
+void *scan(const ScanArgs &args);
 
 void hook(void *function, void *detour, void **trampoline);
 
 void unhook(void *function);
 
-template <typename ReturnType> struct ScanArgs
+template <typename ReturnType> inline ReturnType *scan(const ScanArgs &args)
 {
-    const std::vector<int> aob;
-    const size_t alignment = 1;
-    const ptrdiff_t offset = 0;
-    const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {};
-};
-
-template <typename ReturnType> inline ReturnType *scan(const ScanArgs<ReturnType> &args)
-{
-    return reinterpret_cast<ReturnType *>(
-        scan(args.aob, args.alignment, args.offset, args.relative_offsets));
+    return reinterpret_cast<ReturnType *>(scan(args));
 }
 
 template <typename FunctionType>
-inline FunctionType *hook(const ScanArgs<FunctionType> &args, FunctionType &detour,
-                          FunctionType *&trampoline)
+inline FunctionType *hook(const ScanArgs &args, FunctionType &detour, FunctionType *&trampoline)
 {
-    auto function = scan(args);
+    auto function = scan<FunctionType>(args);
     if (function == nullptr)
     {
         throw std::runtime_error("Failed to find original function address");
