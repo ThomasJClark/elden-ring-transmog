@@ -52,7 +52,9 @@ void ModUtils::deinitialize()
 void *ModUtils::scan(const ScanArgs &args)
 {
     auto match =
-        reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
+        args.aob.empty()
+            ? &memory.front()
+            : reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
     if (match != nullptr)
     {
         match += args.offset;
