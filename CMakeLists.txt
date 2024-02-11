@@ -53,6 +53,8 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogVFX.hpp
   src/TransmogVFX.cpp
   src/dllmain.cpp
+  src/ezstate/EzState.hpp
+  src/ezstate/CustomStates.hpp
   src/messages.hpp)
 
 target_link_libraries(EldenRingTransmogMod

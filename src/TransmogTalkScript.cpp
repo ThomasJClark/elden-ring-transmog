@@ -1,71 +1,70 @@
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 
 #include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
+#include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
+#include "TransmogVFX.hpp"
+#include "ezstate/CustomStates.hpp"
+#include "ezstate/EzState.hpp"
 
 using namespace std;
 using namespace TransmogTalkScript;
 
-struct CSEzStateTalkEvent;
-
-struct EzStateExternalEventTemp;
-
-struct EzStateExternalEventTempArg
+namespace
 {
-    int32_t value;
-    byte padding1[4];
-    int32_t type;
-    byte padding2[4];
-};
+extern TransmogMenuNextState transmog_menu_next_state;
 
-struct EzStateExternalEventTempVtable
-{
-    void *(*FUN_141ffaf70)(EzStateExternalEventTemp *param_1, void *param_2);
-    void (*FUN_141ffb060)(EzStateExternalEventTemp *param_1, int param_2, void *param_3,
-                          void *param_4);
-    int (*GetCommand)(EzStateExternalEventTemp *param_1);
-    int (*GetArgCount)(EzStateExternalEventTemp *param_1);
-    EzStateExternalEventTempArg *(*GetArg)(EzStateExternalEventTemp *param_1, int param_2);
-};
+// TalkESD state for the main "Transmogrify armor" menu
+TransmogMenuState transmog_menu_state(69000, transmog_menu_next_state);
 
-struct EzStateExternalEventTemp
-{
-    EzStateExternalEventTempVtable *vftable;
-    int32_t command;
-    int32_t unk1;
-    int32_t unk2;
-    int32_t unk3;
-    EzStateExternalEventTempArg args[10];
-    byte unk4[808];
-    int32_t arg_count;
-};
+// TalkESD states to open the menu for each protector category
+OpenShopState transmog_head_state(69002, TransmogShop::transmog_head_shop_menu_id,
+                                  TransmogShop::transmog_head_shop_menu_id +
+                                      TransmogShop::transmog_shop_max_size - 1,
+                                  transmog_menu_state);
 
-// struct EsdResCap
-// {
-//     void **vftable;
+OpenShopState transmog_body_state(69003, TransmogShop::transmog_body_shop_menu_id,
+                                  TransmogShop::transmog_body_shop_menu_id +
+                                      TransmogShop::transmog_shop_max_size - 1,
+                                  transmog_menu_state);
+
+OpenShopState transmog_arms_state(69004, TransmogShop::transmog_arms_shop_menu_id,
+                                  TransmogShop::transmog_arms_shop_menu_id +
+                                      TransmogShop::transmog_shop_max_size - 1,
+                                  transmog_menu_state);
+
+OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_id,
+                                  TransmogShop::transmog_legs_shop_menu_id +
+                                      TransmogShop::transmog_shop_max_size - 1,
+                                  transmog_menu_state);
+
+// TalkESD state that disables transmogrification
+// TODO: this *adds* the speffect. figure out how adding/removing it will work.
+ApplySpEffectState disable_transmog_state(69006, TransmogVFX::transmog_speffect_id,
+                                          transmog_menu_state);
+
+//  EzState::Transition cancel_transition = {
+//     DisableTransmog::state,
+//     "\x41\xa1",
 // };
 
-// struct EsdRepository
-// {
-//     void **vftable;
-//     byte unk1[0x28];
-//     uint16_t unk2; // 0x100000000;
-//     byte unk3[0x38];
-//     void *unk4;
-//     byte unk5[0xc];
-//     uint32_t esd_res_cap_count;
-//     EsdResCap **esd_res_caps;
-// };
+// TalkESD state that advances to the next state based on the menu selection
+TransmogMenuNextState transmog_menu_next_state(69001, transmog_head_state, transmog_body_state,
+                                               transmog_arms_state, transmog_legs_state,
+                                               disable_transmog_state);
 
-/*
-1. TGA > Misc/WIP > Dependencies > FD4Singleton Finder & Symbol Registerer
-2. EsdRepository
-EsdRepository 7FF661122C48
-*/
+// todo state 7 (return to main menu?)
+
+// TODO class ----
+}; // namespace
+
+typedef void ExecuteCommandFn(CSEzStateTalkEvent *self, EzState::ExternalEventTemp *evt);
 
 static map<int, string> esd_command_names = {
     {1, "TalkToPlayer"},
@@ -169,70 +168,193 @@ static map<int, string> esd_command_names = {
     {115, "Unused_OpenBonfireMenu"},
 };
 
-static void log_evt(EzStateExternalEventTemp *evt)
-{
-    auto command_id = evt->vftable->GetCommand(evt);
-    auto arg_count = evt->vftable->GetArgCount(evt);
-
-    if (command_id != 62 && command_id != 119 && command_id != 123 && command_id != 138 &&
-        command_id != 139)
-    {
-        if (esd_command_names.contains(command_id))
-        {
-            cout << esd_command_names[command_id];
-        }
-        else
-        {
-            cout << "UNKNOWN_ESD_COMMAND_" << command_id << dec;
-        }
-        cout << "(";
-        for (int i = 1; i < arg_count; i++)
-        {
-            auto arg = evt->vftable->GetArg(evt, i);
-            cout << "[" << arg->type << "]" << arg->value << (i < arg_count - 1 ? ", " : "");
-        }
-        cout << ")" << endl;
-    }
-}
-
-typedef void ExecuteCommandFn(CSEzStateTalkEvent *self, EzStateExternalEventTemp *evt);
+typedef void ExecuteCommandFn(CSEzStateTalkEvent *self, EzState::ExternalEventTemp *evt);
 
 ExecuteCommandFn *execute_command_hook;
 ExecuteCommandFn *execute_command;
-static void execute_command_detour(CSEzStateTalkEvent *self, EzStateExternalEventTemp *evt)
+static void execute_command_detour(CSEzStateTalkEvent *self, EzState::ExternalEventTemp *evt)
 {
-    log_evt(evt);
     execute_command(self, evt);
+}
 
-    if (evt->vftable->GetCommand(evt) == 19 /* AddTalkListData */
-        && evt->vftable->GetArg(evt, 2)->value == 15000395 /* Sort chest */)
+std::string bytes_to_str(const byte *bytes, size_t count)
+{
+    stringstream s;
+    for (int i = 0; i < count; i++)
     {
-        auto evt2 = *evt;
-        evt2.args[0].value = 199;
-        evt2.args[1].value = TransmogMessages::event_text_for_talk_transmog_armor_id;
-        log_evt(&evt2);
-        execute_command(self, &evt2);
+        s << setfill('0') << setw(2) << hex << right << (int)bytes[i];
+        if (i != count - 1)
+            s << " ";
+    }
+    return s.str();
+}
+
+void log_ezstate_command_list(EzState::List<EzState::Command> const &command_list)
+{
+    if (command_list.count != 0)
+    {
+        cout << endl;
+        for (int i = 0; i < command_list.count; i++)
+        {
+            auto &command = command_list.elements[i];
+
+            cout << "    - ";
+
+            if (command.bank == 1 && esd_command_names.contains(command.id))
+            {
+                cout << esd_command_names[command.id];
+            }
+            else
+            {
+                cout << "cmd_" << command.bank << "_" << command.id << dec;
+            }
+            cout << "(";
+            for (int i = 0; i < command.args.count; i++)
+            {
+                auto arg = command.args.elements[i];
+                cout << bytes_to_str(arg.data, arg.size);
+                if (i < command.args.count - 1)
+                    cout << ", ";
+            }
+            cout << ")" << endl;
+        }
+    }
+    else
+    {
+        cout << "<empty>" << endl;
     }
 }
 
+void log_ezstate_state(EzState::State const &state)
+{
+    cout << "state:" << endl;
+    cout << "  id: " << state.id << endl;
+    cout << "  transitions:" << endl;
+    for (int i = 0; i < state.transitions.count; i++)
+    {
+        auto transition = state.transitions.elements[i];
+
+        if (transition->target_state != nullptr)
+            cout << "    - target_state: " << transition->target_state->id << endl;
+        else
+            cout << "    - target_state: null" << endl;
+
+        if (transition->pass_commands.count != 0)
+        {
+            cout << "      pass:" << endl;
+            for (int i = 0; i < transition->pass_commands.count; i++)
+                cout << "        - command " << transition->pass_commands.elements[i].id << "["
+                     << transition->pass_commands.elements[i].bank << "]" << endl;
+        }
+        else
+            cout << "      pass: <empty>" << endl;
+
+        cout << "      evaluator: "
+             << bytes_to_str(transition->evaluator.elements, transition->evaluator.count) << endl;
+    }
+
+    cout << "  entry: ";
+    log_ezstate_command_list(state.entry_commands);
+
+    cout << "  while: ";
+    log_ezstate_command_list(state.while_commands);
+
+    cout << "  exit: ";
+    log_ezstate_command_list(state.exit_commands);
+}
+
+static EzState::Command patched_site_of_grace_talk_list_commands[100];
+static EzState::IntValue unk = -1;
+static EzState::IntValue transmog_talk_list_index = 69;
+static EzState::IntValue transmog_menu_text_id =
+    TransmogMessages::event_text_for_talk_transmog_armor_id;
+static EzState::CommandArg transmog_arg_list[] = {transmog_talk_list_index, transmog_menu_text_id,
+                                                  unk};
+
 /**
- * WIP.
+ * Patch a TalkESD state to include adding a "Transmogirfy armor" menu option, if it's a menu
+ * that should have this option and it's not already patched.
  *
- * Working:
- *   - Inserting commands into existing event scripts
+ * This is done in a hook instead of during initialization because I believe the game reads talk
+ * scripts from the disk when reloading, and I have no idea how to patch that routine.
  *
- * Not working:
- *   - State transitions
- *   - New states
+ * TODO: test grace detection on Reforged and The Convergence
+ * TODO: state transition
  */
+static bool patch_menu_state(EzState::State *state)
+{
+    bool is_site_of_grace_menu = false;
+
+    for (int i = 0; i < state->entry_commands.count; i++)
+    {
+        auto &command = state->entry_commands.elements[i];
+        if (command.id == EzState::add_talk_list_data_command_id && command.args.count == 3)
+        {
+            auto &message_id =
+                *reinterpret_cast<const int32_t *>(command.args.elements[1].data + 1);
+
+            if (message_id == 15000395) // Sort chest
+            {
+                is_site_of_grace_menu = true;
+            }
+            else if (message_id == TransmogMessages::event_text_for_talk_transmog_armor_id)
+            {
+                // Already patched - don't change anything
+                return false;
+            }
+        }
+    }
+
+    if (is_site_of_grace_menu)
+    {
+        copy(state->entry_commands.elements,
+             state->entry_commands.elements + state->entry_commands.count,
+             patched_site_of_grace_talk_list_commands);
+
+        patched_site_of_grace_talk_list_commands[state->entry_commands.count++] = {
+            .id = EzState::add_talk_list_data_command_id,
+            .args = transmog_arg_list,
+        };
+
+        state->entry_commands.elements = patched_site_of_grace_talk_list_commands;
+
+        return true;
+    }
+
+    return false;
+}
+
+static void (*FUN_1420426a0)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
+static void (*FUN_1420426a0_hook)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
+static void FUN_1420426a0_detour(EzState::State *state, EzState::MachineImpl *machine, void *unk)
+{
+    if (patch_menu_state(state))
+    {
+        cout << "Patched menu state" << endl;
+        log_ezstate_state(*state);
+    }
+
+    FUN_1420426a0(state, machine, unk);
+}
+
 void TransmogTalkScript::initialize()
 {
+    // TODO aob instead of hardcoded offsets
     execute_command_hook =
-        // TODO aob instead of hardcoded offset
         ModUtils::hook({.offset = 0xe65800}, execute_command_detour, execute_command);
+    FUN_1420426a0_hook = ModUtils::hook({.offset = 0x20426a0}, FUN_1420426a0_detour, FUN_1420426a0);
+
+    log_ezstate_state(transmog_menu_state);
+    log_ezstate_state(transmog_menu_next_state);
+    log_ezstate_state(transmog_head_state);
+    log_ezstate_state(transmog_body_state);
+    log_ezstate_state(transmog_arms_state);
+    log_ezstate_state(transmog_legs_state);
+    log_ezstate_state(disable_transmog_state);
 }
 
 void TransmogTalkScript::deinitialize()
 {
     ModUtils::unhook(execute_command_hook);
+    ModUtils::unhook(FUN_1420426a0_hook);
 }

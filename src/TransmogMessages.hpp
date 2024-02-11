@@ -11,6 +11,7 @@ static const int32_t event_text_for_talk_transmog_body_id = 69000011;
 static const int32_t event_text_for_talk_transmog_arms_id = 69000012;
 static const int32_t event_text_for_talk_transmog_legs_id = 69000013;
 static const int32_t event_text_for_talk_undo_transmog_id = 69000020;
+static const int32_t event_text_for_talk_cancel_id = 15000372;
 static const int32_t event_text_for_map_undo_transmog_alert_id = 690000;
 static const int32_t menu_text_transmog_head_id = 690000;
 static const int32_t menu_text_transmog_body_id = 690001;

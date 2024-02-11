@@ -1,4 +1,3 @@
-#include <iomanip>
 #include <iostream>
 #include <tga/paramdefs.h>
 #include <thread>
@@ -41,18 +40,19 @@ void Transmog::initialize()
         {
             this_thread::sleep_for(chrono::milliseconds(100));
         }
+        auto msg_repository = *msg_repository_address;
 
         cout << "Hooking transmog messages..." << endl;
-        TransmogMessages::initialize(*msg_repository_address);
+        TransmogMessages::initialize(msg_repository);
 
         cout << "Adding transmog VFX..." << endl;
         TransmogVFX::initialize(params);
 
         cout << "Adding transmog shops..." << endl;
-        TransmogShop::initialize(params, *msg_repository_address);
+        TransmogShop::initialize(params, msg_repository);
 
-        // cout << "Hooking talk scripts..." << endl;
-        // TransmogTalkScript::initialize();
+        cout << "Hooking talk scripts..." << endl;
+        TransmogTalkScript::initialize();
 
         cout << "Initialized transmog" << endl;
 
@@ -82,6 +82,6 @@ void Transmog::deinitialize()
     TransmogMessages::deinitialize();
     TransmogVFX::deinitialize();
     TransmogShop::deinitialize();
-    // TransmogTalkScript::deinitialize();
+    TransmogTalkScript::deinitialize();
     ModUtils::deinitialize();
 }
