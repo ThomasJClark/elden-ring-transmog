@@ -173,6 +173,7 @@ void TransmogVFX::initialize(ParamMap &params)
     transmog_speffect.effectTargetOpposeTarget = true;
     transmog_speffect.effectTargetFriendlyTarget = true;
     transmog_speffect.effectTargetSelfTarget = true;
+    transmog_speffect.saveCategory = 5;
 
     // Hook get_speffect_param() to return the above speffect
     get_speffect_param_hook = ModUtils::hook<>(
