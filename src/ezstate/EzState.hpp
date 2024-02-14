@@ -6,14 +6,12 @@
 
 #pragma pack(push, 1)
 
-struct CSEzStateTalkEvent;
-
 namespace EzState
 {
 
 template <typename T> struct List
 {
-    const T *elements;
+    T *elements;
     uint32_t count;
     std::byte pad[4];
 
@@ -21,7 +19,7 @@ template <typename T> struct List
     {
     }
 
-    inline List(const T *elements, uint32_t count) : elements(elements), count(count)
+    inline List(T *elements, uint32_t count) : elements(elements), count(count)
     {
     }
 
@@ -65,15 +63,16 @@ struct Command;
 
 struct Transition
 {
-    const State *target_state;
+    State *target_state;
     List<Command> pass_commands;
     List<Transition *> sub_transitions;
     List<std::byte> evaluator;
 
     template <size_t evaluator_chars>
-    inline Transition(State const &target_state, const char (&evaluator_string)[evaluator_chars])
+    inline Transition(State &target_state, const char (&evaluator_string)[evaluator_chars])
         : target_state(&target_state),
-          evaluator(reinterpret_cast<const std::byte *>(evaluator_string), evaluator_chars - 1)
+          evaluator(reinterpret_cast<std::byte *>(const_cast<char *>(evaluator_string)),
+                    evaluator_chars - 1)
     {
     }
 };
@@ -107,6 +106,7 @@ static constexpr int32_t close_shop_message_command_id = 0xc;
 static constexpr int32_t add_talk_list_data_command_id = 0x13;
 static constexpr int32_t clear_talk_list_data_command_id = 0x14;
 static constexpr int32_t open_regular_shop_command_id = 0x16;
+static constexpr int32_t open_repository_command_id = 0x1e;
 static constexpr int32_t give_speffect_to_player_command_id = 0x3e;
 
 struct Command
@@ -126,6 +126,7 @@ struct State
     List<Command> while_commands;
 };
 
+struct CSEzStateTalkEvent;
 struct MachineImpl
 {
     void **vftable;
