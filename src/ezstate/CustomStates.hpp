@@ -19,7 +19,7 @@ class ApplySpEffectState : public EzState::State
     EzState::Transition *transitions[1] = {&pass_transition};
 
   public:
-    ApplySpEffectState(int32_t id, int32_t speffect_id, EzState::State &main_menu_state)
+    ApplySpEffectState(int32_t id, int32_t speffect_id, EzState::State *main_menu_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           speffect_id_arg(speffect_id), pass_transition(main_menu_state, "\x41\xa1")
     {
@@ -42,7 +42,7 @@ class OpenShopState : public EzState::State
 
   public:
     OpenShopState(int32_t id, int32_t begin_shop_lineup_id, int32_t end_up_lineup_id,
-                  EzState::State &main_menu_state)
+                  EzState::State *main_menu_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           begin_arg(begin_shop_lineup_id), end_arg(end_up_lineup_id),
           close_shop_transition(main_menu_state,
@@ -138,7 +138,7 @@ class TransmogMenuState : public EzState::State
     EzState::Transition *transitions[1] = {&next_menu_transition};
 
   public:
-    TransmogMenuState(int32_t id, EzState::State &next_state)
+    TransmogMenuState(int32_t id, EzState::State *next_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           next_menu_transition(next_state,
                                // CheckSpecificPersonMenuIsOpen(1, 0) == 1
@@ -176,49 +176,41 @@ class TransmogMenuNextState : public EzState::State
     EzState::Transition select_transmog_arms_transition;
     EzState::Transition select_transmog_legs_transition;
     EzState::Transition select_disable_transmog_transition;
-    EzState::Transition *transitions[5] = {
-        &select_transmog_head_transition,    &select_transmog_body_transition,
-        &select_transmog_arms_transition,    &select_transmog_legs_transition,
-        &select_disable_transmog_transition,
+    EzState::Transition return_transition;
+
+    // TODO: this closes the entire menu. I think this needs to either transition to the initial
+    // state, or the transmog menu needs to be in a separate state group.
+    EzState::IntValue return_value = 0;
+    EzState::CommandArg return_value_arg_list[1] = {return_value};
+    EzState::Command return_commands[1] = {
+        {.bank = 7, .id = EzState::CommandId::return_value, .args = return_value_arg_list},
     };
 
+    EzState::Transition *transitions[6] = {
+        &select_transmog_head_transition,    &select_transmog_body_transition,
+        &select_transmog_arms_transition,    &select_transmog_legs_transition,
+        &select_disable_transmog_transition, &return_transition};
+
   public:
-    TransmogMenuNextState(int32_t id, EzState::State &transmog_head_state,
-                          EzState::State &transmog_body_state, EzState::State &transmog_arms_state,
-                          EzState::State &transmog_legs_state,
-                          EzState::State &disable_transmog_state)
+    TransmogMenuNextState(int32_t id, EzState::State *transmog_head_state,
+                          EzState::State *transmog_body_state, EzState::State *transmog_arms_state,
+                          EzState::State *transmog_legs_state,
+                          EzState::State *disable_transmog_state)
 
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
-          // todo I wonder if i just need pass commands for adding speffects?
-          select_transmog_head_transition(transmog_head_state,
-                                          // GetTalkListEntryResult() == 1
-                                          "\x57\x84\xa7\x41\x95\xa1"),
-          select_transmog_body_transition(transmog_body_state,
-                                          // GetTalkListEntryResult() == 2
-                                          "\xaf\x42\x95\xa1"),
-          select_transmog_arms_transition(transmog_arms_state,
-                                          // GetTalkListEntryResult() == 3
-                                          "\xaf\x43\x95\xa1"),
-          select_transmog_legs_transition(transmog_legs_state,
-                                          // GetTalkListEntryResult() == 4
-                                          "\xaf\x44\x95\xa1"),
-          select_disable_transmog_transition(disable_transmog_state,
-                                             // GetTalkListEntryResult() == 5
-                                             "\xaf\x45\x95\xa1")
-    // cancel_transition(disable_transmog_state, "\x41\xa1"),
+          // GetTalkListEntryResult() == 1
+          select_transmog_head_transition(transmog_head_state, "\x57\x84\xa7\x41\x95\xa1"),
+          // GetTalkListEntryResult() == 2
+          select_transmog_body_transition(transmog_body_state, "\xaf\x42\x95\xa1"),
+          // GetTalkListEntryResult() == 3
+          select_transmog_arms_transition(transmog_arms_state, "\xaf\x43\x95\xa1"),
+          // GetTalkListEntryResult() == 4
+          select_transmog_legs_transition(transmog_legs_state, "\xaf\x44\x95\xa1"),
+          // GetTalkListEntryResult() == 5
+          select_disable_transmog_transition(disable_transmog_state, "\xaf\x45\x95\xa1"),
+          return_transition(nullptr, "\x41\xa1", return_commands)
     {
     }
 };
-
-// target_state: 25
-// evaluator:
-// target_state: 18
-// evaluator:
-// target_state: 31
-// evaluator:
-// target_state: 7
-// evaluator:
-// target_state: 12
-// evaluator:
 
 #pragma pack(pop)

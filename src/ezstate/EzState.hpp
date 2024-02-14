@@ -40,10 +40,12 @@ struct Transition
     List<std::byte> evaluator;
 
     template <size_t evaluator_chars>
-    inline Transition(State &target_state, const char (&evaluator_string)[evaluator_chars])
-        : target_state(&target_state),
+    inline Transition(State *target_state, const char (&evaluator_string)[evaluator_chars],
+                      List<Command> pass_commands = {})
+        : target_state(target_state),
           evaluator(reinterpret_cast<std::byte *>(const_cast<char *>(evaluator_string)),
-                    evaluator_chars - 1)
+                    evaluator_chars - 1),
+          pass_commands(pass_commands)
     {
     }
 };
@@ -74,6 +76,7 @@ struct CommandArg
 
 enum class CommandId : int32_t
 {
+    // Bank 1
     show_shop_message = 0xa,
     close_shop_message = 0xc,
     add_talk_list_data = 0x13,
@@ -81,6 +84,9 @@ enum class CommandId : int32_t
     open_regular_shop = 0x16,
     open_repository = 0x1e,
     give_speffect_to_player = 0x3e,
+
+    // Bank 7
+    return_value = -1,
 };
 
 struct Command
@@ -99,7 +105,6 @@ struct State
     List<Command> exit_commands;
     List<Command> while_commands;
 };
-
 }; // namespace EzState
 
 #pragma pack(pop)

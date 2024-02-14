@@ -41,7 +41,6 @@ set_target_properties(steamapi PROPERTIES
 add_library(EldenRingTransmogMod SHARED
   src/ModUtils.hpp
   src/ModUtils.cpp
-  src/Params.hpp
   src/Transmog.hpp
   src/Transmog.cpp
   src/TransmogMessages.hpp
@@ -55,7 +54,8 @@ add_library(EldenRingTransmogMod SHARED
   src/dllmain.cpp
   src/ezstate/EzState.hpp
   src/ezstate/CustomStates.hpp
-  src/messages.hpp)
+  src/messages.hpp
+  src/params/Params.hpp)
 
 target_link_libraries(EldenRingTransmogMod
   minhook

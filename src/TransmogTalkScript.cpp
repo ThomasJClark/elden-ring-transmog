@@ -22,48 +22,42 @@ extern OpenShopState transmog_legs_state;
 extern ApplySpEffectState disable_transmog_state;
 
 // TalkESD state for the main "Transmogrify armor" menu
-TransmogMenuState transmog_menu_state(69000, transmog_menu_next_state);
+TransmogMenuState transmog_menu_state(69000, &transmog_menu_next_state);
 
 // TalkESD state that advances to the next state based on the menu selection
-TransmogMenuNextState transmog_menu_next_state(69001, transmog_head_state, transmog_body_state,
-                                               transmog_arms_state, transmog_legs_state,
-                                               disable_transmog_state);
+TransmogMenuNextState transmog_menu_next_state(69001, &transmog_head_state, &transmog_body_state,
+                                               &transmog_arms_state, &transmog_legs_state,
+                                               &disable_transmog_state);
 
 // TalkESD states to open the menu for each protector category
 OpenShopState transmog_head_state(69002, TransmogShop::transmog_head_shop_menu_id,
                                   TransmogShop::transmog_head_shop_menu_id +
                                       TransmogShop::transmog_shop_max_size - 1,
-                                  transmog_menu_state);
+                                  &transmog_menu_state);
 
 OpenShopState transmog_body_state(69003, TransmogShop::transmog_body_shop_menu_id,
                                   TransmogShop::transmog_body_shop_menu_id +
                                       TransmogShop::transmog_shop_max_size - 1,
-                                  transmog_menu_state);
+                                  &transmog_menu_state);
 
 OpenShopState transmog_arms_state(69004, TransmogShop::transmog_arms_shop_menu_id,
                                   TransmogShop::transmog_arms_shop_menu_id +
                                       TransmogShop::transmog_shop_max_size - 1,
-                                  transmog_menu_state);
+                                  &transmog_menu_state);
 
 OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_id,
                                   TransmogShop::transmog_legs_shop_menu_id +
                                       TransmogShop::transmog_shop_max_size - 1,
-                                  transmog_menu_state);
+                                  &transmog_menu_state);
 
 // TalkESD state that disables transmogrification
 // TODO: this *adds* the speffect. figure out how adding/removing it will work.
 ApplySpEffectState disable_transmog_state(69006, TransmogVFX::transmog_speffect_id,
-                                          transmog_menu_state);
-
-//  EzState::Transition cancel_transition = {
-//     DisableTransmog::state,
-//     "\x41\xa1",
-// };
-
-// todo state 7 (return to main menu?)
+                                          &transmog_menu_state);
 }; // namespace
 
 static EzState::IntValue unk = -1;
+
 static EzState::IntValue transmog_talk_list_index = 69;
 static EzState::IntValue transmog_menu_text_id =
     TransmogMessages::event_text_for_talk_transmog_armor_id;
@@ -77,8 +71,8 @@ static EzState::Command main_menu_transmog_command = {
 };
 
 // GetTalkListEntryResult() == 69
-static EzState::Transition main_menu_transmog_transition = {transmog_menu_state,
-                                                            "\xaf\x85\x95\xa1"};
+static EzState::Transition main_menu_transmog_transition(&transmog_menu_state,
+                                                         "\x57\x84\x82\x45\x00\x00\x00\x95\xa1");
 
 static EzState::Command patched_site_of_grace_talk_list_commands[100];
 
@@ -147,7 +141,7 @@ static bool patch_menu_transition_state(EzState::State *state)
 {
     auto &transitions = state->transitions;
 
-    int index = -1;
+    int sort_chest_index = -1;
     for (int i = 0; i < transitions.count; i++)
     {
         auto transition = transitions.elements[i];
@@ -163,23 +157,25 @@ static bool patch_menu_transition_state(EzState::State *state)
             target_state->entry_commands.elements[0].bank == 1 &&
             target_state->entry_commands.elements[0].id == EzState::CommandId::open_repository)
         {
-            index = i;
+            sort_chest_index = i;
         }
     }
-    if (index == -1)
+    if (sort_chest_index == -1)
     {
         // Doesn't have transition to "Sort chest" action - don't change anything
         return false;
     }
 
+    int transmog_index = sort_chest_index + 1;
+
     // Patch the transition for this state
-    copy(transitions.elements, transitions.elements + index + 1,
+    copy(transitions.elements, transitions.elements + transmog_index,
          patched_site_of_grace_talk_list_transitions);
 
-    copy(transitions.elements + index + 1, transitions.elements + transitions.count,
-         patched_site_of_grace_talk_list_transitions + index + 2);
+    copy(transitions.elements + transmog_index, transitions.elements + transitions.count,
+         patched_site_of_grace_talk_list_transitions + transmog_index + 1);
 
-    patched_site_of_grace_talk_list_transitions[index + 1] = &main_menu_transmog_transition;
+    patched_site_of_grace_talk_list_transitions[transmog_index] = &main_menu_transmog_transition;
 
     transitions.elements = patched_site_of_grace_talk_list_transitions;
     transitions.count++;

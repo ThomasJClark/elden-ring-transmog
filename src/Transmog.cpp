@@ -3,12 +3,12 @@
 #include <thread>
 
 #include "ModUtils.hpp"
-#include "Params.hpp"
 #include "Transmog.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
+#include "params/Params.hpp"
 
 using namespace std;
 
