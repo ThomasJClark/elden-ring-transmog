@@ -1,9 +1,5 @@
 #include <cstdint>
-#include <iomanip>
 #include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
 
 #include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
@@ -76,7 +72,7 @@ static EzState::CommandArg transmog_arg_list[] = {transmog_talk_list_index, tran
 
 // AddTalkListData(69, "Transmogrify armor", -1)
 static EzState::Command main_menu_transmog_command = {
-    .id = EzState::add_talk_list_data_command_id,
+    .id = EzState::CommandId::add_talk_list_data,
     .args = transmog_arg_list,
 };
 
@@ -107,7 +103,7 @@ static bool patch_menu_state(EzState::State *state)
     for (int i = 0; i < commands.count; i++)
     {
         auto &command = commands.elements[i];
-        if (command.id == EzState::add_talk_list_data_command_id && command.args.count == 3)
+        if (command.id == EzState::CommandId::add_talk_list_data && command.args.count == 3)
         {
             auto &message_id =
                 *reinterpret_cast<const int32_t *>(command.args.elements[1].data + 1);
@@ -165,7 +161,7 @@ static bool patch_menu_transition_state(EzState::State *state)
         auto &target_state = transition->target_state;
         if (target_state != nullptr && target_state->entry_commands.count != 0 &&
             target_state->entry_commands.elements[0].bank == 1 &&
-            target_state->entry_commands.elements[0].id == EzState::open_repository_command_id)
+            target_state->entry_commands.elements[0].id == EzState::CommandId::open_repository)
         {
             index = i;
         }
@@ -212,16 +208,11 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 void TransmogTalkScript::initialize()
 {
     // TODO aob instead of hardcoded offsets
-
-    // execute_command_hook =
-    //     ModUtils::hook({.offset = 0xe65800}, execute_command_detour, execute_command);
-
     ezstate_enter_state_hook =
         ModUtils::hook({.offset = 0x20426a0}, ezstate_enter_state_detour, ezstate_enter_state);
 }
 
 void TransmogTalkScript::deinitialize()
 {
-    // ModUtils::unhook(execute_command_hook);
     ModUtils::unhook(ezstate_enter_state_hook);
 }

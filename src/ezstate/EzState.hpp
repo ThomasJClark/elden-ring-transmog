@@ -72,18 +72,21 @@ struct CommandArg
     }
 };
 
-static constexpr int32_t show_shop_message_command_id = 0xa;
-static constexpr int32_t close_shop_message_command_id = 0xc;
-static constexpr int32_t add_talk_list_data_command_id = 0x13;
-static constexpr int32_t clear_talk_list_data_command_id = 0x14;
-static constexpr int32_t open_regular_shop_command_id = 0x16;
-static constexpr int32_t open_repository_command_id = 0x1e;
-static constexpr int32_t give_speffect_to_player_command_id = 0x3e;
+enum class CommandId : int32_t
+{
+    show_shop_message = 0xa,
+    close_shop_message = 0xc,
+    add_talk_list_data = 0x13,
+    clear_talk_list_data = 0x14,
+    open_regular_shop = 0x16,
+    open_repository = 0x1e,
+    give_speffect_to_player = 0x3e,
+};
 
 struct Command
 {
     int32_t bank = 0x1;
-    int32_t id;
+    CommandId id;
     List<CommandArg> args;
 };
 

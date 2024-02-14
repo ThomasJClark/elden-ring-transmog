@@ -14,7 +14,7 @@ class ApplySpEffectState : public EzState::State
     EzState::IntValue speffect_id_arg;
     EzState::CommandArg arg_list[1] = {speffect_id_arg};
     EzState::Command entry_commands[1] = {
-        {.id = EzState::give_speffect_to_player_command_id, .args = arg_list}};
+        {.id = EzState::CommandId::give_speffect_to_player, .args = arg_list}};
     EzState::Transition pass_transition;
     EzState::Transition *transitions[1] = {&pass_transition};
 
@@ -36,7 +36,7 @@ class OpenShopState : public EzState::State
     EzState::IntValue end_arg;
     EzState::CommandArg arg_list[2] = {begin_arg, end_arg};
     EzState::Command entry_commands[1] = {
-        {.id = EzState::open_regular_shop_command_id, .args = arg_list}};
+        {.id = EzState::CommandId::open_regular_shop, .args = arg_list}};
     EzState::Transition close_shop_transition;
     EzState::Transition *transitions[1] = {&close_shop_transition};
 
@@ -116,23 +116,23 @@ class TransmogMenuState : public EzState::State
 
     EzState::Command entry_commands[9] = {
         // CloseShopMessage()
-        {.id = EzState::close_shop_message_command_id},
+        {.id = EzState::CommandId::close_shop_message},
         // ClearTalkListData()
-        {.id = EzState::clear_talk_list_data_command_id},
+        {.id = EzState::CommandId::clear_talk_list_data},
         // AddTalkListData(1, "Transmogrify head", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = transmog_head_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_head_arg_list},
         // AddTalkListData(2, "Transmogrify body", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = transmog_body_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_body_arg_list},
         // AddTalkListData(3, "Transmogrify arms", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = transmog_arms_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_arms_arg_list},
         // AddTalkListData(4, "Transmogrify legs", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = transmog_legs_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_legs_arg_list},
         // AddTalkListData(5, "Untransmogrify equipped armor", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = disable_transmog_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = disable_transmog_arg_list},
         // AddTalkListData(99, "Cancel", -1)
-        {.id = EzState::add_talk_list_data_command_id, .args = cancel_arg_list},
+        {.id = EzState::CommandId::add_talk_list_data, .args = cancel_arg_list},
         // ShowShopMessage(1)
-        {.id = EzState::show_shop_message_command_id, .args = show_shop_message_arg_list},
+        {.id = EzState::CommandId::show_shop_message, .args = show_shop_message_arg_list},
     };
     EzState::Transition next_menu_transition;
     EzState::Transition *transitions[1] = {&next_menu_transition};
