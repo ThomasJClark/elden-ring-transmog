@@ -8,6 +8,7 @@
 
 namespace EzState
 {
+struct MachineImpl;
 
 template <typename T> struct List
 {
@@ -26,36 +27,6 @@ template <typename T> struct List
     template <size_t count> inline List(T (&t)[count]) : elements(t), count(count)
     {
     }
-};
-
-struct ExternalEventTempArg
-{
-    int32_t value;
-    std::byte pad1[4];
-    int32_t type;
-    std::byte pad2[4];
-};
-
-struct ExternalEventTemp;
-struct ExternalEventTempVtable
-{
-    void *(*FUN_141ffaf70)(ExternalEventTemp *param_1, void *param_2);
-    void (*FUN_141ffb060)(ExternalEventTemp *param_1, int param_2, void *param_3, void *param_4);
-    int (*GetCommand)(ExternalEventTemp *param_1);
-    int (*GetArgCount)(ExternalEventTemp *param_1);
-    ExternalEventTempArg *(*GetArg)(ExternalEventTemp *param_1, int param_2);
-};
-
-struct ExternalEventTemp
-{
-    ExternalEventTempVtable *vftable;
-    int32_t command;
-    int32_t unk1;
-    int32_t unk2;
-    int32_t unk3;
-    ExternalEventTempArg args[10];
-    std::byte unk4[808];
-    int32_t arg_count;
 };
 
 struct State;
@@ -126,16 +97,6 @@ struct State
     List<Command> while_commands;
 };
 
-struct CSEzStateTalkEvent;
-struct MachineImpl
-{
-    void **vftable;
-    std::byte unk1[0xc0];
-    CSEzStateTalkEvent **events_begin;
-    CSEzStateTalkEvent **events_end;
-    std::byte unk2[0x50];
-    uint32_t status;
-};
 }; // namespace EzState
 
 #pragma pack(pop)
