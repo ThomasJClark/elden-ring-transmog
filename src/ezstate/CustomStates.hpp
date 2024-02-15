@@ -13,8 +13,7 @@ class ApplySpEffectState : public EzState::State
   private:
     EzState::IntValue speffect_id_arg;
     EzState::CommandArg arg_list[1] = {speffect_id_arg};
-    EzState::Command entry_commands[1] = {
-        {.id = EzState::CommandId::give_speffect_to_player, .args = arg_list}};
+    EzState::Call entry_commands[1] = {{EzState::Commands::give_speffect_to_player, arg_list}};
     EzState::Transition pass_transition;
     EzState::Transition *transitions[1] = {&pass_transition};
 
@@ -35,8 +34,7 @@ class OpenShopState : public EzState::State
     EzState::IntValue begin_arg;
     EzState::IntValue end_arg;
     EzState::CommandArg arg_list[2] = {begin_arg, end_arg};
-    EzState::Command entry_commands[1] = {
-        {.id = EzState::CommandId::open_regular_shop, .args = arg_list}};
+    EzState::Call entry_commands[1] = {{EzState::Commands::open_regular_shop, arg_list}};
     EzState::Transition close_shop_transition;
     EzState::Transition *transitions[1] = {&close_shop_transition};
 
@@ -114,25 +112,25 @@ class TransmogMenuState : public EzState::State
     EzState::IntValue generic_dialog_shop_message = 0;
     EzState::CommandArg show_shop_message_arg_list[1] = {generic_dialog_shop_message};
 
-    EzState::Command entry_commands[9] = {
+    EzState::Call entry_commands[9] = {
         // CloseShopMessage()
-        {.id = EzState::CommandId::close_shop_message},
+        {EzState::Commands::close_shop_message},
         // ClearTalkListData()
-        {.id = EzState::CommandId::clear_talk_list_data},
+        {EzState::Commands::clear_talk_list_data},
         // AddTalkListData(1, "Transmogrify head", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_head_arg_list},
+        {EzState::Commands::add_talk_list_data, transmog_head_arg_list},
         // AddTalkListData(2, "Transmogrify body", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_body_arg_list},
+        {EzState::Commands::add_talk_list_data, transmog_body_arg_list},
         // AddTalkListData(3, "Transmogrify arms", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_arms_arg_list},
+        {EzState::Commands::add_talk_list_data, transmog_arms_arg_list},
         // AddTalkListData(4, "Transmogrify legs", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = transmog_legs_arg_list},
+        {EzState::Commands::add_talk_list_data, transmog_legs_arg_list},
         // AddTalkListData(5, "Untransmogrify equipped armor", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = disable_transmog_arg_list},
+        {EzState::Commands::add_talk_list_data, disable_transmog_arg_list},
         // AddTalkListData(99, "Cancel", -1)
-        {.id = EzState::CommandId::add_talk_list_data, .args = cancel_arg_list},
+        {EzState::Commands::add_talk_list_data, cancel_arg_list},
         // ShowShopMessage(1)
-        {.id = EzState::CommandId::show_shop_message, .args = show_shop_message_arg_list},
+        {EzState::Commands::show_shop_message, show_shop_message_arg_list},
     };
     EzState::Transition next_menu_transition;
     EzState::Transition *transitions[1] = {&next_menu_transition};
@@ -177,15 +175,6 @@ class TransmogMenuNextState : public EzState::State
     EzState::Transition select_transmog_legs_transition;
     EzState::Transition select_disable_transmog_transition;
     EzState::Transition return_transition;
-
-    // TODO: this closes the entire menu. I think this needs to either transition to the initial
-    // state, or the transmog menu needs to be in a separate state group.
-    EzState::IntValue return_value = 0;
-    EzState::CommandArg return_value_arg_list[1] = {return_value};
-    EzState::Command return_commands[1] = {
-        {.bank = 7, .id = EzState::CommandId::return_value, .args = return_value_arg_list},
-    };
-
     EzState::Transition *transitions[6] = {
         &select_transmog_head_transition,    &select_transmog_body_transition,
         &select_transmog_arms_transition,    &select_transmog_legs_transition,
@@ -208,8 +197,13 @@ class TransmogMenuNextState : public EzState::State
           select_transmog_legs_transition(transmog_legs_state, "\xaf\x44\x95\xa1"),
           // GetTalkListEntryResult() == 5
           select_disable_transmog_transition(disable_transmog_state, "\xaf\x45\x95\xa1"),
-          return_transition(nullptr, "\x41\xa1", return_commands)
+          return_transition(nullptr, "\x41\xa1")
     {
+    }
+
+    void set_return_state(EzState::State *state)
+    {
+        return_transition.target_state = state;
     }
 };
 
