@@ -94,97 +94,94 @@ static bool is_sort_chest_transition(EzState::Transition *transition)
            target_state->entry_commands.elements[0].command == EzState::Commands::open_repository;
 }
 
-/**
- * Patch the site of grace menu to contain a "Transmogrify armor" option
- */
-static void patch_site_of_grace_menu(EzState::StateGroup *state_group)
-{
-    EzState::State *add_menu_state = nullptr;
-    EzState::State *menu_transition_state = nullptr;
-
-    int command_index = -1;
-    int transition_index = -1;
-
-    // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
-    // chest.
-    for (int i = 0; i < state_group->states.count; i++)
-    {
-        auto state = &state_group->states.elements[i];
-
-        for (int j = 0; j < state->entry_commands.count; j++)
-        {
-            auto call = &state->entry_commands.elements[j];
-            if (is_add_talk_list_data_call(call, event_text_for_talk_sort_chest_id))
-            {
-                add_menu_state = state;
-                command_index = j + 1;
-            }
-            else if (is_add_talk_list_data_call(
-                         call, TransmogMessages::event_text_for_talk_transmog_armor_id))
-            {
-                cout << "Not patching state group x" << (0x7fffffff - state_group->id)
-                     << ", already patched" << endl;
-                return;
-            }
-        }
-
-        for (int j = 0; j < state->transitions.count; j++)
-        {
-            auto transition = state->transitions.elements[j];
-            if (is_sort_chest_transition(transition))
-            {
-                menu_transition_state = state;
-                transition_index = j + 1;
-            }
-        }
-    }
-
-    // If this is the site of grace menu, patch it
-    if (add_menu_state != nullptr && menu_transition_state != nullptr)
-    {
-        // Add "Transmogrify armor" menu option
-        auto &commands = add_menu_state->entry_commands;
-
-        copy(commands.elements, commands.elements + commands.count, patched_commands);
-        copy(commands.elements + command_index, commands.elements + commands.count,
-             patched_commands + command_index + 1);
-
-        patched_commands[command_index] = main_menu_transmog_command;
-
-        commands.elements = patched_commands;
-        commands.count++;
-
-        // Add a transition to the "Transmogrify armor" menu
-        auto &transitions = menu_transition_state->transitions;
-
-        copy(transitions.elements, transitions.elements + transitions.count, patched_transitions);
-        copy(transitions.elements + transition_index, transitions.elements + transitions.count,
-             patched_transitions + transition_index + 1);
-
-        patched_transitions[transition_index] = &main_menu_transmog_transition;
-
-        transitions.elements = patched_transitions;
-        transitions.count++;
-
-        // When closing the transmog menu, return to the main site of grace menu
-        transmog_menu_next_state.set_return_state(state_group->initial_state);
-
-        cout << "Patched state group x" << (0x7fffffff - state_group->id) << endl;
-    }
-}
-
 static EzState::StateGroup *state_group = nullptr;
 
 static void (*ezstate_enter_state)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
 static void (*ezstate_enter_state_hook)(EzState::State *state, EzState::MachineImpl *machine,
                                         void *unk);
+
+/**
+ * Patch the site of grace menu to contain a "Transmogrify armor" option
+ */
 static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineImpl *machine,
                                        void *unk)
 {
     auto state_group = machine->state_group;
     if (state == state_group->initial_state)
     {
-        patch_site_of_grace_menu(state_group);
+        EzState::State *add_menu_state = nullptr;
+        EzState::State *menu_transition_state = nullptr;
+
+        int command_index = -1;
+        int transition_index = -1;
+
+        // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
+        // chest.
+        for (int i = 0; i < state_group->states.count; i++)
+        {
+            auto state = &state_group->states.elements[i];
+
+            for (int j = 0; j < state->entry_commands.count; j++)
+            {
+                auto call = &state->entry_commands.elements[j];
+                if (is_add_talk_list_data_call(call, event_text_for_talk_sort_chest_id))
+                {
+                    add_menu_state = state;
+                    command_index = j + 1;
+                }
+                else if (is_add_talk_list_data_call(
+                             call, TransmogMessages::event_text_for_talk_transmog_armor_id))
+                {
+                    cout << "Not patching state group x" << (0x7fffffff - state_group->id)
+                         << ", already patched" << endl;
+                    return;
+                }
+            }
+
+            for (int j = 0; j < state->transitions.count; j++)
+            {
+                auto transition = state->transitions.elements[j];
+                if (is_sort_chest_transition(transition))
+                {
+                    menu_transition_state = state;
+                    transition_index = j + 1;
+                }
+            }
+        }
+
+        // If this is the site of grace menu, patch it
+        if (add_menu_state != nullptr && menu_transition_state != nullptr)
+        {
+            // Add "Transmogrify armor" menu option
+            auto &commands = add_menu_state->entry_commands;
+
+            copy(commands.elements, commands.elements + commands.count, patched_commands);
+            copy(commands.elements + command_index, commands.elements + commands.count,
+                 patched_commands + command_index + 1);
+
+            patched_commands[command_index] = main_menu_transmog_command;
+
+            commands.elements = patched_commands;
+            commands.count++;
+
+            // Add a transition to the "Transmogrify armor" menu
+            auto &transitions = menu_transition_state->transitions;
+
+            copy(transitions.elements, transitions.elements + transitions.count,
+                 patched_transitions);
+            copy(transitions.elements + transition_index, transitions.elements + transitions.count,
+                 patched_transitions + transition_index + 1);
+
+            patched_transitions[transition_index] = &main_menu_transmog_transition;
+
+            transitions.elements = patched_transitions;
+            transitions.count++;
+
+            // When closing the transmog menu, return to the main site of grace menu
+            transmog_menu_next_state.set_return_state(state_group->initial_state);
+
+            cout << "Patched state group x" << (0x7fffffff - state_group->id) << endl;
+        }
     }
 
     ezstate_enter_state(state, machine, unk);
@@ -192,9 +189,18 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 
 void TransmogTalkScript::initialize()
 {
-    // TODO aob instead of hardcoded offsets
-    ezstate_enter_state_hook =
-        ModUtils::hook({.offset = 0x20426a0}, ezstate_enter_state_detour, ezstate_enter_state);
+    ezstate_enter_state_hook = ModUtils::hook(
+        {
+            .aob = "80 7e 18 00"     // cmp byte ptr [rsi + 0x18], 0x0
+                   "74 15"           // jz end_label
+                   "4c 8d 44 24 40"  // lea r8=>local_4c8, [rsp + 0x40]
+                   "48 8b d6"        // mov rdx,rsi
+                   "48 8b 4e 20"     // mov rcx,qword ptr [rsi + 0x20]
+                   "e8 ?? ?? ?? ??", // call EzState::EnterState
+            .offset = 0x12,
+            .relative_offsets = {{0x1, 0x5}},
+        },
+        ezstate_enter_state_detour, ezstate_enter_state);
 }
 
 void TransmogTalkScript::deinitialize()
