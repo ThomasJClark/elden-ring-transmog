@@ -4,6 +4,7 @@
 
 #include "ModUtils.hpp"
 #include "Transmog.hpp"
+#include "TransmogEvents.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
@@ -54,6 +55,13 @@ void Transmog::initialize()
         cout << "Hooking talk scripts..." << endl;
         TransmogTalkScript::initialize();
 
+        cout << "Hooking transmog events..." << endl;
+        for (;;)
+        {
+            TransmogEvents::initialize();
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+
         cout << "Initialized transmog" << endl;
 
 #if _DEBUG
@@ -83,5 +91,6 @@ void Transmog::deinitialize()
     TransmogVFX::deinitialize();
     TransmogShop::deinitialize();
     TransmogTalkScript::deinitialize();
+    TransmogEvents::deinitialize();
     ModUtils::deinitialize();
 }
