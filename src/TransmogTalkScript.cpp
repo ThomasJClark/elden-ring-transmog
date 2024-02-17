@@ -7,7 +7,7 @@
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
 #include "ezstate/CustomStates.hpp"
-#include "ezstate/EzState.hpp"
+#include "internal/EzState.hpp"
 
 using namespace std;
 using namespace TransmogTalkScript;

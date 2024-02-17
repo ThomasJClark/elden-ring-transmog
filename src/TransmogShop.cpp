@@ -129,7 +129,7 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
     }
 }
 
-void TransmogShop::initialize(ParamMap &params, MsgRepository *msg_repository)
+void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repository)
 {
     auto equip_param_protector = params[L"EquipParamProtector"];
 

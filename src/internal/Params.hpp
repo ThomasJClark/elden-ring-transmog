@@ -8,6 +8,9 @@
 #include <tga/param_containers.h>
 
 #pragma pack(push, 1)
+
+namespace CS
+{
 struct ParamListEntry
 {
     ParamResCap *param_res_cap;
@@ -19,7 +22,6 @@ struct ParamList
     std::byte unknown[136];
     ParamListEntry entries[186];
 };
-#pragma pack(pop)
 
 typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
 
@@ -53,3 +55,6 @@ static bool try_get_params(ParamList **param_list_address, ParamMap &params)
     }
     return true;
 }
+} // namespace CS
+
+#pragma pack(pop)

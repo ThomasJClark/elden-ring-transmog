@@ -133,7 +133,7 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
-void TransmogVFX::initialize(ParamMap &params)
+void TransmogVFX::initialize(CS::ParamMap &params)
 {
     auto equip_param_protector = params[L"EquipParamProtector"];
     auto reinforce_param_protector = params[L"ReinforceParamProtector"];

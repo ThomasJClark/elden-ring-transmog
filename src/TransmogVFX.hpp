@@ -5,7 +5,10 @@
 #include <string>
 #include <tga/paramdefs.h>
 
+namespace CS
+{
 typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
+};
 
 namespace TransmogVFX
 {
@@ -21,7 +24,7 @@ static const int64_t transmog_reinforce_param_id = 0;
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
  */
-void initialize(ParamMap &params);
+void initialize(CS::ParamMap &params);
 void deinitialize();
 
 /**

@@ -54,10 +54,12 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogVFX.hpp
   src/TransmogVFX.cpp
   src/dllmain.cpp
-  src/ezstate/EzState.hpp
   src/ezstate/CustomStates.hpp
-  src/messages.hpp
-  src/params/Params.hpp)
+  src/internal/EzState.hpp
+  src/internal/GameDataMan.hpp
+  src/internal/List.hpp
+  src/internal/Params.hpp
+  src/messages.hpp)
 
 target_link_libraries(EldenRingTransmogMod
   minhook

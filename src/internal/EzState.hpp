@@ -2,31 +2,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <initializer_list>
+
+#include "List.hpp"
 
 #pragma pack(push, 1)
 
 namespace EzState
 {
-template <typename T> struct List
-{
-    T *elements;
-    uint32_t count;
-    std::byte pad[4];
-
-    inline List() : count(0), elements(nullptr)
-    {
-    }
-
-    inline List(T *elements, uint32_t count) : elements(elements), count(count)
-    {
-    }
-
-    template <size_t count> inline List(T (&t)[count]) : elements(t), count(count)
-    {
-    }
-};
-
 struct StateGroup;
 struct State;
 struct Call;
@@ -43,20 +25,20 @@ struct StateGroup
 {
     int32_t id;
     std::byte pad[4];
-    List<State> states;
+    CS::List<State> states;
     State *initial_state;
 };
 
 struct Transition
 {
     State *target_state;
-    List<Call> pass_commands;
-    List<Transition *> sub_transitions;
-    List<std::byte> evaluator;
+    CS::List<Call> pass_commands;
+    CS::List<Transition *> sub_transitions;
+    CS::List<std::byte> evaluator;
 
     template <size_t evaluator_chars>
     inline Transition(State *target_state, const char (&evaluator_string)[evaluator_chars],
-                      List<Call> pass_commands = {})
+                      CS::List<Call> pass_commands = {})
         : target_state(target_state),
           evaluator(reinterpret_cast<std::byte *>(const_cast<char *>(evaluator_string)),
                     evaluator_chars - 1),
@@ -115,17 +97,17 @@ struct CommandArg
 struct Call
 {
     Command command;
-    List<CommandArg> args;
+    CS::List<CommandArg> args;
 };
 
 struct State
 {
     int32_t id;
     std::byte pad[4];
-    List<Transition *> transitions;
-    List<Call> entry_commands;
-    List<Call> exit_commands;
-    List<Call> while_commands;
+    CS::List<Transition *> transitions;
+    CS::List<Call> entry_commands;
+    CS::List<Call> exit_commands;
+    CS::List<Call> while_commands;
 };
 }; // namespace EzState
 

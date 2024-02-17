@@ -9,7 +9,7 @@
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
-#include "params/Params.hpp"
+#include "internal/Params.hpp"
 
 using namespace std;
 
@@ -22,12 +22,12 @@ void Transmog::initialize()
 
     mod_thread = thread([]() {
         cout << "Waiting for params..." << endl;
-        ParamMap params;
-        auto param_list_address = ModUtils::scan<ParamList *>({
+        CS::ParamMap params;
+        auto param_list_address = ModUtils::scan<CS::ParamList *>({
             .aob = "48 8B 0D ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 45 33 C0 BA 90",
             .relative_offsets = {{0x3, 0x7}},
         });
-        while (!try_get_params(param_list_address, params))
+        while (!CS::try_get_params(param_list_address, params))
         {
             this_thread::sleep_for(chrono::milliseconds(100));
         }
