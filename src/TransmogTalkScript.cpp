@@ -78,20 +78,20 @@ static EzState::Transition *patched_transitions[100];
 /**
  * Return true if the given EzState call is AddTalkListData(??, message_id, ??)
  */
-static bool is_add_talk_list_data_call(EzState::Call *call, int32_t message_id)
+static bool is_add_talk_list_data_call(EzState::Call &call, int32_t message_id)
 {
-    return call->command == EzState::Commands::add_talk_list_data && call->args.count == 3 &&
-           *reinterpret_cast<const int32_t *>(call->args.elements[1].data + 1) == message_id;
+    return call.command == EzState::Commands::add_talk_list_data && call.args.count == 3 &&
+           *reinterpret_cast<const int32_t *>(call.args[1].data + 1) == message_id;
 }
 
 /**
  * Return true if the given EzState transition goes to a state that opens the storage chest
  */
-static bool is_sort_chest_transition(EzState::Transition *transition)
+static bool is_sort_chest_transition(const EzState::Transition *transition)
 {
     auto target_state = transition->target_state;
     return target_state != nullptr && target_state->entry_commands.count != 0 &&
-           target_state->entry_commands.elements[0].command == EzState::Commands::open_repository;
+           target_state->entry_commands[0].command == EzState::Commands::open_repository;
 }
 
 static EzState::StateGroup *state_group = nullptr;
@@ -110,24 +110,21 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
     if (state == state_group->initial_state)
     {
         EzState::State *add_menu_state = nullptr;
-        EzState::State *menu_transition_state = nullptr;
+        EzState::Call *call_iter = nullptr;
 
-        int command_index = -1;
-        int transition_index = -1;
+        EzState::State *menu_transition_state = nullptr;
+        EzState::Transition **transition_iter = nullptr;
 
         // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
         // chest.
-        for (int i = 0; i < state_group->states.count; i++)
+        for (auto &state : state_group->states)
         {
-            auto state = &state_group->states.elements[i];
-
-            for (int j = 0; j < state->entry_commands.count; j++)
+            for (auto &call : state.entry_commands)
             {
-                auto call = &state->entry_commands.elements[j];
                 if (is_add_talk_list_data_call(call, event_text_for_talk_sort_chest_id))
                 {
-                    add_menu_state = state;
-                    command_index = j + 1;
+                    add_menu_state = &state;
+                    call_iter = &call + 1;
                 }
                 else if (is_add_talk_list_data_call(
                              call, TransmogMessages::event_text_for_talk_transmog_armor_id))
@@ -138,13 +135,12 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
                 }
             }
 
-            for (int j = 0; j < state->transitions.count; j++)
+            for (auto &transition : state.transitions)
             {
-                auto transition = state->transitions.elements[j];
                 if (is_sort_chest_transition(transition))
                 {
-                    menu_transition_state = state;
-                    transition_index = j + 1;
+                    menu_transition_state = &state;
+                    transition_iter = &transition + 1;
                 }
             }
         }
@@ -155,10 +151,9 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
             // Add "Transmogrify armor" menu option
             auto &commands = add_menu_state->entry_commands;
 
-            copy(commands.elements, commands.elements + commands.count, patched_commands);
-            copy(commands.elements + command_index, commands.elements + commands.count,
-                 patched_commands + command_index + 1);
-
+            int command_index = call_iter - commands.begin();
+            copy(commands.begin(), call_iter, patched_commands);
+            copy(call_iter, commands.end(), patched_commands + command_index + 1);
             patched_commands[command_index] = main_menu_transmog_command;
 
             commands.elements = patched_commands;
@@ -167,11 +162,9 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
             // Add a transition to the "Transmogrify armor" menu
             auto &transitions = menu_transition_state->transitions;
 
-            copy(transitions.elements, transitions.elements + transitions.count,
-                 patched_transitions);
-            copy(transitions.elements + transition_index, transitions.elements + transitions.count,
-                 patched_transitions + transition_index + 1);
-
+            int transition_index = transition_iter - transitions.begin();
+            copy(transitions.begin(), transition_iter, patched_transitions);
+            copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
             patched_transitions[transition_index] = &main_menu_transmog_transition;
 
             transitions.elements = patched_transitions;

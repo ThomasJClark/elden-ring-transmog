@@ -34,9 +34,8 @@ void TransmogEvents::initialize()
     else
     {
         cout << "inventory:" << endl;
-        for (int i = 0; i < inventory_data.inventory.count; i++)
+        for (auto &entry : inventory_data.inventory)
         {
-            auto &entry = inventory_data.inventory.elements[i];
             cout << " - ga_item_id: " << hex << entry.ga_item_id << dec << endl;
             cout << "   item_id: " << hex << entry.item_id << dec << endl;
             cout << "   quantity: " << hex << entry.quantity << dec << endl;
@@ -48,5 +47,3 @@ void TransmogEvents::initialize()
 void TransmogEvents::deinitialize()
 {
 }
-// 7ff705354d20
-// 3a80061

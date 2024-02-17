@@ -21,5 +21,20 @@ template <typename T> struct List
     template <size_t count> inline List(T (&t)[count]) : elements(t), count(count)
     {
     }
+
+    inline T &operator[](size_t index)
+    {
+        return elements[index];
+    }
+
+    inline T *begin()
+    {
+        return elements;
+    }
+
+    inline T *end()
+    {
+        return elements + count;
+    }
 };
 }; // namespace CS
