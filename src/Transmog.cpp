@@ -56,11 +56,7 @@ void Transmog::initialize()
         TransmogTalkScript::initialize();
 
         cout << "Hooking transmog events..." << endl;
-        for (;;)
-        {
-            TransmogEvents::initialize();
-            this_thread::sleep_for(chrono::seconds(1));
-        }
+        TransmogEvents::initialize();
 
         cout << "Initialized transmog" << endl;
 

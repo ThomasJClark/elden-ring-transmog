@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#pragma pack(push, 1)
+
 namespace CS
 {
 template <typename T> struct List
@@ -38,3 +40,5 @@ template <typename T> struct List
     }
 };
 }; // namespace CS
+
+#pragma pack(pop)
