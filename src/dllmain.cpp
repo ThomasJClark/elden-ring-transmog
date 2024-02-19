@@ -9,7 +9,7 @@
 
 using namespace std;
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+bool WINAPI DllMain(HINSTANCE hinstDLL, uint32_t fdwReason, void *lpvReserved)
 {
     if (fdwReason == DLL_PROCESS_ATTACH)
     {
@@ -29,6 +29,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         catch (runtime_error const &e)
         {
             cerr << "Error initializing mod: " << e.what() << endl;
+            return false;
         }
     }
     else if (fdwReason == DLL_PROCESS_DETACH && lpvReserved != nullptr)
@@ -40,7 +41,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         catch (runtime_error const &e)
         {
             cerr << "Error deinitializing mod: " << e.what() << endl;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }

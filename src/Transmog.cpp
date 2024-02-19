@@ -56,7 +56,7 @@ void Transmog::initialize()
         TransmogTalkScript::initialize();
 
         cout << "Hooking transmog events..." << endl;
-        TransmogEvents::initialize();
+        TransmogEvents::initialize(params);
 
         cout << "Initialized transmog" << endl;
 
@@ -77,6 +77,11 @@ void Transmog::initialize()
         boiled_crab_good->refId_default = TransmogVFX::transmog_speffect_id;
         boiled_crab_good->goodsUseAnim = 62;
 #endif
+        for (;;)
+        {
+            this_thread::sleep_for(chrono::seconds(1));
+            TransmogEvents::log();
+        }
     });
 }
 
