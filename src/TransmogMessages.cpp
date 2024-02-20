@@ -15,9 +15,10 @@ static const uint32_t msgbnd_goods_info = 20;
 static const uint32_t msgbnd_goods_caption = 24;
 static const uint32_t msgbnd_protector_caption = 26;
 static const uint32_t msgbnd_event_text_for_talk = 33;
-static const uint32_t msgbnd_event_text_for_map = 34;
 static const uint32_t msgbnd_menu_text = 200;
+static const uint32_t msgbnd_line_help = 201;
 static const uint32_t msgbnd_system_message_win64 = 203;
+static const uint32_t msgbnd_dialogues = 204;
 
 struct ISteamApps;
 extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
@@ -36,13 +37,22 @@ static string get_steam_language()
     return steam_language != nullptr ? steam_language : "";
 }
 
+/**
+ * Assigned the list of localized messages based on the player's language preference
+ */
+static Messages transmog_messages;
+
+/**
+ * Set while the transmog menu is open to adjust some of the UI strings, or to -1 while a different
+ * shop menu is open
+ */
+static int8_t active_transmog_shop_protector_category = -1;
+
 typedef const char16_t *GetMessageFn(MsgRepository *msg_repository, uint32_t unknown,
                                      uint32_t bnd_id, int32_t msg_id);
 
 static GetMessageFn *get_message_hook;
 static GetMessageFn *get_message;
-
-static Messages transmog_messages;
 
 const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unknown, uint32_t bnd_id,
                                    int32_t msg_id)
@@ -81,13 +91,6 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
         }
         break;
 
-    case msgbnd_event_text_for_map:
-        if (msg_id == event_text_for_map_undo_transmog_alert_id)
-        {
-            return transmog_messages.event_text_for_map_undo_transmog_alert.c_str();
-        }
-        break;
-
     case msgbnd_goods_name: {
         auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
@@ -121,9 +124,64 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
         }
         break;
     }
+
+    case msgbnd_line_help:
+        if (msg_id == line_help_select_item_for_purchase_id)
+        {
+            if (active_transmog_shop_protector_category != -1)
+            {
+                return transmog_messages.line_help_select_transmog_target.c_str();
+            }
+        }
+        break;
+
+    case msgbnd_dialogues:
+        if (msg_id == dialogues_purchase_item_for_runes)
+        {
+            switch (active_transmog_shop_protector_category)
+            {
+            case TransmogShop::protector_category_head:
+                return transmog_messages.dialogues_transmog_head_prompt.c_str();
+            case TransmogShop::protector_category_body:
+                return transmog_messages.dialogues_transmog_body_prompt.c_str();
+            case TransmogShop::protector_category_arms:
+                return transmog_messages.dialogues_transmog_arms_prompt.c_str();
+            case TransmogShop::protector_category_legs:
+                return transmog_messages.dialogues_transmog_legs_prompt.c_str();
+            }
+        }
+        break;
     }
 
     return get_message(msg_repository, unknown, bnd_id, msg_id);
+}
+
+typedef void OpenRegularShopFn(void *, uint64_t, uint64_t);
+
+static OpenRegularShopFn *open_regular_shop_hook;
+static OpenRegularShopFn *open_regular_shop;
+
+static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_id)
+{
+    switch (begin_id)
+    {
+    case TransmogShop::transmog_head_shop_menu_id:
+        active_transmog_shop_protector_category = TransmogShop::protector_category_head;
+        break;
+    case TransmogShop::transmog_body_shop_menu_id:
+        active_transmog_shop_protector_category = TransmogShop::protector_category_body;
+        break;
+    case TransmogShop::transmog_arms_shop_menu_id:
+        active_transmog_shop_protector_category = TransmogShop::protector_category_arms;
+        break;
+    case TransmogShop::transmog_legs_shop_menu_id:
+        active_transmog_shop_protector_category = TransmogShop::protector_category_legs;
+        break;
+    default:
+        active_transmog_shop_protector_category = -1;
+    }
+
+    open_regular_shop(unk, begin_id, end_id);
 }
 
 void TransmogMessages::initialize(MsgRepository *msg_repository)
@@ -136,6 +194,14 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
             .relative_offsets = {{0x1, 0x5}},
         },
         get_message_detour, get_message);
+
+    // Hook OpenRegularShop() to adjust some UI strings for the transmog shop, but not other
+    // shops
+    open_regular_shop_hook = ModUtils::hook(
+        {
+            .offset = 0xe5e350,
+        },
+        open_regular_shop_detour, open_regular_shop);
 
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
@@ -186,4 +252,5 @@ const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_rep
 void TransmogMessages::deinitialize()
 {
     ModUtils::unhook(get_message_hook);
+    ModUtils::unhook(open_regular_shop_hook);
 }

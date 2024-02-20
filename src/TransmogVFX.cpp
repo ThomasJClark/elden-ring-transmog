@@ -3,6 +3,7 @@
 #include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
+#include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
 
 using namespace TransmogVFX;
@@ -221,20 +222,19 @@ void TransmogVFX::deinitialize()
 
 void TransmogVFX::set_transmog(EquipParamProtector *equip_param_protector)
 {
-    if (equip_param_protector->protectorCategory == 0)
+    switch (equip_param_protector->protectorCategory)
     {
+    case TransmogShop::protector_category_head:
         transmog_head = *equip_param_protector;
-    }
-    else if (equip_param_protector->protectorCategory == 1)
-    {
+        break;
+    case TransmogShop::protector_category_body:
         transmog_body = *equip_param_protector;
-    }
-    else if (equip_param_protector->protectorCategory == 2)
-    {
+        break;
+    case TransmogShop::protector_category_arms:
         transmog_arms = *equip_param_protector;
-    }
-    else if (equip_param_protector->protectorCategory == 3)
-    {
+        break;
+    case TransmogShop::protector_category_legs:
         transmog_legs = *equip_param_protector;
+        break;
     }
 }

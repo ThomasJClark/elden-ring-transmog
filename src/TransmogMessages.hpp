@@ -18,6 +18,8 @@ static const int32_t menu_text_transmog_head_id = 690000;
 static const int32_t menu_text_transmog_body_id = 690001;
 static const int32_t menu_text_transmog_arms_id = 690002;
 static const int32_t menu_text_transmog_legs_id = 690003;
+static const int32_t line_help_select_item_for_purchase_id = 231000;
+static const int32_t dialogues_purchase_item_for_runes = 231000;
 
 /**
  * Determine the player's selected language, then hook the internal get_message() function to

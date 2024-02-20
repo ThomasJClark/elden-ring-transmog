@@ -107,22 +107,22 @@ int add_inventory_equip_detour(CS::EquipGameData *equip_game_data, uint32_t *ga_
     return inventory_id;
 }
 
-int FUN_140245db0_detour(CS::EquipGameData *equip_game_data, uint64_t item_id, int32_t quantity,
-                         bool param_4, bool param_5)
-{
-}
+// int FUN_140245db0_detour(CS::EquipGameData *equip_game_data, uint64_t item_id, int32_t quantity,
+//                          bool param_4, bool param_5)
+// {
+// }
 
-bool FUN_140773690_detour(int32_t *item_id, int32_t quantity)
-{
-}
+// bool FUN_140773690_detour(int32_t *item_id, int32_t quantity)
+// {
+// }
 
-bool FUN_140773840(int32_t *item_id, int param_2)
-{
-}
+// bool FUN_140773840(int32_t *item_id, int param_2)
+// {
+// }
 
-void FUN_140789360(void *param_1, void *param_2)
-{
-}
+// void FUN_140789360(void *param_1, void *param_2)
+// {
+// }
 
 void TransmogEvents::initialize(CS::ParamMap &params)
 {
