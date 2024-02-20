@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <iostream>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
@@ -224,22 +225,36 @@ void TransmogVFX::deinitialize()
     ModUtils::unhook(get_speffect_vfx_param_hook);
 }
 
-void TransmogVFX::set_transmog(EquipParamProtector *equip_param_protector)
+void TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
 {
+    FindEquipParamProtectorResult protector_result;
+    get_equip_param_protector(&protector_result, equip_param_protector_id);
+    if (protector_result.row == nullptr)
+    {
+        cout << "Protector " << equip_param_protector_id << " doesn't exist" << endl;
+        return;
+    }
+
+    auto equip_param_protector = protector_result.row;
+
     // Set the appropriate slot in the transmog protector set to point to the new armor piece
-    switch (equip_param_protector->protectorCategory)
+    switch (protector_result.row->protectorCategory)
     {
     case TransmogShop::protector_category_head:
-        transmog_head = equip_param_protector;
+        transmog_head = protector_result.row;
+        cout << "Set head transmog to protector " << protector_result.id << endl;
         break;
     case TransmogShop::protector_category_body:
-        transmog_body = equip_param_protector;
+        transmog_body = protector_result.row;
+        cout << "Set body transmog to protector " << protector_result.id << endl;
         break;
     case TransmogShop::protector_category_arms:
-        transmog_arms = equip_param_protector;
+        transmog_arms = protector_result.row;
+        cout << "Set arms transmog to protector " << protector_result.id << endl;
         break;
     case TransmogShop::protector_category_legs:
-        transmog_legs = equip_param_protector;
+        transmog_legs = protector_result.row;
+        cout << "Set legs transmog to protector " << protector_result.id << endl;
         break;
     }
 

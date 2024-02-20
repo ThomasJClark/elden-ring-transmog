@@ -62,14 +62,10 @@ void Transmog::initialize()
 
 #if _DEBUG
         // set up some incredible fashion for testing
-        TransmogVFX::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][1060000]));
-        TransmogVFX::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][140100]));
-        TransmogVFX::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][910200]));
-        TransmogVFX::set_transmog(
-            reinterpret_cast<EquipParamProtector *>(params[L"EquipParamProtector"][320300]));
+        TransmogVFX::set_transmog_protector(1060000);
+        TransmogVFX::set_transmog_protector(140100);
+        TransmogVFX::set_transmog_protector(910200);
+        TransmogVFX::set_transmog_protector(320300);
 
         // make boiled crab activate transmog for testing
         auto boiled_crab_good =

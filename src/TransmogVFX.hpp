@@ -32,5 +32,5 @@ void deinitialize();
 /**
  * Set the given armor piece as the player's appearance
  */
-void set_transmog(EquipParamProtector *equip_param_protector);
+void set_transmog_protector(int64_t equip_param_protector_id);
 } // namespace TransmogVFX
