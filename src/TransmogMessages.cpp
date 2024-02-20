@@ -199,7 +199,14 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     // shops
     open_regular_shop_hook = ModUtils::hook(
         {
-            .offset = 0xe5e350,
+            .aob = "4c 8b 49 18"           // mov    r9, [rcx + 0x18]
+                   "48 8b d9"              // mov    rbx,rcx
+                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
+                   "e8 ?? ?? ?? ??"        // call   OpenRegularShopInner
+                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
+                   "0f 10 00"              // movups xmm0, [rax]
+                   "c7 43 10 05 00 00 00", // mov    [rbx + 0x10], 5
+            .offset = -0x6,
         },
         open_regular_shop_detour, open_regular_shop);
 
