@@ -55,10 +55,10 @@ static FindSpEffectParamFn *get_speffect_param;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param_hook;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 
-static EquipParamProtector transmog_head = {0};
-static EquipParamProtector transmog_body = {0};
-static EquipParamProtector transmog_arms = {0};
-static EquipParamProtector transmog_legs = {0};
+static EquipParamProtector *transmog_head = nullptr;
+static EquipParamProtector *transmog_body = nullptr;
+static EquipParamProtector *transmog_arms = nullptr;
+static EquipParamProtector *transmog_legs = nullptr;
 static ReinforceParamProtector transmog_reinforce_param = {0};
 static SpEffectParam transmog_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
@@ -68,31 +68,35 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
 {
     switch (id)
     {
-    case transmog_head_id:
-        result->id = transmog_head_id;
-        result->row = &transmog_head;
-        result->base_id = transmog_head_id;
+    case transmog_set_id + head_protector_offset:
+    case transmog_set_alt_id + head_protector_offset:
+        result->id = id;
+        result->row = transmog_head;
+        result->base_id = id;
         result->reinforce_param_protector_result.id = transmog_reinforce_param_id;
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
-    case transmog_body_id:
-        result->id = transmog_body_id;
-        result->row = &transmog_body;
-        result->base_id = transmog_body_id;
+    case transmog_set_id + body_protector_offset:
+    case transmog_set_alt_id + body_protector_offset:
+        result->id = id;
+        result->row = transmog_body;
+        result->base_id = id;
         result->reinforce_param_protector_result.id = transmog_reinforce_param_id;
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
-    case transmog_arms_id:
-        result->id = transmog_arms_id;
-        result->row = &transmog_arms;
-        result->base_id = transmog_arms_id;
+    case transmog_set_id + arms_protector_offset:
+    case transmog_set_alt_id + arms_protector_offset:
+        result->id = id;
+        result->row = transmog_arms;
+        result->base_id = id;
         result->reinforce_param_protector_result.id = transmog_reinforce_param_id;
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
-    case transmog_legs_id:
-        result->id = transmog_legs_id;
-        result->row = &transmog_legs;
-        result->base_id = transmog_legs_id;
+    case transmog_set_id + legs_protector_offset:
+    case transmog_set_alt_id + legs_protector_offset:
+        result->id = id;
+        result->row = transmog_legs;
+        result->base_id = id;
         result->reinforce_param_protector_result.id = transmog_reinforce_param_id;
         result->reinforce_param_protector_result.row = &transmog_reinforce_param;
         break;
@@ -141,10 +145,10 @@ void TransmogVFX::initialize(CS::ParamMap &params)
     auto speffect_param = params[L"SpEffectParam"];
 
     // Initialize to bare head/body/arms/legs
-    transmog_head = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[10000]);
-    transmog_body = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[10100]);
-    transmog_arms = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[10200]);
-    transmog_legs = *reinterpret_cast<EquipParamProtector *>(equip_param_protector[10300]);
+    transmog_head = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10000]);
+    transmog_body = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10100]);
+    transmog_arms = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10200]);
+    transmog_legs = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10300]);
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
     transmog_reinforce_param =
@@ -191,13 +195,13 @@ void TransmogVFX::initialize(CS::ParamMap &params)
     // transformProtectorId should always be the ID of the head armor, and if
     // isFullBodyTransformProtectorId is true the VFX will instead apply the three other armor
     // pieces.
-    transmog_head_vfx.transformProtectorId = transmog_head_id;
+    transmog_head_vfx.transformProtectorId = transmog_set_id;
     transmog_head_vfx.isFullBodyTransformProtectorId = false;
     transmog_head_vfx.isVisibleDeadChr = true;
     transmog_head_vfx.initSfxId = 523412;
     transmog_head_vfx.initDmyId = 220;
 
-    transmog_body_vfx.transformProtectorId = transmog_head_id;
+    transmog_body_vfx.transformProtectorId = transmog_set_id;
     transmog_body_vfx.isFullBodyTransformProtectorId = true;
     transmog_body_vfx.isVisibleDeadChr = true;
 
@@ -222,19 +226,33 @@ void TransmogVFX::deinitialize()
 
 void TransmogVFX::set_transmog(EquipParamProtector *equip_param_protector)
 {
+    // Set the appropriate slot in the transmog protector set to point to the new armor piece
     switch (equip_param_protector->protectorCategory)
     {
     case TransmogShop::protector_category_head:
-        transmog_head = *equip_param_protector;
+        transmog_head = equip_param_protector;
         break;
     case TransmogShop::protector_category_body:
-        transmog_body = *equip_param_protector;
+        transmog_body = equip_param_protector;
         break;
     case TransmogShop::protector_category_arms:
-        transmog_arms = *equip_param_protector;
+        transmog_arms = equip_param_protector;
         break;
     case TransmogShop::protector_category_legs:
-        transmog_legs = *equip_param_protector;
+        transmog_legs = equip_param_protector;
         break;
+    }
+
+    // Toggle the set between the default and alternate IDs to force the game to pick up the new
+    // protector
+    if (transmog_head_vfx.transformProtectorId == transmog_set_id)
+    {
+        transmog_head_vfx.transformProtectorId = transmog_set_alt_id;
+        transmog_body_vfx.transformProtectorId = transmog_set_alt_id;
+    }
+    else
+    {
+        transmog_head_vfx.transformProtectorId = transmog_set_id;
+        transmog_body_vfx.transformProtectorId = transmog_set_id;
     }
 }

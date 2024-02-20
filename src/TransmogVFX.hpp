@@ -12,14 +12,16 @@ typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
 
 namespace TransmogVFX
 {
-static const int64_t transmog_speffect_id = 690001;
-static const int64_t transmog_head_vfx_id = 690001;
-static const int64_t transmog_body_vfx_id = 690002;
-static const int64_t transmog_head_id = 69000000;
-static const int64_t transmog_body_id = 69000100;
-static const int64_t transmog_arms_id = 69000200;
-static const int64_t transmog_legs_id = 69000300;
-static const int64_t transmog_reinforce_param_id = 0;
+static constexpr int64_t transmog_speffect_id = 690001;
+static constexpr int64_t transmog_head_vfx_id = 690001;
+static constexpr int64_t transmog_body_vfx_id = 690002;
+static constexpr int64_t transmog_set_id = 69000000;
+static constexpr int64_t transmog_set_alt_id = 69010000;
+static constexpr int64_t transmog_reinforce_param_id = 0;
+static constexpr int64_t head_protector_offset = 0;
+static constexpr int64_t body_protector_offset = 100;
+static constexpr int64_t arms_protector_offset = 200;
+static constexpr int64_t legs_protector_offset = 300;
 
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
