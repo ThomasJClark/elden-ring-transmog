@@ -1,86 +1,40 @@
-#include <iomanip>
 #include <iostream>
 
 #include "ModUtils.hpp"
 #include "TransmogEvents.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
-#include "internal/GameDataMan.hpp"
+#include "internal/WorldChrMan.hpp"
 
 using namespace TransmogEvents;
 using namespace std;
 
-static CS::GameDataMan *game_data_man = nullptr;
+static CS::WorldChrManImp **world_chr_man_addr = nullptr;
 
-static int32_t (*remove_item)(CS::EquipInventoryData *equip_inventory_data, uint32_t index,
-                              uint32_t count) = nullptr;
+typedef int32_t RemoveItemFn(CS::EquipInventoryData *, uint32_t, uint32_t);
+typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t, bool unk);
+typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t);
 
-// much more accurate inventory:
-// https://github.com/thefifthmatt/runtimesouls/blob/42801e5873da809b899d6bf902482fcb6adfd536/inventory.h#L77
-
-// int (*add_inventory_equip)(CS::EquipGameData *equip_game_data, uint32_t *ga_item_id,
-//                            int32_t purchased_quantity, bool param_4, bool param_5);
-// int add_inventory_equip_detour(CS::EquipGameData *equip_game_data, uint32_t *ga_item_id,
-//                                int32_t purchased_quantity, bool param_4, bool param_5)
-// {
-//     auto inventory_id =
-//         add_inventory_equip(equip_game_data, ga_item_id, purchased_quantity, param_4, param_5);
-
-//     if (*ga_item_id < 0xb0000000 || *ga_item_id >= 0xc0000000)
-//     {
-//         return inventory_id;
-//     }
-
-//     auto goods_id = *ga_item_id - 0xb0000000;
-//     auto protector_id = TransmogShop::get_protector_id_for_transmog_good(goods_id);
-//     if (protector_id == -1)
-//     {
-//         return inventory_id;
-//     }
-
-//     auto &inventory = equip_game_data->equip_inventory_data;
-
-//     cout << "inventory.count_info = " << inventory.count_info << endl;
-//     cout << "inventory.entries = " << inventory.entries << endl;
-//     cout << "inventory.length = " << inventory.length << endl;
-//     cout << "inventory.start_id = " << inventory.start_id << endl;
-
-//     cout << "index = " << (inventory_id - inventory.start_id) << endl;
-//     cout << "ga_item_id = 0x" << hex << *ga_item_id << dec << endl;
-//     cout << "param_4 = " << (param_4 ? "true" : "false") << endl;
-//     cout << "param_5 = " << (param_5 ? "true" : "false") << endl;
-//     cout << "inventory_id = " << inventory_id << endl;
-
-//     auto protector =
-//         reinterpret_cast<EquipParamProtector *>(equip_param_protector->at(protector_id));
-//     if (protector == nullptr)
-//     {
-//         cout << "protector = " << protector_id << " <null>" << endl;
-//     }
-//     else
-//     {
-//         cout << "protector = " << protector_id << " " << protector->equipModelId << endl;
-//         TransmogVFX::set_transmog(protector);
-//     }
-
-//     cout << endl;
-//     cout << bytes_to_str((byte *)&inventory, sizeof(inventory)) << endl;
-//     cout << endl;
-
-//     return inventory_id;
-// }
+static RemoveItemFn *remove_item = nullptr;
+static ApplySpEffectFn *apply_speffect = nullptr;
+static ClearSpEffectFn *clear_speffect = nullptr;
 
 /**
  * When the player buys a transmog good, look up the corresponding armor piece and update
  * the transmog VFX to show it.
  *
  * TODO:
- *   - apply the transmog speffect
  *   - remove existing items of the same category
  *   - call this function on load with the initial inventory
  */
 void try_apply_transmog_item(int32_t item_id)
 {
+    auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man == nullptr || world_chr_man->main_player == nullptr)
+    {
+        return;
+    }
+
     if (item_id < item_type_goods_begin || item_id >= item_type_goods_end)
     {
         return;
@@ -93,7 +47,11 @@ void try_apply_transmog_item(int32_t item_id)
         return;
     }
 
+    // Update the transmog VFX to show this protector
     TransmogVFX::set_transmog_protector(transmog_protector_id);
+
+    // Ensure the main player has the transmog speffect
+    apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_speffect_id, false);
 }
 
 bool (*add_inventory_from_shop)(int32_t *, int32_t) = nullptr;
@@ -107,32 +65,52 @@ bool add_inventory_from_shop_detour(int32_t *item_id, int32_t quantity)
 
 void TransmogEvents::initialize(CS::ParamMap &params)
 {
-    game_data_man = *ModUtils::scan<CS::GameDataMan *>({
-        .aob = "48 8B 05 ?? ?? ?? ?? 48 85 C0 74 05 48 8B 40 58 C3 C3",
-        .relative_offsets = {{0x3, 0x7}},
+    world_chr_man_addr = ModUtils::scan<CS::WorldChrManImp *>({
+        .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
+               "48 85 c0"              // test rax, rax
+               "74 0f"                 // jz end_label
+               "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
+        .relative_offsets = {{3, 7}},
     });
 
-    remove_item = ModUtils::scan<decltype(*remove_item)>({
+    remove_item = ModUtils::scan<RemoveItemFn>({
         .aob = "?? 83 ec ?? 8b f2 ?? 8b e9 ?? 85 c0 74",
-        .offset = -0xc,
+        .offset = -12,
     });
 
-    cout << "GameDataMan " << game_data_man << endl;
-    cout << "PlayerGameData " << game_data_man->player_game_data << endl;
-    cout << "EquipGameData " << &game_data_man->player_game_data->equip_game_data << endl;
-    cout << "EquipInventoryData "
-         << &game_data_man->player_game_data->equip_game_data.equip_inventory_data << endl;
+    // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
+    // speffect 4270 (Disable Grace Warp)
+    string enable_disable_grace_warp_aob = "45 33 c0"        // xor r8d, r8d
+                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+                                           "48 8b cf"        // mov rcx, rdi
+                                           "e8 ?? ?? ?? ??"  // call ChrIns::ApplyEffect
+                                           "eb 16"           // jmp end_label
+                                           "e8 ?? ?? ?? ??"  // call HasSpEffect
+                                           "84 c0"           // test al, al
+                                           "74 0d"           // jz end_label
+                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+                                           "48 8b cf"        // mov rcx, rdi
+                                           "e8 ?? ?? ?? ??"; // call ChrIns::ClearSpEffect
 
-    // Try hooking methods in CS::EquipInventoryData::vftable?
+    ptrdiff_t disable_enable_grace_warp_offset =
+        ModUtils::scan<byte>({.aob = enable_disable_grace_warp_aob}) -
+        ModUtils::scan<byte>({.offset = 0});
 
-    // TODO AOBs
+    apply_speffect = ModUtils::scan<ApplySpEffectFn>({
+        .offset = disable_enable_grace_warp_offset + 11,
+        .relative_offsets = {{1, 5}},
+    });
 
-    // Hook CS::EquipGameData::AddInventoryEquip()
-    // ModUtils::hook({.offset = 0x245a30}, add_inventory_equip_detour, add_inventory_equip);
+    clear_speffect = ModUtils::scan<ClearSpEffectFn>({
+        .offset = disable_enable_grace_warp_offset + 35,
+        .relative_offsets = {{1, 5}},
+    });
 
-    // NOTE: either eldenring.exe+73690 or eldenring.exe+73840 could work here
+    // TODO: AOB. either eldenring.exe+73690 or eldenring.exe+73840 could work here
     add_inventory_from_shop_hook = ModUtils::hook(
         {.offset = 0x773840}, add_inventory_from_shop_detour, add_inventory_from_shop);
+
+    // Hook idea for load in - something initialized in common event?
 }
 
 void TransmogEvents::log()

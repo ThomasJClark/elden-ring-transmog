@@ -56,9 +56,9 @@ add_library(EldenRingTransmogMod SHARED
   src/dllmain.cpp
   src/ezstate/CustomStates.hpp
   src/internal/EzState.hpp
-  src/internal/GameDataMan.hpp
   src/internal/List.hpp
   src/internal/Params.hpp
+  src/internal/WorldChrMan.hpp
   src/messages.hpp)
 
 target_link_libraries(EldenRingTransmogMod

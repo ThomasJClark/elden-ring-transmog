@@ -3,8 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "List.hpp"
-
 #pragma pack(push, 1)
 
 namespace CS
@@ -68,6 +66,7 @@ struct EquipGameData
     EquipItemData *equip_item_data;
     std::byte unk6[0x218];
 };
+
 struct PlayerGameData
 {
     std::byte unk1[0x2B0];
@@ -75,10 +74,17 @@ struct PlayerGameData
     std::byte unk2[0x360];
 };
 
-struct GameDataMan
+struct PlayerIns
 {
-    std::byte unk[0x8];
+    std::byte unk1[0x580];
     PlayerGameData *player_game_data;
+    std::byte unk2[0x1b8];
+};
+
+struct WorldChrManImp
+{
+    std::byte unk[0x1e508];
+    PlayerIns *main_player;
 };
 } // namespace CS
 

@@ -61,7 +61,7 @@ void *ModUtils::scan(const ScanArgs &args)
 
         for (auto [first, second] : args.relative_offsets)
         {
-            ptrdiff_t offset = *reinterpret_cast<uint32_t *>(&match[first]) + second;
+            ptrdiff_t offset = *reinterpret_cast<int32_t *>(&match[first]) + second;
             match += offset;
         }
 
