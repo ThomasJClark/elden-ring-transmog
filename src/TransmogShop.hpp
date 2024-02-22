@@ -42,23 +42,6 @@ inline bool is_invisible_protector_id(int64_t protector_id)
            protector_id == bare_arms_protector_id || protector_id == bare_legs_protector_id;
 }
 
-inline int64_t get_transmog_shop_param_id(int64_t protector_id, uint8_t protector_category)
-{
-    switch (protector_category)
-    {
-    case protector_category_head:
-        return transmog_head_shop_menu_id + protector_id / 100;
-    case protector_category_body:
-        return transmog_body_shop_menu_id + protector_id / 100;
-    case protector_category_arms:
-        return transmog_arms_shop_menu_id + protector_id / 100;
-    case protector_category_legs:
-        return transmog_legs_shop_menu_id + protector_id / 100;
-    default:
-        return -1;
-    }
-}
-
 inline int64_t get_transmog_goods_id_for_protector(int64_t protector_id)
 {
     return transmog_goods_start_id + protector_id / 100;

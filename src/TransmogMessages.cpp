@@ -62,32 +62,32 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
     case msgbnd_event_text_for_talk:
         switch (msg_id)
         {
-        case event_text_for_talk_transmog_armor_id:
-            return transmog_messages.event_text_for_talk_transmog_armor.c_str();
-        case event_text_for_talk_transmog_head_id:
-            return transmog_messages.event_text_for_talk_transmog_head.c_str();
-        case event_text_for_talk_transmog_body_id:
-            return transmog_messages.event_text_for_talk_transmog_body.c_str();
-        case event_text_for_talk_transmog_arms_id:
-            return transmog_messages.event_text_for_talk_transmog_arms.c_str();
-        case event_text_for_talk_transmog_legs_id:
-            return transmog_messages.event_text_for_talk_transmog_legs.c_str();
-        case event_text_for_talk_undo_transmog_id:
-            return transmog_messages.event_text_for_talk_undo_transmog.c_str();
+        case EventTextForTalk::transmog_armor:
+            return transmog_messages.transmog_armor.c_str();
+        case EventTextForTalk::transmog_head:
+            return transmog_messages.transmog_head.c_str();
+        case EventTextForTalk::transmog_body:
+            return transmog_messages.transmog_body.c_str();
+        case EventTextForTalk::transmog_arms:
+            return transmog_messages.transmog_arms.c_str();
+        case EventTextForTalk::transmog_legs:
+            return transmog_messages.transmog_legs.c_str();
+        case EventTextForTalk::undo_transmog:
+            return transmog_messages.undo_transmog.c_str();
         }
         break;
 
     case msgbnd_menu_text:
         switch (msg_id)
         {
-        case menu_text_transmog_head_id:
-            return transmog_messages.menu_text_transmog_head.c_str();
-        case menu_text_transmog_body_id:
-            return transmog_messages.menu_text_transmog_body.c_str();
-        case menu_text_transmog_arms_id:
-            return transmog_messages.menu_text_transmog_arms.c_str();
-        case menu_text_transmog_legs_id:
-            return transmog_messages.menu_text_transmog_legs.c_str();
+        case MenuText::transmog_head:
+            return transmog_messages.transmog_head_title.c_str();
+        case MenuText::transmog_body:
+            return transmog_messages.transmog_body_title.c_str();
+        case MenuText::transmog_arms:
+            return transmog_messages.transmog_arms_title.c_str();
+        case MenuText::transmog_legs:
+            return transmog_messages.transmog_legs_title.c_str();
         }
         break;
 
@@ -97,7 +97,7 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
         {
             if (TransmogShop::is_invisible_protector_id(protector_id))
             {
-                return transmog_messages.protector_name_invisible.c_str();
+                return transmog_messages.invisible.c_str();
             }
             else
             {
@@ -126,28 +126,28 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
     }
 
     case msgbnd_line_help:
-        if (msg_id == line_help_select_item_for_purchase_id)
+        if (msg_id == LineHelp::select_item_for_purchase)
         {
             if (active_transmog_shop_protector_category != -1)
             {
-                return transmog_messages.line_help_select_transmog_target.c_str();
+                return transmog_messages.select_transmog_target.c_str();
             }
         }
         break;
 
     case msgbnd_dialogues:
-        if (msg_id == dialogues_purchase_item_for_runes)
+        if (msg_id == Dialogues::purchase_item_for_runes)
         {
             switch (active_transmog_shop_protector_category)
             {
             case TransmogShop::protector_category_head:
-                return transmog_messages.dialogues_transmog_head_prompt.c_str();
+                return transmog_messages.transmog_head_to.c_str();
             case TransmogShop::protector_category_body:
-                return transmog_messages.dialogues_transmog_body_prompt.c_str();
+                return transmog_messages.transmog_body_to.c_str();
             case TransmogShop::protector_category_arms:
-                return transmog_messages.dialogues_transmog_arms_prompt.c_str();
+                return transmog_messages.transmog_arms_to.c_str();
             case TransmogShop::protector_category_legs:
-                return transmog_messages.dialogues_transmog_legs_prompt.c_str();
+                return transmog_messages.transmog_legs_to.c_str();
             }
         }
         break;
@@ -235,14 +235,12 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
             str = u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
         };
 
-        prepend_icon(transmog_messages.event_text_for_talk_transmog_armor,
-                     u"SB_ERR_Grace_AlterGarments.png");
-        prepend_icon(transmog_messages.event_text_for_talk_transmog_head, u"SB_ERR_A_Mind");
-        prepend_icon(transmog_messages.event_text_for_talk_transmog_body, u"SB_ERR_A_Vigor");
-        prepend_icon(transmog_messages.event_text_for_talk_transmog_arms, u"SB_ERR_A_Strength");
-        prepend_icon(transmog_messages.event_text_for_talk_transmog_legs, u"SB_ERR_A_Endurance");
-        prepend_icon(transmog_messages.event_text_for_talk_undo_transmog,
-                     u"SB_ERR_Grace_AlterGarments.png");
+        prepend_icon(transmog_messages.transmog_armor, u"SB_ERR_Grace_AlterGarments.png");
+        prepend_icon(transmog_messages.transmog_head, u"SB_ERR_A_Mind");
+        prepend_icon(transmog_messages.transmog_body, u"SB_ERR_A_Vigor");
+        prepend_icon(transmog_messages.transmog_arms, u"SB_ERR_A_Strength");
+        prepend_icon(transmog_messages.transmog_legs, u"SB_ERR_A_Endurance");
+        prepend_icon(transmog_messages.undo_transmog, u"SB_ERR_Grace_AlterGarments.png");
     }
 }
 

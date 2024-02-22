@@ -135,16 +135,16 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
-    transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_head_id;
+    transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_head;
     transmog_head_shop_menu.menuIconId = 5;
 
-    transmog_body_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_body_id;
+    transmog_body_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_body;
     transmog_body_shop_menu.menuIconId = 5;
 
-    transmog_arms_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_arms_id;
+    transmog_arms_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_arms;
     transmog_arms_shop_menu.menuIconId = 5;
 
-    transmog_legs_shop_menu.menuTitleMsgId = TransmogMessages::menu_text_transmog_legs_id;
+    transmog_legs_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_legs;
     transmog_legs_shop_menu.menuIconId = 5;
 
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
@@ -206,8 +206,23 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
             .reinforceMaterialId = -1,
         };
 
-        auto shop_lineup_param_id =
-            get_transmog_shop_param_id(protector_id, protector_row->protectorCategory);
+        int32_t shop_lineup_param_id = -1;
+        switch (protector_row->protectorCategory)
+        {
+        case protector_category_head:
+            shop_lineup_param_id = transmog_head_shop_menu_id + protector_id / 100;
+            break;
+        case protector_category_body:
+            shop_lineup_param_id = transmog_body_shop_menu_id + protector_id / 100;
+            break;
+        case protector_category_arms:
+            shop_lineup_param_id = transmog_arms_shop_menu_id + protector_id / 100;
+            break;
+        case protector_category_legs:
+            shop_lineup_param_id = transmog_legs_shop_menu_id + protector_id / 100;
+            break;
+        }
+
         transmog_shop_lineups[shop_lineup_param_id] = {
             .equipId = static_cast<int32_t>(goods_id),
             .value = -1,

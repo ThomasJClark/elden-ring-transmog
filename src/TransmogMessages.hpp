@@ -6,20 +6,35 @@ struct MsgRepository;
 
 namespace TransmogMessages
 {
-static const int32_t event_text_for_talk_transmog_armor_id = 69000000;
-static const int32_t event_text_for_talk_transmog_head_id = 69000010;
-static const int32_t event_text_for_talk_transmog_body_id = 69000011;
-static const int32_t event_text_for_talk_transmog_arms_id = 69000012;
-static const int32_t event_text_for_talk_transmog_legs_id = 69000013;
-static const int32_t event_text_for_talk_undo_transmog_id = 69000020;
-static const int32_t event_text_for_talk_cancel_id = 15000372;
-static const int32_t event_text_for_map_undo_transmog_alert_id = 690000;
-static const int32_t menu_text_transmog_head_id = 690000;
-static const int32_t menu_text_transmog_body_id = 690001;
-static const int32_t menu_text_transmog_arms_id = 690002;
-static const int32_t menu_text_transmog_legs_id = 690003;
-static const int32_t line_help_select_item_for_purchase_id = 231000;
-static const int32_t dialogues_purchase_item_for_runes = 231000;
+namespace EventTextForTalk
+{
+static constexpr int32_t transmog_armor = 69000000;
+static constexpr int32_t transmog_head = 69000010;
+static constexpr int32_t transmog_body = 69000011;
+static constexpr int32_t transmog_arms = 69000012;
+static constexpr int32_t transmog_legs = 69000013;
+static constexpr int32_t undo_transmog = 69000020;
+static constexpr int32_t cancel = 15000372;
+static constexpr int32_t sort_chest = 15000395;
+} // namespace EventTextForTalk
+
+namespace MenuText
+{
+static constexpr int32_t transmog_head = 690000;
+static constexpr int32_t transmog_body = 690001;
+static constexpr int32_t transmog_arms = 690002;
+static constexpr int32_t transmog_legs = 690003;
+} // namespace MenuText
+
+namespace LineHelp
+{
+static constexpr int32_t select_item_for_purchase = 231000;
+}
+
+namespace Dialogues
+{
+static constexpr int32_t purchase_item_for_runes = 231000;
+}
 
 /**
  * Determine the player's selected language, then hook the internal get_message() function to
