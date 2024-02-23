@@ -1,109 +1,91 @@
-#include <iostream>
+#include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
 #include "TransmogEvents.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
-#include "internal/WorldChrMan.hpp"
 
 using namespace TransmogEvents;
 using namespace std;
 
+typedef int32_t GetInventoryKeyFn(CS::EquipInventoryData *, uint32_t *item_id);
+typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
+
+static GetInventoryKeyFn *get_inventory_key = nullptr;
+static AddRemoveItemFn *add_remove_item = nullptr;
+
 static CS::WorldChrManImp **world_chr_man_addr = nullptr;
-
-typedef int32_t RemoveItemFn(CS::EquipInventoryData *, uint32_t, uint32_t);
-typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t, bool unk);
-typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t);
-
-static RemoveItemFn *remove_item = nullptr;
-static ApplySpEffectFn *apply_speffect = nullptr;
-static ClearSpEffectFn *clear_speffect = nullptr;
+static map<uint64_t, EquipParamProtector *> *equip_param_protector;
 
 /**
- * When the player buys a transmog good, look up the corresponding armor piece and update
- * the transmog VFX to show it.
- *
- * TODO:
- *   - remove existing items of the same category
- *   - call this function on load with the initial inventory
+ * If the given item ID in the players inventory is a transmog good, look up the corresponding
+ * armor piece and update the transmog VFX to show it.
  */
-void try_apply_transmog_item(int32_t item_id)
+static EquipParamProtector *try_apply_transmog_item(int32_t item_id)
 {
-    auto world_chr_man = *world_chr_man_addr;
-    if (world_chr_man == nullptr || world_chr_man->main_player == nullptr)
+    if (item_id >= item_type_goods_begin && item_id < item_type_goods_end)
     {
-        return;
+        auto transmog_goods_id = item_id - item_type_goods_begin;
+        auto transmog_protector_id =
+            TransmogShop::get_protector_id_for_transmog_good(transmog_goods_id);
+        if (transmog_protector_id != -1)
+        {
+            return TransmogVFX::set_transmog_protector(transmog_protector_id);
+        }
     }
 
-    if (item_id < item_type_goods_begin || item_id >= item_type_goods_end)
-    {
-        return;
-    }
-
-    auto transmog_protector_id =
-        TransmogShop::get_protector_id_for_transmog_good(item_id - item_type_goods_begin);
-    if (transmog_protector_id == -1)
-    {
-        return;
-    }
-
-    // Update the transmog VFX to show this protector
-    TransmogVFX::set_transmog_protector(transmog_protector_id);
-
-    // Ensure the main player has the transmog speffect
-    apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_speffect_id, false);
+    return nullptr;
 }
 
-bool (*add_inventory_from_shop)(int32_t *, int32_t) = nullptr;
-bool (*add_inventory_from_shop_hook)(int32_t *, int32_t) = nullptr;
+typedef bool AddInventoryFromShopFn(int32_t *new_item_id, int32_t quantity);
 
-bool add_inventory_from_shop_detour(int32_t *item_id, int32_t quantity)
+AddInventoryFromShopFn *add_inventory_from_shop = nullptr;
+AddInventoryFromShopFn *add_inventory_from_shop_hook = nullptr;
+
+/**
+ * Hook the function called when buying and item from a shop to apply transmogs when they're
+ * chosen
+ */
+static bool add_inventory_from_shop_detour(int32_t *new_item_id, int32_t quantity)
 {
-    try_apply_transmog_item(*item_id);
-    return add_inventory_from_shop(item_id, quantity);
+    auto result = add_inventory_from_shop(new_item_id, quantity);
+
+    // If this is a transmog item, update the VFX to apply it
+    auto new_protector = try_apply_transmog_item(*new_item_id);
+    if (new_protector != nullptr)
+    {
+        // Remove any other items of the same category in the player's inventory, so there's only
+        // one item for each slot
+        for (auto [other_protector_id, other_protector] : *equip_param_protector)
+        {
+            if (other_protector != new_protector &&
+                other_protector->protectorCategory == new_protector->protectorCategory)
+            {
+                auto other_goods_id =
+                    TransmogShop::get_transmog_goods_id_for_protector(other_protector_id);
+                add_remove_item(item_type_goods_begin, other_goods_id, -1);
+            }
+        }
+    }
+
+    return result;
 }
 
-void TransmogEvents::initialize(CS::ParamMap &params)
+void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
 {
-    world_chr_man_addr = ModUtils::scan<CS::WorldChrManImp *>({
-        .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
-               "48 85 c0"              // test rax, rax
-               "74 0f"                 // jz end_label
-               "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
-        .relative_offsets = {{3, 7}},
+    equip_param_protector =
+        reinterpret_cast<map<uint64_t, EquipParamProtector *> *>(&params[L"EquipParamProtector"]);
+
+    ::world_chr_man_addr = world_chr_man_addr;
+
+    // TODO: AOB
+    get_inventory_key = ModUtils::scan<GetInventoryKeyFn>({
+        .offset = 0x24b490,
     });
 
-    remove_item = ModUtils::scan<RemoveItemFn>({
-        .aob = "?? 83 ec ?? 8b f2 ?? 8b e9 ?? 85 c0 74",
-        .offset = -12,
-    });
-
-    // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
-    // speffect 4270 (Disable Grace Warp)
-    string enable_disable_grace_warp_aob = "45 33 c0"        // xor r8d, r8d
-                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
-                                           "48 8b cf"        // mov rcx, rdi
-                                           "e8 ?? ?? ?? ??"  // call ChrIns::ApplyEffect
-                                           "eb 16"           // jmp end_label
-                                           "e8 ?? ?? ?? ??"  // call HasSpEffect
-                                           "84 c0"           // test al, al
-                                           "74 0d"           // jz end_label
-                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
-                                           "48 8b cf"        // mov rcx, rdi
-                                           "e8 ?? ?? ?? ??"; // call ChrIns::ClearSpEffect
-
-    ptrdiff_t disable_enable_grace_warp_offset =
-        ModUtils::scan<byte>({.aob = enable_disable_grace_warp_aob}) -
-        ModUtils::scan<byte>({.offset = 0});
-
-    apply_speffect = ModUtils::scan<ApplySpEffectFn>({
-        .offset = disable_enable_grace_warp_offset + 11,
-        .relative_offsets = {{1, 5}},
-    });
-
-    clear_speffect = ModUtils::scan<ClearSpEffectFn>({
-        .offset = disable_enable_grace_warp_offset + 35,
-        .relative_offsets = {{1, 5}},
+    // TODO: AOB
+    add_remove_item = ModUtils::scan<AddRemoveItemFn>({
+        .offset = 0x5dfa20,
     });
 
     // TODO: AOB. either eldenring.exe+73690 or eldenring.exe+73840 could work here
@@ -111,20 +93,7 @@ void TransmogEvents::initialize(CS::ParamMap &params)
         {.offset = 0x773840}, add_inventory_from_shop_detour, add_inventory_from_shop);
 
     // Hook idea for load in - something initialized in common event?
-}
-
-void TransmogEvents::log()
-{
-    // auto &inventory_data = game_data_man->player_game_data->equip_game_data.equip_inventory_data;
-    // for (auto &entry : inventory_data.inventory)
-    // {
-    //     if (entry.item_id >= item_type_goods_begin && entry.item_id < item_type_goods_end)
-    //     {
-    //         int goods_id = entry.item_id - item_type_goods_begin;
-    //         cout << &entry.quantity << " " << goods_id << " " << entry.quantity << endl;
-    //     }
-    // }
-    // cout << endl;
+    // Alternatively, WorldChrMan changes load & teleport. Check what writes to that address.
 }
 
 void TransmogEvents::deinitialize()

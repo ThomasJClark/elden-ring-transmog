@@ -10,10 +10,12 @@
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
 #include "internal/Params.hpp"
+#include "internal/WorldChrMan.hpp"
 
 using namespace std;
 
 thread mod_thread;
+CS::ParamMap params;
 
 void Transmog::initialize()
 {
@@ -22,7 +24,6 @@ void Transmog::initialize()
 
     mod_thread = thread([]() {
         cout << "Waiting for params..." << endl;
-        CS::ParamMap params;
         auto param_list_address = ModUtils::scan<CS::ParamList *>({
             .aob = "48 8B 0D ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 45 33 C0 BA 90",
             .relative_offsets = {{0x3, 0x7}},
@@ -43,11 +44,19 @@ void Transmog::initialize()
         }
         auto msg_repository = *msg_repository_address;
 
+        auto world_chr_man_addr = ModUtils::scan<CS::WorldChrManImp *>({
+            .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
+                   "48 85 c0"              // test rax, rax
+                   "74 0f"                 // jz end_label
+                   "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
+            .relative_offsets = {{3, 7}},
+        });
+
         cout << "Hooking transmog messages..." << endl;
         TransmogMessages::initialize(msg_repository);
 
         cout << "Adding transmog VFX..." << endl;
-        TransmogVFX::initialize(params);
+        TransmogVFX::initialize(params, world_chr_man_addr);
 
         cout << "Adding transmog shops..." << endl;
         TransmogShop::initialize(params, msg_repository);
@@ -56,28 +65,9 @@ void Transmog::initialize()
         TransmogTalkScript::initialize();
 
         cout << "Hooking transmog events..." << endl;
-        TransmogEvents::initialize(params);
+        TransmogEvents::initialize(params, world_chr_man_addr);
 
         cout << "Initialized transmog" << endl;
-
-#if _DEBUG
-        // set up some incredible fashion for testing
-        TransmogVFX::set_transmog_protector(1060000);
-        TransmogVFX::set_transmog_protector(140100);
-        TransmogVFX::set_transmog_protector(910200);
-        TransmogVFX::set_transmog_protector(320300);
-
-        // make boiled crab activate transmog for testing
-        auto boiled_crab_good =
-            reinterpret_cast<EquipParamGoods *>(params[L"EquipParamGoods"][820]);
-        boiled_crab_good->refId_default = TransmogVFX::transmog_speffect_id;
-        boiled_crab_good->goodsUseAnim = 62;
-#endif
-        for (;;)
-        {
-            this_thread::sleep_for(chrono::seconds(1));
-            TransmogEvents::log();
-        }
     });
 }
 

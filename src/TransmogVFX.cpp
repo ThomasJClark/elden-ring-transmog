@@ -45,6 +45,12 @@ struct FindSpEffectVfxParamResult
 
 #pragma pack(pop)
 
+typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t speffect_id, bool unk);
+typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t speffect_id);
+
+static ApplySpEffectFn *apply_speffect;
+static ClearSpEffectFn *clear_speffect;
+
 typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
 typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, uint32_t id);
@@ -64,6 +70,8 @@ static ReinforceParamProtector transmog_reinforce_param = {0};
 static SpEffectParam transmog_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
+
+static CS::WorldChrManImp **world_chr_man_addr;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
@@ -139,8 +147,10 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
-void TransmogVFX::initialize(CS::ParamMap &params)
+void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
 {
+    ::world_chr_man_addr = world_chr_man_addr;
+
     auto equip_param_protector = params[L"EquipParamProtector"];
     auto reinforce_param_protector = params[L"ReinforceParamProtector"];
     auto speffect_param = params[L"SpEffectParam"];
@@ -216,6 +226,34 @@ void TransmogVFX::initialize(CS::ParamMap &params)
             .offset = -0x6a,
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
+
+    // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
+    // speffect 4270 (Disable Grace Warp)
+    string enable_disable_grace_warp_aob = "45 33 c0"        // xor r8d, r8d
+                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+                                           "48 8b cf"        // mov rcx, rdi
+                                           "e8 ?? ?? ?? ??"  // call ChrIns::ApplyEffect
+                                           "eb 16"           // jmp end_label
+                                           "e8 ?? ?? ?? ??"  // call HasSpEffect
+                                           "84 c0"           // test al, al
+                                           "74 0d"           // jz end_label
+                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+                                           "48 8b cf"        // mov rcx, rdi
+                                           "e8 ?? ?? ?? ??"; // call ChrIns::ClearSpEffect
+
+    ptrdiff_t disable_enable_grace_warp_offset =
+        ModUtils::scan<byte>({.aob = enable_disable_grace_warp_aob}) -
+        ModUtils::scan<byte>({.offset = 0});
+
+    apply_speffect = ModUtils::scan<ApplySpEffectFn>({
+        .offset = disable_enable_grace_warp_offset + 11,
+        .relative_offsets = {{1, 5}},
+    });
+
+    clear_speffect = ModUtils::scan<ClearSpEffectFn>({
+        .offset = disable_enable_grace_warp_offset + 35,
+        .relative_offsets = {{1, 5}},
+    });
 }
 
 void TransmogVFX::deinitialize()
@@ -225,14 +263,14 @@ void TransmogVFX::deinitialize()
     ModUtils::unhook(get_speffect_vfx_param_hook);
 }
 
-void TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
+EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
 {
     FindEquipParamProtectorResult protector_result;
     get_equip_param_protector(&protector_result, equip_param_protector_id);
     if (protector_result.row == nullptr)
     {
         cout << "Protector " << equip_param_protector_id << " doesn't exist" << endl;
-        return;
+        return nullptr;
     }
 
     auto equip_param_protector = protector_result.row;
@@ -270,4 +308,10 @@ void TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
         transmog_head_vfx.transformProtectorId = transmog_set_id;
         transmog_body_vfx.transformProtectorId = transmog_set_id;
     }
+
+    // Ensure the main player has the transmog speffect
+    auto world_chr_man = *world_chr_man_addr;
+    apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_speffect_id, false);
+
+    return equip_param_protector;
 }

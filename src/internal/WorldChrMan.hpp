@@ -13,7 +13,7 @@ struct EquipItemData;
 struct PlayerInventoryEntry
 {
     uint32_t ga_item_id;
-    uint32_t item_id;
+    int32_t item_id;
     uint32_t quantity;
     int32_t display_id;
     int32_t unk;
@@ -22,14 +22,20 @@ struct PlayerInventoryEntry
 struct EquipInventoryData
 {
     void **vftable;
-    std::byte unk1[0x10];
+    std::byte unk1[0x8];
+    PlayerInventoryEntry *entries1;
     uint32_t count_info;
-    int32_t start_id;
-    std::byte unk2[0x20];
-    PlayerInventoryEntry *entries;
-    std::byte unk3[0x38];
+    int32_t start_index;
+    std::byte unk2[0x8];
+    int32_t todo1;
+    std::byte unk3[0x14];
+    PlayerInventoryEntry *entries2; // I think this only includes stackable items? idk
+    std::byte unk4[0x8];
+    PlayerInventoryEntry *key_items; // idk??? why are there three entries lists?
+    std::byte unk5[0x28];
     uint32_t length;
-    std::byte unk4[0x1e];
+    uint32_t todo2;
+    std::byte unk6[0x1a];
 };
 
 struct ChrAsm
