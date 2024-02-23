@@ -173,7 +173,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
                    "48 85 c0"           // test rax, rax
                    "0f 84 ?? ?? ?? ??", // jz end_lbl
-            .offset = -0x96,
+            .offset = -150,
         },
         get_equip_param_protector_detour, get_equip_param_protector);
 
@@ -198,7 +198,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
                    "48 85 c0"           // test rax, rax
                    "0f 84 ?? ?? ?? ??", // jz end_lbl
-            .offset = -0x72,
+            .offset = -114,
         },
         get_speffect_param_detour, get_speffect_param);
 
@@ -223,7 +223,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
                    "e8 ?? ?? ?? ??" // call SoloParamRepositoryImp::GetParamResCap
                    "48 85 c0"       // test rax, rax
                    "74 ??",         // jz end_lbl
-            .offset = -0x6a,
+            .offset = -106,
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
 

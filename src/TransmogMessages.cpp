@@ -190,8 +190,8 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     get_message_hook = ModUtils::hook(
         {
             .aob = "8B DA 44 8B CA 33 D2 48 8B F9 44 8D 42 6F",
-            .offset = 0xe,
-            .relative_offsets = {{0x1, 0x5}},
+            .offset = 14,
+            .relative_offsets = {{1, 5}},
         },
         get_message_detour, get_message);
 
@@ -206,7 +206,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
                    "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
                    "0f 10 00"              // movups xmm0, [rax]
                    "c7 43 10 05 00 00 00", // mov    [rbx + 0x10], 5
-            .offset = -0x6,
+            .offset = -6,
         },
         open_regular_shop_detour, open_regular_shop);
 

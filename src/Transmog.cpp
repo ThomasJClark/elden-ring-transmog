@@ -26,7 +26,7 @@ void Transmog::initialize()
         cout << "Waiting for params..." << endl;
         auto param_list_address = ModUtils::scan<CS::ParamList *>({
             .aob = "48 8B 0D ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 45 33 C0 BA 90",
-            .relative_offsets = {{0x3, 0x7}},
+            .relative_offsets = {{3, 7}},
         });
         while (!CS::try_get_params(param_list_address, params))
         {
@@ -36,7 +36,7 @@ void Transmog::initialize()
         cout << "Waiting for messages..." << endl;
         auto msg_repository_address = ModUtils::scan<MsgRepository *>({
             .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
-            .relative_offsets = {{0x3, 0x7}},
+            .relative_offsets = {{3, 7}},
         });
         while (*msg_repository_address == nullptr)
         {

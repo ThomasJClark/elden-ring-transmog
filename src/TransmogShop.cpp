@@ -157,12 +157,10 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
                    "33 d2"           // xor edx,edx
                    "48 8d 4d 18"     // lea rcx=>local_1d0,[rbp + 0x18]
                    "e8 ?? ?? ?? ??", // call GetShopMenu
-            .offset = 0xe,
-            .relative_offsets = {{0x1, 0x5}},
+            .offset = 14,
+            .relative_offsets = {{1, 5}},
         },
         get_shop_menu_detour, get_shop_menu);
-
-    auto glass_shard = reinterpret_cast<EquipParamGoods *>(params[L"EquipParamGoods"][10000]);
 
     // Add goods and shop entries for every armor piece the player can buy
     for (auto entry : equip_param_protector)
@@ -242,7 +240,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
                    "48 85 c0"           // test rax rax
                    "0f 84 ?? ?? ?? ??", // jz end_lbl
-            .offset = -0x6a,
+            .offset = -106,
         },
         get_equip_param_goods_detour, get_equip_param_goods);
 
@@ -255,7 +253,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
                    "e8 ?? ?? ?? ??"       // call SoloParamRepositoryImp::GetParamResCap
                    "48 85 c0"             // test rax, rax
                    "74 ??",               // jz end_lbl
-            .offset = -0x81,
+            .offset = -129,
         },
         get_shop_lineup_param_detour, get_shop_lineup_param);
 }

@@ -188,8 +188,8 @@ void TransmogTalkScript::initialize()
                    "48 8b d6"        // mov rdx,rsi
                    "48 8b 4e 20"     // mov rcx,qword ptr [rsi + 0x20]
                    "e8 ?? ?? ?? ??", // call EzState::EnterState
-            .offset = 0x12,
-            .relative_offsets = {{0x1, 0x5}},
+            .offset = 18,
+            .relative_offsets = {{1, 5}},
         },
         ezstate_enter_state_detour, ezstate_enter_state);
 }
