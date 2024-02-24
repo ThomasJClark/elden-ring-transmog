@@ -8,12 +8,9 @@
 using namespace TransmogEvents;
 using namespace std;
 
-typedef int32_t GetInventoryKeyFn(CS::EquipInventoryData *, uint32_t *item_id);
 typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
 
-static GetInventoryKeyFn *get_inventory_key = nullptr;
 static AddRemoveItemFn *add_remove_item = nullptr;
-
 static CS::WorldChrManImp **world_chr_man_addr = nullptr;
 static map<uint64_t, EquipParamProtector *> *equip_param_protector;
 
@@ -78,14 +75,14 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
 
     ::world_chr_man_addr = world_chr_man_addr;
 
-    // TODO: AOB
-    get_inventory_key = ModUtils::scan<GetInventoryKeyFn>({
-        .offset = 0x24b490,
-    });
-
-    // TODO: AOB
     add_remove_item = ModUtils::scan<AddRemoveItemFn>({
-        .offset = 0x5dfa20,
+        .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
+               "41 83 c8 ff"       // or r8d, -1
+               "8b d3"             // mov edx, ebx
+               "b9 00 00 00 40"    // mov ecx, item_type_goods_begin
+               "e8 ?? ?? ?? ??",   // call AddRemoveItem
+        .offset = 17,
+        .relative_offsets = {{1, 5}},
     });
 
     // TODO: AOB. either eldenring.exe+73690 or eldenring.exe+73840 could work here
