@@ -78,10 +78,19 @@ void ModUtils::hook(void *function, void *detour, void **trampoline)
     {
         throw runtime_error(string("Error creating hook: ") + MH_StatusToString(mh_status));
     }
-    mh_status = MH_EnableHook(function);
+    mh_status = MH_QueueEnableHook(function);
     if (mh_status != MH_OK)
     {
-        throw runtime_error(string("Error enabling hook: ") + MH_StatusToString(mh_status));
+        throw runtime_error(string("Error queueing hook: ") + MH_StatusToString(mh_status));
+    }
+}
+
+void ModUtils::enable_hooks()
+{
+    auto mh_status = MH_ApplyQueued();
+    if (mh_status != MH_OK)
+    {
+        throw runtime_error(string("Error enabling hooks: ") + MH_StatusToString(mh_status));
     }
 }
 

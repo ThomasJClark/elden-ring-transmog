@@ -8,6 +8,7 @@ namespace ModUtils
 {
 
 void initialize();
+void enable_hooks();
 void deinitialize();
 
 struct ScanArgs

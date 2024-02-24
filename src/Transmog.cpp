@@ -67,6 +67,8 @@ void Transmog::initialize()
         cout << "Hooking transmog events..." << endl;
         TransmogEvents::initialize(params, world_chr_man_addr);
 
+        ModUtils::enable_hooks();
+
         cout << "Initialized transmog" << endl;
     });
 }
