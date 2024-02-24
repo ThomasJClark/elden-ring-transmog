@@ -85,9 +85,16 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
         .relative_offsets = {{1, 5}},
     });
 
-    // TODO: AOB. either eldenring.exe+73690 or eldenring.exe+73840 could work here
     add_inventory_from_shop_hook = ModUtils::hook(
-        {.offset = 0x773840}, add_inventory_from_shop_detour, add_inventory_from_shop);
+        {
+            .aob = "8b 93 80 00 00 00" // mov edx, [rbx + 0x80]
+                   "0f af d1"          // imul edx, ecx
+                   "48 8b c8"          // mov rcx, rax
+                   "e8 ?? ?? ?? ??",   // call AddInventoryFromShop
+            .offset = 12,
+            .relative_offsets = {{1, 5}},
+        },
+        add_inventory_from_shop_detour, add_inventory_from_shop);
 
     // Hook idea for load in - something initialized in common event?
     // Alternatively, WorldChrMan changes load & teleport. Check what writes to that address.
