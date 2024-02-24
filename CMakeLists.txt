@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.28.1)
 
+set(CMAKE_GENERATOR_PLATFORM x64)
+
 project(EldenRingTransmogMod
   VERSION   0.0.0
   LANGUAGES CXX)
