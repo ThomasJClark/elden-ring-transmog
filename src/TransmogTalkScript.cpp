@@ -92,8 +92,6 @@ static bool is_sort_chest_transition(const EzState::Transition *transition)
 static EzState::StateGroup *state_group = nullptr;
 
 static void (*ezstate_enter_state)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
-static void (*ezstate_enter_state_hook)(EzState::State *state, EzState::MachineImpl *machine,
-                                        void *unk);
 
 /**
  * Patch the site of grace menu to contain a "Transmogrify armor" option
@@ -178,7 +176,7 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 
 void TransmogTalkScript::initialize()
 {
-    ezstate_enter_state_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "80 7e 18 00"     // cmp byte ptr [rsi + 0x18], 0x0
                    "74 15"           // jz end_label
@@ -190,9 +188,4 @@ void TransmogTalkScript::initialize()
             .relative_offsets = {{1, 5}},
         },
         ezstate_enter_state_detour, ezstate_enter_state);
-}
-
-void TransmogTalkScript::deinitialize()
-{
-    ModUtils::unhook(ezstate_enter_state_hook);
 }

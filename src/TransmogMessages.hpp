@@ -43,6 +43,4 @@ static constexpr int32_t purchase_item_for_runes = 231000;
 void initialize(MsgRepository *msg_repository);
 
 const std::u16string_view get_protector_name(MsgRepository *msg_repository, int32_t id);
-
-void deinitialize();
 }; // namespace TransmogMessages

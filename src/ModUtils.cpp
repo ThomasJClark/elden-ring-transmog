@@ -93,8 +93,3 @@ void ModUtils::enable_hooks()
         throw runtime_error(string("Error enabling hooks: ") + MH_StatusToString(mh_status));
     }
 }
-
-void ModUtils::unhook(void *function)
-{
-    MH_RemoveHook(function);
-}

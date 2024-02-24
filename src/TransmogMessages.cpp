@@ -48,11 +48,8 @@ static Messages transmog_messages;
  */
 static int8_t active_transmog_shop_protector_category = -1;
 
-typedef const char16_t *GetMessageFn(MsgRepository *msg_repository, uint32_t unknown,
-                                     uint32_t bnd_id, int32_t msg_id);
-
-static GetMessageFn *get_message_hook;
-static GetMessageFn *get_message;
+static const char16_t *(*get_message)(MsgRepository *msg_repository, uint32_t unknown,
+                                      uint32_t bnd_id, int32_t msg_id);
 
 const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unknown, uint32_t bnd_id,
                                    int32_t msg_id)
@@ -156,10 +153,7 @@ const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unkno
     return get_message(msg_repository, unknown, bnd_id, msg_id);
 }
 
-typedef void OpenRegularShopFn(void *, uint64_t, uint64_t);
-
-static OpenRegularShopFn *open_regular_shop_hook;
-static OpenRegularShopFn *open_regular_shop;
+static void (*open_regular_shop)(void *, uint64_t, uint64_t);
 
 static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_id)
 {
@@ -187,7 +181,7 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
 void TransmogMessages::initialize(MsgRepository *msg_repository)
 {
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
-    get_message_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "8B DA 44 8B CA 33 D2 48 8B F9 44 8D 42 6F",
             .offset = 14,
@@ -197,7 +191,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
 
     // Hook OpenRegularShop() to adjust some UI strings for the transmog shop, but not other
     // shops
-    open_regular_shop_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "4c 8b 49 18"           // mov    r9, [rcx + 0x18]
                    "48 8b d9"              // mov    rbx,rcx
@@ -226,7 +220,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     }
 
     // For Elden Ring Reforged, add icons to match other menu text
-    u16string_view calibrations_ver = get_message_hook(msg_repository, 0, msgbnd_menu_text, 401322);
+    u16string_view calibrations_ver = get_message(msg_repository, 0, msgbnd_menu_text, 401322);
     if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
     {
         cout << "Detected ELDEN RING Reforged - enabling menu icons" << endl;
@@ -252,10 +246,4 @@ const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_rep
         return u"";
     }
     return result;
-}
-
-void TransmogMessages::deinitialize()
-{
-    ModUtils::unhook(get_message_hook);
-    ModUtils::unhook(open_regular_shop_hook);
 }

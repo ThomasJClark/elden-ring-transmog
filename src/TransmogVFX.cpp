@@ -55,11 +55,8 @@ typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, ui
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
 typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, uint32_t id);
 
-static FindEquipParamProtectorFn *get_equip_param_protector_hook;
 static FindEquipParamProtectorFn *get_equip_param_protector;
-static FindSpEffectParamFn *get_speffect_param_hook;
 static FindSpEffectParamFn *get_speffect_param;
-static FindSpEffectVfxParamFn *get_speffect_vfx_param_hook;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 
 static EquipParamProtector *transmog_head = nullptr;
@@ -173,7 +170,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
 
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
-    get_equip_param_protector_hook = ModUtils::hook<>(
+    ModUtils::hook(
         {
             .aob = "41 8d 50 01"        // lea edx, [r8 + 1]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -203,7 +200,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
     transmog_body_speffect.vfxId = transmog_body_vfx_id;
 
     // Hook get_speffect_param() to return the above speffect
-    get_speffect_param_hook = ModUtils::hook<>(
+    ModUtils::hook(
         {
             .aob = "41 8d 50 0f"        // lea edx, [r8 + 15]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -230,7 +227,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
     transmog_body_vfx.materialParamId = -1;
 
     // Hook get_speffect_vfx_param() to return the above VFX params
-    get_speffect_vfx_param_hook = ModUtils::hook<>(
+    ModUtils::hook(
         {
             .aob = "41 8d 50 10"    // lea edx, [r8 + 16]
                    "e8 ?? ?? ?? ??" // call SoloParamRepositoryImp::GetParamResCap
@@ -267,13 +264,6 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
         .offset = disable_enable_grace_warp_offset + 35,
         .relative_offsets = {{1, 5}},
     });
-}
-
-void TransmogVFX::deinitialize()
-{
-    ModUtils::unhook(get_equip_param_protector_hook);
-    ModUtils::unhook(get_speffect_param_hook);
-    ModUtils::unhook(get_speffect_vfx_param_hook);
 }
 
 EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)

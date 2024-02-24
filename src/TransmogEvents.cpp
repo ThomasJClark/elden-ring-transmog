@@ -35,10 +35,7 @@ static EquipParamProtector *try_apply_transmog_item(int32_t item_id)
     return nullptr;
 }
 
-typedef bool AddInventoryFromShopFn(int32_t *new_item_id, int32_t quantity);
-
-static AddInventoryFromShopFn *add_inventory_from_shop = nullptr;
-static AddInventoryFromShopFn *add_inventory_from_shop_hook = nullptr;
+static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) = nullptr;
 
 /**
  * Hook the function called when buying and item from a shop to apply transmogs when they're
@@ -74,12 +71,8 @@ namespace CS
 struct InGameStep;
 };
 
-typedef void InitOrFinishMoveMapFn(CS::InGameStep *);
-
-static InitOrFinishMoveMapFn *init_move_map = nullptr;
-static InitOrFinishMoveMapFn *init_move_map_hook = nullptr;
-static InitOrFinishMoveMapFn *finish_move_map = nullptr;
-static InitOrFinishMoveMapFn *finish_move_map_hook = nullptr;
+static void (*init_move_map)(CS::InGameStep *) = nullptr;
+static void (*finish_move_map)(CS::InGameStep *) = nullptr;
 
 /**
  * When loading into a map, update the transmog VFX based on the character's inventory
@@ -114,7 +107,7 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
         .relative_offsets = {{1, 5}},
     });
 
-    add_inventory_from_shop_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "8b 93 80 00 00 00" // mov edx, [rbx + 0x80]
                    "0f af d1"          // imul edx, ecx
@@ -127,7 +120,7 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
 
     // TODO AOB
     // InGameStep::STEP_MoveMap_Init
-    init_move_map_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .offset = 0xac0200,
         },
@@ -135,7 +128,7 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
 
     // TODO AOB
     // InGameStep::STEP_MoveMap_Finish
-    finish_move_map_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .offset = 0xabfdb0,
         },
@@ -143,9 +136,4 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
 
     // Hook idea for load in - something initialized in common event?
     // Alternatively, WorldChrMan changes load & teleport. Check what writes to that address.
-}
-
-void TransmogEvents::deinitialize()
-{
-    ModUtils::unhook(add_inventory_from_shop_hook);
 }

@@ -30,7 +30,6 @@ static constexpr int64_t legs_protector_offset = 300;
  * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
  */
 void initialize(CS::ParamMap &params, CS::WorldChrManImp **);
-void deinitialize();
 
 /**
  * Set the given armor piece as the player's appearance

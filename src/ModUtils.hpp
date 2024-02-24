@@ -22,8 +22,6 @@ void *scan(const ScanArgs &args);
 
 void hook(void *function, void *detour, void **trampoline);
 
-void unhook(void *function);
-
 template <typename ReturnType> inline ReturnType *scan(const ScanArgs &args)
 {
     return reinterpret_cast<ReturnType *>(scan(args));

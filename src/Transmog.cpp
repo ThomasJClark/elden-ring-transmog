@@ -76,10 +76,5 @@ void Transmog::initialize()
 void Transmog::deinitialize()
 {
     mod_thread.join();
-    TransmogMessages::deinitialize();
-    TransmogVFX::deinitialize();
-    TransmogShop::deinitialize();
-    TransmogTalkScript::deinitialize();
-    TransmogEvents::deinitialize();
     ModUtils::deinitialize();
 }

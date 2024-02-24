@@ -37,18 +37,6 @@ struct FindEquipParamGoodsResult
 };
 #pragma pack(pop)
 
-typedef FindShopMenuResult *FindShopMenuFn(FindShopMenuResult *result, byte shop_type,
-                                           int32_t begin_id, int32_t end_id);
-typedef void FindShopLineupParamFn(FindShopLineupParamResult *result, byte shop_type, int32_t id);
-typedef void FindEquipParamGoodsFn(FindEquipParamGoodsResult *result, int32_t id);
-
-static FindShopMenuFn *get_shop_menu_hook;
-static FindShopMenuFn *get_shop_menu;
-static FindShopLineupParamFn *get_shop_lineup_param;
-static FindShopLineupParamFn *get_shop_lineup_param_hook;
-static FindEquipParamGoodsFn *get_equip_param_goods;
-static FindEquipParamGoodsFn *get_equip_param_goods_hook;
-
 static ShopLineupParam transmog_head_shop_menu = {0};
 static ShopLineupParam transmog_body_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
@@ -56,6 +44,9 @@ static ShopLineupParam transmog_legs_shop_menu = {0};
 
 static unordered_map<int32_t, ShopLineupParam> transmog_shop_lineups;
 static unordered_map<int32_t, EquipParamGoods> transmog_goods;
+
+static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result, byte shop_type,
+                                            int32_t begin_id, int32_t end_id);
 
 FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_type,
                                          int32_t begin_id, int32_t end_id)
@@ -89,6 +80,8 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
     return result;
 }
 
+static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, byte shop_type, int32_t id);
+
 void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type, int32_t id)
 {
     if (shop_type == byte(0) && id >= transmog_head_shop_menu_id &&
@@ -112,7 +105,7 @@ void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_t
     get_shop_lineup_param(result, shop_type, id);
 }
 
-bool logged = false;
+static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int32_t id);
 
 void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 {
@@ -150,7 +143,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
     // by buying an item from one of these shops for $0, since this is easier than making a custom
     // menu.
-    get_shop_menu_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "45 8b 4e 14"     // mov r9d,dword ptr [r14 + 0x14]
                    "45 8b 46 10"     // mov r8d,dword ptr [r14 + 0x10]
@@ -234,7 +227,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
     }
 
     // Hook get_equip_param_goods() to return the above items
-    get_equip_param_goods_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "41 8d 50 03"        // lea edx, [r8 + 3]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -245,7 +238,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
         get_equip_param_goods_detour, get_equip_param_goods);
 
     // Hook get_shop_lineup_param() to return the above shop entries
-    get_shop_lineup_param_hook = ModUtils::hook(
+    ModUtils::hook(
         {
             .aob = "48 8d 15 ?? ?? ?? ??" // lea rdx, [shop_lineup_param_indexes]
                    "45 33 c0"             // xor r8d, r8d
@@ -256,11 +249,4 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
             .offset = -129,
         },
         get_shop_lineup_param_detour, get_shop_lineup_param);
-}
-
-void TransmogShop::deinitialize()
-{
-    ModUtils::unhook(get_shop_menu_hook);
-    ModUtils::unhook(get_shop_lineup_param_hook);
-    ModUtils::unhook(get_equip_param_goods_hook);
 }

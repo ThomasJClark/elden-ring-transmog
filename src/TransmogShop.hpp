@@ -34,7 +34,6 @@ static constexpr int64_t transmog_shop_max_size = 100000;
  * Hook the internal get_*_param() functions to return the new params used for the transmog shops
  */
 void initialize(CS::ParamMap &params, MsgRepository *msg_repository);
-void deinitialize();
 
 inline bool is_invisible_protector_id(int64_t protector_id)
 {
