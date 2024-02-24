@@ -209,12 +209,14 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
     transmog_head_vfx.transformProtectorId = transmog_set_id;
     transmog_head_vfx.isFullBodyTransformProtectorId = false;
     transmog_head_vfx.isVisibleDeadChr = true;
+    transmog_body_vfx.materialParamId = -1;
     transmog_head_vfx.initSfxId = 523412;
     transmog_head_vfx.initDmyId = 220;
 
     transmog_body_vfx.transformProtectorId = transmog_set_id;
     transmog_body_vfx.isFullBodyTransformProtectorId = true;
     transmog_body_vfx.isVisibleDeadChr = true;
+    transmog_body_vfx.materialParamId = -1;
 
     // Hook get_speffect_vfx_param() to return the above VFX params
     get_speffect_vfx_param_hook = ModUtils::hook<>(
