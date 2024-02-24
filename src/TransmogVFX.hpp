@@ -14,7 +14,8 @@ typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
 
 namespace TransmogVFX
 {
-static constexpr int64_t transmog_speffect_id = 690001;
+static constexpr int64_t transmog_head_speffect_id = 690001;
+static constexpr int64_t transmog_body_speffect_id = 690002;
 static constexpr int64_t transmog_head_vfx_id = 690001;
 static constexpr int64_t transmog_body_vfx_id = 690002;
 static constexpr int64_t transmog_set_id = 69000000;

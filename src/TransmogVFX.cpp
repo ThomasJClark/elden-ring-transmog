@@ -67,7 +67,8 @@ static EquipParamProtector *transmog_body = nullptr;
 static EquipParamProtector *transmog_arms = nullptr;
 static EquipParamProtector *transmog_legs = nullptr;
 static ReinforceParamProtector transmog_reinforce_param = {0};
-static SpEffectParam transmog_speffect = {0};
+static SpEffectParam transmog_head_speffect = {0};
+static SpEffectParam transmog_body_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
@@ -118,9 +119,14 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
 {
     switch (id)
     {
-    case transmog_speffect_id:
-        result->id = transmog_speffect_id;
-        result->row = &transmog_speffect;
+    case transmog_head_speffect_id:
+        result->id = transmog_head_speffect_id;
+        result->row = &transmog_head_speffect;
+        result->unknown = byte(0x04);
+        break;
+    case transmog_body_speffect_id:
+        result->id = transmog_body_speffect_id;
+        result->row = &transmog_body_speffect;
         result->unknown = byte(0x04);
         break;
     default:
@@ -177,19 +183,24 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
         },
         get_equip_param_protector_detour, get_equip_param_protector);
 
-    // Initialize the speffect from speffect 2 (basically a no-op effect), and override the VFX
-    transmog_speffect = *reinterpret_cast<SpEffectParam *>(speffect_param[2]);
-    transmog_speffect.vfxId = transmog_head_vfx_id;
-    transmog_speffect.vfxId1 = transmog_body_vfx_id;
-    transmog_speffect.effectEndurance = -1;
-    transmog_speffect.effectTargetSelf = true;
-    transmog_speffect.effectTargetFriend = true;
-    transmog_speffect.effectTargetEnemy = true;
-    transmog_speffect.effectTargetPlayer = true;
-    transmog_speffect.effectTargetOpposeTarget = true;
-    transmog_speffect.effectTargetFriendlyTarget = true;
-    transmog_speffect.effectTargetSelfTarget = true;
-    transmog_speffect.saveCategory = 5;
+    // Initialize the speffects from speffect 2 (basically a no-op effect), ovrriding the VFX and
+    // a few other properties
+    auto base_speffect = *reinterpret_cast<SpEffectParam *>(speffect_param[2]);
+    base_speffect.effectEndurance = -1;
+    base_speffect.effectTargetSelf = true;
+    base_speffect.effectTargetFriend = true;
+    base_speffect.effectTargetEnemy = true;
+    base_speffect.effectTargetPlayer = true;
+    base_speffect.effectTargetOpposeTarget = true;
+    base_speffect.effectTargetFriendlyTarget = true;
+    base_speffect.effectTargetSelfTarget = true;
+    base_speffect.saveCategory = 5;
+
+    transmog_head_speffect = base_speffect;
+    transmog_head_speffect.vfxId = transmog_head_vfx_id;
+
+    transmog_body_speffect = base_speffect;
+    transmog_body_speffect.vfxId = transmog_body_vfx_id;
 
     // Hook get_speffect_param() to return the above speffect
     get_speffect_param_hook = ModUtils::hook<>(
@@ -209,7 +220,7 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
     transmog_head_vfx.transformProtectorId = transmog_set_id;
     transmog_head_vfx.isFullBodyTransformProtectorId = false;
     transmog_head_vfx.isVisibleDeadChr = true;
-    transmog_body_vfx.materialParamId = -1;
+    transmog_head_vfx.materialParamId = -1;
     transmog_head_vfx.initSfxId = 523412;
     transmog_head_vfx.initDmyId = 220;
 
@@ -313,7 +324,14 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
 
     // Ensure the main player has the transmog speffect
     auto world_chr_man = *world_chr_man_addr;
-    apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_speffect_id, false);
+    if (protector_result.row->protectorCategory == TransmogShop::protector_category_head)
+    {
+        apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_head_speffect_id, false);
+    }
+    else
+    {
+        apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_body_speffect_id, false);
+    }
 
     return equip_param_protector;
 }

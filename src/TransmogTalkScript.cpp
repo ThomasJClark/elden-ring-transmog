@@ -5,7 +5,6 @@
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
-#include "TransmogVFX.hpp"
 #include "ezstate/CustomStates.hpp"
 #include "internal/EzState.hpp"
 
@@ -52,8 +51,7 @@ OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_i
 
 // TalkESD state that disables transmogrification
 // TODO: this *adds* the speffect. figure out how adding/removing it will work.
-ApplySpEffectState disable_transmog_state(69006, TransmogVFX::transmog_speffect_id,
-                                          &transmog_menu_state);
+ApplySpEffectState disable_transmog_state(69006, 12345, &transmog_menu_state);
 }; // namespace
 
 // AddTalkListData(69, "Transmogrify armor", -1)
