@@ -1,3 +1,4 @@
+#include <iostream>
 #include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
@@ -36,8 +37,8 @@ static EquipParamProtector *try_apply_transmog_item(int32_t item_id)
 
 typedef bool AddInventoryFromShopFn(int32_t *new_item_id, int32_t quantity);
 
-AddInventoryFromShopFn *add_inventory_from_shop = nullptr;
-AddInventoryFromShopFn *add_inventory_from_shop_hook = nullptr;
+static AddInventoryFromShopFn *add_inventory_from_shop = nullptr;
+static AddInventoryFromShopFn *add_inventory_from_shop_hook = nullptr;
 
 /**
  * Hook the function called when buying and item from a shop to apply transmogs when they're
@@ -68,6 +69,34 @@ static bool add_inventory_from_shop_detour(int32_t *new_item_id, int32_t quantit
     return result;
 }
 
+namespace CS
+{
+struct InGameStep;
+};
+
+typedef void InitOrFinishMoveMapFn(CS::InGameStep *);
+
+static InitOrFinishMoveMapFn *init_move_map = nullptr;
+static InitOrFinishMoveMapFn *init_move_map_hook = nullptr;
+static InitOrFinishMoveMapFn *finish_move_map = nullptr;
+static InitOrFinishMoveMapFn *finish_move_map_hook = nullptr;
+
+/**
+ * When loading into a map, update the transmog VFX based on the character's inventory
+ */
+static void init_move_map_detour(CS::InGameStep *in_game_step)
+{
+    init_move_map(in_game_step);
+}
+
+/**
+ * When loading out of a map, reset the transmog VFX
+ */
+static void finish_move_map_detour(CS::InGameStep *in_game_step)
+{
+    finish_move_map(in_game_step);
+}
+
 void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
 {
     equip_param_protector =
@@ -95,6 +124,22 @@ void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world
             .relative_offsets = {{1, 5}},
         },
         add_inventory_from_shop_detour, add_inventory_from_shop);
+
+    // TODO AOB
+    // InGameStep::STEP_MoveMap_Init
+    init_move_map_hook = ModUtils::hook(
+        {
+            .offset = 0xac0200,
+        },
+        init_move_map_detour, init_move_map);
+
+    // TODO AOB
+    // InGameStep::STEP_MoveMap_Finish
+    finish_move_map_hook = ModUtils::hook(
+        {
+            .offset = 0xabfdb0,
+        },
+        finish_move_map_detour, finish_move_map);
 
     // Hook idea for load in - something initialized in common event?
     // Alternatively, WorldChrMan changes load & teleport. Check what writes to that address.
