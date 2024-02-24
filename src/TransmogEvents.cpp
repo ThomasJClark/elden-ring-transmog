@@ -87,6 +87,7 @@ static void init_move_map_detour(CS::InGameStep *in_game_step)
  */
 static void finish_move_map_detour(CS::InGameStep *in_game_step)
 {
+    TransmogVFX::reset_transmog();
     finish_move_map(in_game_step);
 }
 

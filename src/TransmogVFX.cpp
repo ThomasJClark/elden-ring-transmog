@@ -69,6 +69,10 @@ static SpEffectParam transmog_body_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
+static map<uint64_t, EquipParamProtector *> *equip_param_protector;
+static map<uint64_t, ReinforceParamProtector *> *reinforce_param_protector;
+static map<uint64_t, SpEffectParam *> *speffect_param;
+
 static CS::WorldChrManImp **world_chr_man_addr;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
@@ -152,21 +156,12 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
 
 void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
 {
+    equip_param_protector =
+        reinterpret_cast<map<uint64_t, EquipParamProtector *> *>(&params[L"EquipParamProtector"]);
+    reinforce_param_protector = reinterpret_cast<map<uint64_t, ReinforceParamProtector *> *>(
+        &params[L"ReinforceParamProtector"]);
+    speffect_param = reinterpret_cast<map<uint64_t, SpEffectParam *> *>(&params[L"SpEffectParam"]);
     ::world_chr_man_addr = world_chr_man_addr;
-
-    auto equip_param_protector = params[L"EquipParamProtector"];
-    auto reinforce_param_protector = params[L"ReinforceParamProtector"];
-    auto speffect_param = params[L"SpEffectParam"];
-
-    // Initialize to bare head/body/arms/legs
-    transmog_head = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10000]);
-    transmog_body = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10100]);
-    transmog_arms = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10200]);
-    transmog_legs = reinterpret_cast<EquipParamProtector *>(equip_param_protector[10300]);
-
-    // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
-    transmog_reinforce_param =
-        *reinterpret_cast<ReinforceParamProtector *>(reinforce_param_protector[0]);
 
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
@@ -180,25 +175,6 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
         },
         get_equip_param_protector_detour, get_equip_param_protector);
 
-    // Initialize the speffects from speffect 2 (basically a no-op effect), ovrriding the VFX and
-    // a few other properties
-    auto base_speffect = *reinterpret_cast<SpEffectParam *>(speffect_param[2]);
-    base_speffect.effectEndurance = -1;
-    base_speffect.effectTargetSelf = true;
-    base_speffect.effectTargetFriend = true;
-    base_speffect.effectTargetEnemy = true;
-    base_speffect.effectTargetPlayer = true;
-    base_speffect.effectTargetOpposeTarget = true;
-    base_speffect.effectTargetFriendlyTarget = true;
-    base_speffect.effectTargetSelfTarget = true;
-    base_speffect.saveCategory = 5;
-
-    transmog_head_speffect = base_speffect;
-    transmog_head_speffect.vfxId = transmog_head_vfx_id;
-
-    transmog_body_speffect = base_speffect;
-    transmog_body_speffect.vfxId = transmog_body_vfx_id;
-
     // Hook get_speffect_param() to return the above speffect
     ModUtils::hook(
         {
@@ -209,22 +185,6 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
             .offset = -114,
         },
         get_speffect_param_detour, get_speffect_param);
-
-    // Add two VFX for transforming the player's head and the rest of their body.
-    // transformProtectorId should always be the ID of the head armor, and if
-    // isFullBodyTransformProtectorId is true the VFX will instead apply the three other armor
-    // pieces.
-    transmog_head_vfx.transformProtectorId = transmog_set_id;
-    transmog_head_vfx.isFullBodyTransformProtectorId = false;
-    transmog_head_vfx.isVisibleDeadChr = true;
-    transmog_head_vfx.materialParamId = -1;
-    transmog_head_vfx.initSfxId = 523412;
-    transmog_head_vfx.initDmyId = 220;
-
-    transmog_body_vfx.transformProtectorId = transmog_set_id;
-    transmog_body_vfx.isFullBodyTransformProtectorId = true;
-    transmog_body_vfx.isVisibleDeadChr = true;
-    transmog_body_vfx.materialParamId = -1;
 
     // Hook get_speffect_vfx_param() to return the above VFX params
     ModUtils::hook(
@@ -264,6 +224,57 @@ void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_ch
         .offset = disable_enable_grace_warp_offset + 35,
         .relative_offsets = {{1, 5}},
     });
+
+    reset_transmog();
+}
+
+void TransmogVFX::reset_transmog()
+{
+    cout << "Resetting transmog params" << endl;
+
+    // Initialize to bare head/body/arms/legs
+    transmog_head = (*equip_param_protector)[10000];
+    transmog_body = (*equip_param_protector)[10100];
+    transmog_arms = (*equip_param_protector)[10200];
+    transmog_legs = (*equip_param_protector)[10300];
+
+    // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
+    transmog_reinforce_param = *(*reinforce_param_protector)[0];
+
+    // Initialize the speffects from speffect 2 (basically a no-op effect), ovrriding the VFX and
+    // a few other properties
+    auto base_speffect = *(*speffect_param)[2];
+    base_speffect.effectEndurance = -1;
+    base_speffect.effectTargetSelf = true;
+    base_speffect.effectTargetFriend = true;
+    base_speffect.effectTargetEnemy = true;
+    base_speffect.effectTargetPlayer = true;
+    base_speffect.effectTargetOpposeTarget = true;
+    base_speffect.effectTargetFriendlyTarget = true;
+    base_speffect.effectTargetSelfTarget = true;
+    base_speffect.saveCategory = 5;
+
+    transmog_head_speffect = base_speffect;
+    transmog_head_speffect.vfxId = transmog_head_vfx_id;
+
+    transmog_body_speffect = base_speffect;
+    transmog_body_speffect.vfxId = transmog_body_vfx_id;
+
+    // Add two VFX for transforming the player's head and the rest of their body.
+    // transformProtectorId should always be the ID of the head armor, and if
+    // isFullBodyTransformProtectorId is true the VFX will instead apply the three other armor
+    // pieces.
+    transmog_head_vfx.transformProtectorId = transmog_set_id;
+    transmog_head_vfx.isFullBodyTransformProtectorId = false;
+    transmog_head_vfx.isVisibleDeadChr = true;
+    transmog_head_vfx.materialParamId = -1;
+    transmog_head_vfx.initSfxId = 523412;
+    transmog_head_vfx.initDmyId = 220;
+
+    transmog_body_vfx.transformProtectorId = transmog_set_id;
+    transmog_body_vfx.isFullBodyTransformProtectorId = true;
+    transmog_body_vfx.isVisibleDeadChr = true;
+    transmog_body_vfx.materialParamId = -1;
 }
 
 EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)

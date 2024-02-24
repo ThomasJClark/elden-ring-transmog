@@ -32,6 +32,11 @@ static constexpr int64_t legs_protector_offset = 300;
 void initialize(CS::ParamMap &params, CS::WorldChrManImp **);
 
 /**
+ * Set the dynamic transmog params to their initial state
+ */
+void reset_transmog();
+
+/**
  * Set the given armor piece as the player's appearance
  */
 EquipParamProtector *set_transmog_protector(int64_t equip_param_protector_id);
