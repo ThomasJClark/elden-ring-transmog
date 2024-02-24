@@ -28,7 +28,7 @@ extern "C" __declspec(dllimport) const
 /**
  * Return the player's selected language using the Steamworks SDK
  *
- * https://partner.steamgames.com/doc/store/localization/languages
+ * https://partner.steamgames.com/doc/api/ISteamApps#GetCurrentGameLanguage
  */
 static string get_steam_language()
 {
