@@ -109,17 +109,19 @@ static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int32_t 
 
 void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 {
-    auto transmog_good = transmog_goods.find(id);
-    if (transmog_good != transmog_goods.end())
+    if (id >= transmog_goods_start_id && id < transmog_goods_end_id)
     {
-        result->id = transmog_good->first;
-        result->row = &transmog_good->second;
-        result->unknown = 3;
+        auto transmog_good = transmog_goods.find(id);
+        if (transmog_good != transmog_goods.end())
+        {
+            result->id = transmog_good->first;
+            result->row = &transmog_good->second;
+            result->unknown = 3;
+            return;
+        }
     }
-    else
-    {
-        get_equip_param_goods(result, id);
-    }
+
+    get_equip_param_goods(result, id);
 }
 
 void TransmogShop::initialize(MsgRepository *msg_repository)
