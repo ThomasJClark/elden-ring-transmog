@@ -1,14 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
-#include <string>
-#include <tga/paramdefs.h>
-
-namespace CS
-{
-typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
-};
 
 struct MsgRepository;
 
@@ -33,7 +25,7 @@ static constexpr int64_t transmog_shop_max_size = 100000;
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog shops
  */
-void initialize(CS::ParamMap &params, MsgRepository *msg_repository);
+void initialize(MsgRepository *msg_repository);
 
 inline bool is_invisible_protector_id(int64_t protector_id)
 {

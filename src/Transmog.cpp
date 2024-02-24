@@ -1,21 +1,19 @@
 #include <iostream>
-#include <tga/paramdefs.h>
 #include <thread>
 
 #include "ModUtils.hpp"
+#include "ParamUtils.hpp"
 #include "Transmog.hpp"
 #include "TransmogEvents.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
 #include "TransmogVFX.hpp"
-#include "internal/Params.hpp"
 #include "internal/WorldChrMan.hpp"
 
 using namespace std;
 
 thread mod_thread;
-CS::ParamMap params;
 
 void Transmog::initialize()
 {
@@ -23,15 +21,7 @@ void Transmog::initialize()
     ModUtils::initialize();
 
     mod_thread = thread([]() {
-        cout << "Waiting for params..." << endl;
-        auto param_list_address = ModUtils::scan<CS::ParamList *>({
-            .aob = "48 8B 0D ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 45 33 C0 BA 90",
-            .relative_offsets = {{3, 7}},
-        });
-        while (!CS::try_get_params(param_list_address, params))
-        {
-            this_thread::sleep_for(chrono::milliseconds(100));
-        }
+        ParamUtils::initialize();
 
         cout << "Waiting for messages..." << endl;
         auto msg_repository_address = ModUtils::scan<MsgRepository *>({
@@ -56,16 +46,16 @@ void Transmog::initialize()
         TransmogMessages::initialize(msg_repository);
 
         cout << "Adding transmog VFX..." << endl;
-        TransmogVFX::initialize(params, world_chr_man_addr);
+        TransmogVFX::initialize(world_chr_man_addr);
 
         cout << "Adding transmog shops..." << endl;
-        TransmogShop::initialize(params, msg_repository);
+        TransmogShop::initialize(msg_repository);
 
         cout << "Hooking talk scripts..." << endl;
         TransmogTalkScript::initialize();
 
         cout << "Hooking transmog events..." << endl;
-        TransmogEvents::initialize(params, world_chr_man_addr);
+        TransmogEvents::initialize(world_chr_man_addr);
 
         ModUtils::enable_hooks();
 

@@ -43,6 +43,8 @@ set_target_properties(steamapi PROPERTIES
 add_library(EldenRingTransmogMod SHARED
   src/ModUtils.hpp
   src/ModUtils.cpp
+  src/ParamUtils.hpp
+  src/ParamUtils.cpp
   src/Transmog.hpp
   src/Transmog.cpp
   src/TransmogEvents.hpp
@@ -59,7 +61,6 @@ add_library(EldenRingTransmogMod SHARED
   src/ezstate/CustomStates.hpp
   src/internal/EzState.hpp
   src/internal/List.hpp
-  src/internal/Params.hpp
   src/internal/WorldChrMan.hpp
   src/messages.hpp)
 

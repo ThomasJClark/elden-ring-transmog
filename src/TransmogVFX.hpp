@@ -1,16 +1,9 @@
 #pragma once
 
 #include <cstdint>
-#include <map>
-#include <string>
 #include <tga/paramdefs.h>
 
 #include "internal/WorldChrMan.hpp"
-
-namespace CS
-{
-typedef std::map<std::wstring, std::map<uint64_t, void *>> ParamMap;
-};
 
 namespace TransmogVFX
 {
@@ -29,7 +22,7 @@ static constexpr int64_t legs_protector_offset = 300;
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
  */
-void initialize(CS::ParamMap &params, CS::WorldChrManImp **);
+void initialize(CS::WorldChrManImp **);
 
 /**
  * Set the dynamic transmog params to their initial state

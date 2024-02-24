@@ -2,6 +2,7 @@
 #include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
+#include "ParamUtils.hpp"
 #include "TransmogEvents.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
@@ -13,7 +14,6 @@ typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quant
 
 static AddRemoveItemFn *add_remove_item = nullptr;
 static CS::WorldChrManImp **world_chr_man_addr = nullptr;
-static map<uint64_t, EquipParamProtector *> *equip_param_protector;
 
 /**
  * If the given item ID in the players inventory is a transmog good, look up the corresponding
@@ -51,10 +51,11 @@ static bool add_inventory_from_shop_detour(int32_t *new_item_id, int32_t quantit
     {
         // Remove any other items of the same category in the player's inventory, so there's only
         // one item for each slot
-        for (auto [other_protector_id, other_protector] : *equip_param_protector)
+        for (auto [other_protector_id, other_protector] :
+             ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
         {
-            if (other_protector != new_protector &&
-                other_protector->protectorCategory == new_protector->protectorCategory)
+            if (&other_protector != new_protector &&
+                other_protector.protectorCategory == new_protector->protectorCategory)
             {
                 auto other_goods_id =
                     TransmogShop::get_transmog_goods_id_for_protector(other_protector_id);
@@ -91,11 +92,8 @@ static void finish_move_map_detour(CS::InGameStep *in_game_step)
     finish_move_map(in_game_step);
 }
 
-void TransmogEvents::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
+void TransmogEvents::initialize(CS::WorldChrManImp **world_chr_man_addr)
 {
-    equip_param_protector =
-        reinterpret_cast<map<uint64_t, EquipParamProtector *> *>(&params[L"EquipParamProtector"]);
-
     ::world_chr_man_addr = world_chr_man_addr;
 
     add_remove_item = ModUtils::scan<AddRemoveItemFn>({

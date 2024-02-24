@@ -4,6 +4,7 @@
 #include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
+#include "ParamUtils.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
 
@@ -68,10 +69,6 @@ static SpEffectParam transmog_head_speffect = {0};
 static SpEffectParam transmog_body_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
-
-static map<uint64_t, EquipParamProtector *> *equip_param_protector;
-static map<uint64_t, ReinforceParamProtector *> *reinforce_param_protector;
-static map<uint64_t, SpEffectParam *> *speffect_param;
 
 static CS::WorldChrManImp **world_chr_man_addr;
 
@@ -154,13 +151,8 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
-void TransmogVFX::initialize(CS::ParamMap &params, CS::WorldChrManImp **world_chr_man_addr)
+void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
 {
-    equip_param_protector =
-        reinterpret_cast<map<uint64_t, EquipParamProtector *> *>(&params[L"EquipParamProtector"]);
-    reinforce_param_protector = reinterpret_cast<map<uint64_t, ReinforceParamProtector *> *>(
-        &params[L"ReinforceParamProtector"]);
-    speffect_param = reinterpret_cast<map<uint64_t, SpEffectParam *> *>(&params[L"SpEffectParam"]);
     ::world_chr_man_addr = world_chr_man_addr;
 
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
@@ -233,17 +225,19 @@ void TransmogVFX::reset_transmog()
     cout << "Resetting transmog params" << endl;
 
     // Initialize to bare head/body/arms/legs
-    transmog_head = (*equip_param_protector)[10000];
-    transmog_body = (*equip_param_protector)[10100];
-    transmog_arms = (*equip_param_protector)[10200];
-    transmog_legs = (*equip_param_protector)[10300];
+    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    transmog_head = &equip_param_protector[10000];
+    transmog_body = &equip_param_protector[10100];
+    transmog_arms = &equip_param_protector[10200];
+    transmog_legs = &equip_param_protector[10300];
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
-    transmog_reinforce_param = *(*reinforce_param_protector)[0];
+    transmog_reinforce_param =
+        ParamUtils::get_param<ReinforceParamProtector>(L"ReinforceParamProtector")[0];
 
     // Initialize the speffects from speffect 2 (basically a no-op effect), ovrriding the VFX and
     // a few other properties
-    auto base_speffect = *(*speffect_param)[2];
+    auto base_speffect = ParamUtils::get_param<SpEffectParam>(L"SpEffectParam")[2];
     base_speffect.effectEndurance = -1;
     base_speffect.effectTargetSelf = true;
     base_speffect.effectTargetFriend = true;

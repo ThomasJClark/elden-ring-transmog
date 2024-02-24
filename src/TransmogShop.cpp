@@ -1,9 +1,9 @@
 #include <cstdint>
-#include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 #include <unordered_map>
 
 #include "ModUtils.hpp"
+#include "ParamUtils.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 
@@ -122,10 +122,8 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
     }
 }
 
-void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repository)
+void TransmogShop::initialize(MsgRepository *msg_repository)
 {
-    auto equip_param_protector = params[L"EquipParamProtector"];
-
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
     transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_head;
@@ -156,11 +154,9 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
         get_shop_menu_detour, get_shop_menu);
 
     // Add goods and shop entries for every armor piece the player can buy
-    for (auto entry : equip_param_protector)
+    for (auto [protector_id, protector_row] :
+         ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
-        auto protector_id = entry.first;
-        auto protector_row = reinterpret_cast<EquipParamProtector *>(entry.second);
-
         // Skip invalid/cut items
         auto protector_name = TransmogMessages::get_protector_name(msg_repository, protector_id);
         if (protector_name.empty() || protector_name.starts_with(u"[ERROR]"))
@@ -177,8 +173,8 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
             .appearanceReplaceItemId = -1,
             .yesNoDialogMessageId = -1,
             .potGroupId = -1,
-            .iconId = is_invisible_protector_id(protector_id) ? invisible_icon_id
-                                                              : protector_row->iconIdM,
+            .iconId =
+                is_invisible_protector_id(protector_id) ? invisible_icon_id : protector_row.iconIdM,
             .compTrophySedId = -1,
             .trophySeqId = -1,
             .maxNum = 1,
@@ -198,7 +194,7 @@ void TransmogShop::initialize(CS::ParamMap &params, MsgRepository *msg_repositor
         };
 
         int32_t shop_lineup_param_id = -1;
-        switch (protector_row->protectorCategory)
+        switch (protector_row.protectorCategory)
         {
         case protector_category_head:
             shop_lineup_param_id = transmog_head_shop_menu_id + protector_id / 100;
