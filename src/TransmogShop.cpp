@@ -6,6 +6,7 @@
 #include "ParamUtils.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
+#include "TransmogVFX.hpp"
 
 using namespace TransmogShop;
 using namespace std;
@@ -125,6 +126,32 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
     }
 
     get_equip_param_goods(result, id);
+}
+
+static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) = nullptr;
+
+static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t quantity)
+{
+    auto item_id = *item_id_address;
+
+    if (item_id >= item_type_goods_begin && item_id < item_type_goods_end)
+    {
+        // If this is a transmog item, update the VFX to apply it
+        auto transmog_goods_id = item_id - item_type_goods_begin;
+        auto transmog_protector_id = get_protector_id_for_transmog_good(transmog_goods_id);
+        if (transmog_protector_id != -1)
+        {
+            auto protector = TransmogVFX::set_transmog_protector(transmog_protector_id);
+            if (protector != nullptr)
+            {
+                // Remove any other items of the same category in the player's inventory, so there's
+                // only one item for each slot
+                remove_transmog_goods(protector->protectorCategory);
+            }
+        }
+    }
+
+    return add_inventory_from_shop(item_id_address, quantity);
 }
 
 void TransmogShop::initialize(MsgRepository *msg_repository)
@@ -260,6 +287,18 @@ void TransmogShop::initialize(MsgRepository *msg_repository)
             .offset = -129,
         },
         get_shop_lineup_param_detour, get_shop_lineup_param);
+
+    // Hook add_inventory_from_shop() to apply the transmog VFX when a shop item is chosen
+    ModUtils::hook(
+        {
+            .aob = "8b 93 80 00 00 00" // mov edx, [rbx + 0x80]
+                   "0f af d1"          // imul edx, ecx
+                   "48 8b c8"          // mov rcx, rax
+                   "e8 ?? ?? ?? ??",   // call AddInventoryFromShop
+            .offset = 12,
+            .relative_offsets = {{1, 5}},
+        },
+        add_inventory_from_shop_detour, add_inventory_from_shop);
 }
 
 void TransmogShop::remove_transmog_goods(int8_t protector_category)
