@@ -12,6 +12,9 @@ using namespace std;
 
 static constexpr uint16_t invisible_icon_id = 3142;
 
+typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
+static AddRemoveItemFn *add_remove_item = nullptr;
+
 #pragma pack(push, 1)
 struct FindShopMenuResult
 {
@@ -126,6 +129,16 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 
 void TransmogShop::initialize(MsgRepository *msg_repository)
 {
+    add_remove_item = ModUtils::scan<AddRemoveItemFn>({
+        .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
+               "41 83 c8 ff"       // or r8d, -1
+               "8b d3"             // mov edx, ebx
+               "b9 00 00 00 40"    // mov ecx, item_type_goods_begin
+               "e8 ?? ?? ?? ??",   // call AddRemoveItem
+        .offset = 17,
+        .relative_offsets = {{1, 5}},
+    });
+
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
     transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_head;
@@ -247,4 +260,17 @@ void TransmogShop::initialize(MsgRepository *msg_repository)
             .offset = -129,
         },
         get_shop_lineup_param_detour, get_shop_lineup_param);
+}
+
+void TransmogShop::remove_transmog_goods(int8_t protector_category)
+{
+    for (auto [protector_id, protector] :
+         ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
+    {
+        if (protector_category == -1 || protector.protectorCategory == protector_category)
+        {
+            auto goods_id = get_transmog_goods_id_for_protector(protector_id);
+            add_remove_item(item_type_goods_begin, goods_id, -1);
+        }
+    }
 }

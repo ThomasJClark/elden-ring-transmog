@@ -226,10 +226,10 @@ void TransmogVFX::reset_transmog()
 
     // Initialize to bare head/body/arms/legs
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
-    transmog_head = &equip_param_protector[10000];
-    transmog_body = &equip_param_protector[10100];
-    transmog_arms = &equip_param_protector[10200];
-    transmog_legs = &equip_param_protector[10300];
+    transmog_head = &equip_param_protector[TransmogShop::bare_head_protector_id];
+    transmog_body = &equip_param_protector[TransmogShop::bare_body_protector_id];
+    transmog_arms = &equip_param_protector[TransmogShop::bare_arms_protector_id];
+    transmog_legs = &equip_param_protector[TransmogShop::bare_legs_protector_id];
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
     transmog_reinforce_param =
@@ -329,4 +329,13 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
     }
 
     return equip_param_protector;
+}
+
+void TransmogVFX::disable_transmog()
+{
+    auto world_chr_man = *world_chr_man_addr;
+    clear_speffect(world_chr_man->main_player, transmog_head_speffect_id);
+    clear_speffect(world_chr_man->main_player, transmog_body_speffect_id);
+
+    // TODO: SpawnOneshotSFX()?
 }

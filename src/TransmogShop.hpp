@@ -6,6 +6,8 @@ struct MsgRepository;
 
 namespace TransmogShop
 {
+static constexpr uint32_t item_type_goods_begin = 0x40000000;
+static constexpr uint32_t item_type_goods_end = 0x50000000;
 static constexpr uint8_t protector_category_head = 0;
 static constexpr uint8_t protector_category_body = 1;
 static constexpr uint8_t protector_category_arms = 2;
@@ -26,6 +28,11 @@ static constexpr int64_t transmog_shop_max_size = 100000;
  * Hook the internal get_*_param() functions to return the new params used for the transmog shops
  */
 void initialize(MsgRepository *msg_repository);
+
+/**
+ * Remove transmog shop items from the player's inventory
+ */
+void remove_transmog_goods(int8_t protector_category = -1);
 
 inline bool is_invisible_protector_id(int64_t protector_id)
 {

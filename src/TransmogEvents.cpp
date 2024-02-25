@@ -2,7 +2,6 @@
 #include <tga/paramdefs.h>
 
 #include "ModUtils.hpp"
-#include "ParamUtils.hpp"
 #include "TransmogEvents.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
@@ -10,9 +9,6 @@
 using namespace TransmogEvents;
 using namespace std;
 
-typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
-
-static AddRemoveItemFn *add_remove_item = nullptr;
 static CS::WorldChrManImp **world_chr_man_addr = nullptr;
 
 /**
@@ -43,28 +39,16 @@ static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) =
  */
 static bool add_inventory_from_shop_detour(int32_t *new_item_id, int32_t quantity)
 {
-    auto result = add_inventory_from_shop(new_item_id, quantity);
-
     // If this is a transmog item, update the VFX to apply it
     auto new_protector = try_apply_transmog_item(*new_item_id);
     if (new_protector != nullptr)
     {
         // Remove any other items of the same category in the player's inventory, so there's only
         // one item for each slot
-        for (auto [other_protector_id, other_protector] :
-             ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
-        {
-            if (&other_protector != new_protector &&
-                other_protector.protectorCategory == new_protector->protectorCategory)
-            {
-                auto other_goods_id =
-                    TransmogShop::get_transmog_goods_id_for_protector(other_protector_id);
-                add_remove_item(item_type_goods_begin, other_goods_id, -1);
-            }
-        }
+        TransmogShop::remove_transmog_goods(new_protector->protectorCategory);
     }
 
-    return result;
+    return add_inventory_from_shop(new_item_id, quantity);
 }
 
 namespace CS
@@ -95,16 +79,6 @@ static void finish_move_map_detour(CS::InGameStep *in_game_step)
 void TransmogEvents::initialize(CS::WorldChrManImp **world_chr_man_addr)
 {
     ::world_chr_man_addr = world_chr_man_addr;
-
-    add_remove_item = ModUtils::scan<AddRemoveItemFn>({
-        .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
-               "41 83 c8 ff"       // or r8d, -1
-               "8b d3"             // mov edx, ebx
-               "b9 00 00 00 40"    // mov ecx, item_type_goods_begin
-               "e8 ?? ?? ?? ??",   // call AddRemoveItem
-        .offset = 17,
-        .relative_offsets = {{1, 5}},
-    });
 
     ModUtils::hook(
         {
