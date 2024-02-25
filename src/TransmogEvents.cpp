@@ -106,7 +106,4 @@ void TransmogEvents::initialize(CS::WorldChrManImp **world_chr_man_addr)
             .offset = 0xabfdb0,
         },
         finish_move_map_detour, finish_move_map);
-
-    // Hook idea for load in - something initialized in common event?
-    // Alternatively, WorldChrMan changes load & teleport. Check what writes to that address.
 }

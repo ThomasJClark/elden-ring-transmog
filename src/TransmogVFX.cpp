@@ -246,7 +246,6 @@ void TransmogVFX::reset_transmog()
     base_speffect.effectTargetOpposeTarget = true;
     base_speffect.effectTargetFriendlyTarget = true;
     base_speffect.effectTargetSelfTarget = true;
-    base_speffect.saveCategory = 5;
 
     transmog_head_speffect = base_speffect;
     transmog_head_speffect.vfxId = transmog_head_vfx_id;
