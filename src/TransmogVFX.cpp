@@ -11,6 +11,12 @@
 using namespace TransmogVFX;
 using namespace std;
 
+static constexpr int64_t head_protector_offset = 0;
+static constexpr int64_t body_protector_offset = 100;
+static constexpr int64_t arms_protector_offset = 200;
+static constexpr int64_t legs_protector_offset = 300;
+static constexpr int32_t undo_transmog_sfx_id = 8020;
+
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
 {
@@ -48,9 +54,11 @@ struct FindSpEffectVfxParamResult
 
 typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t speffect_id, bool unk);
 typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t speffect_id);
+typedef void SpawnOneShotVFXOnChrFn(CS::ChrIns *, int32_t dummy_poly_id, int32_t sfx_id, void *unk);
 
 static ApplySpEffectFn *apply_speffect;
 static ClearSpEffectFn *clear_speffect;
+static SpawnOneShotVFXOnChrFn *spawn_one_shot_sfx_on_chr;
 
 typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
@@ -217,6 +225,19 @@ void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
         .relative_offsets = {{1, 5}},
     });
 
+    spawn_one_shot_sfx_on_chr = ModUtils::scan<SpawnOneShotVFXOnChrFn>({
+        .aob = "45 8b 46 04"    // mov r8d, [r14 + 0x4]
+               "41 8b 16"       // mov edx, [r14]
+               "48 8b 0b"       // mov rcx, [rbx]
+               "e8 ?? ?? ?? ??" // call EMEVD::SpawnOneShotSFXOnChr
+               "48 8d 5b 08"    // lea rbx, [rbx + 0x8]
+               "48 ff c7"       // inc rdi
+               "48 3b fe"       // cmp rdi, rsi
+               "75 e5",         // jnz start
+        .offset = 10,
+        .relative_offsets = {{1, 5}},
+    });
+
     reset_transmog();
 }
 
@@ -261,8 +282,6 @@ void TransmogVFX::reset_transmog()
     transmog_head_vfx.isFullBodyTransformProtectorId = false;
     transmog_head_vfx.isVisibleDeadChr = true;
     transmog_head_vfx.materialParamId = -1;
-    transmog_head_vfx.initSfxId = 523412;
-    transmog_head_vfx.initDmyId = 220;
 
     transmog_body_vfx.transformProtectorId = transmog_set_id;
     transmog_body_vfx.isFullBodyTransformProtectorId = true;
@@ -272,6 +291,7 @@ void TransmogVFX::reset_transmog()
 
 EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
 {
+
     FindEquipParamProtectorResult protector_result;
     get_equip_param_protector(&protector_result, equip_param_protector_id);
     if (protector_result.row == nullptr)
@@ -327,6 +347,19 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
         apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_body_speffect_id, false);
     }
 
+    // Show a one-shot SFX on the player depending on the armor category
+    switch (protector_result.row->protectorCategory)
+    {
+    case TransmogShop::protector_category_head:
+        break;
+    case TransmogShop::protector_category_body:
+        break;
+    case TransmogShop::protector_category_arms:
+        break;
+    case TransmogShop::protector_category_legs:
+        break;
+    }
+
     return equip_param_protector;
 }
 
@@ -335,6 +368,5 @@ void TransmogVFX::disable_transmog()
     auto world_chr_man = *world_chr_man_addr;
     clear_speffect(world_chr_man->main_player, transmog_head_speffect_id);
     clear_speffect(world_chr_man->main_player, transmog_body_speffect_id);
-
-    // TODO: SpawnOneshotSFX()?
+    spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id, nullptr);
 }

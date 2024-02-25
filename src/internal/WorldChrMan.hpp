@@ -80,9 +80,14 @@ struct PlayerGameData
     std::byte unk2[0x360];
 };
 
-struct PlayerIns
+struct ChrIns
 {
-    std::byte unk1[0x580];
+    std::byte unk[0x570];
+};
+
+struct PlayerIns : ChrIns
+{
+    std::byte unk1[0x8];
     PlayerGameData *player_game_data;
     std::byte unk2[0x1b8];
 };
