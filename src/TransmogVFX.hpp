@@ -11,6 +11,7 @@ constexpr int64_t transmog_head_speffect_id = 690001;
 constexpr int64_t transmog_body_speffect_id = 690002;
 constexpr int64_t transmog_head_vfx_id = 690001;
 constexpr int64_t transmog_body_vfx_id = 690002;
+
 constexpr int64_t transmog_set_id = 69000000;
 constexpr int64_t transmog_set_alt_id = 69010000;
 constexpr int64_t transmog_reinforce_param_id = 0;

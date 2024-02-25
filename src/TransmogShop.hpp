@@ -2,8 +2,6 @@
 
 #include <cstdint>
 
-struct MsgRepository;
-
 namespace TransmogShop
 {
 static constexpr uint32_t item_type_goods_begin = 0x40000000;
@@ -27,7 +25,7 @@ static constexpr int64_t transmog_shop_max_size = 100000;
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog shops
  */
-void initialize(MsgRepository *msg_repository);
+void initialize();
 
 /**
  * Remove transmog shop items from the player's inventory

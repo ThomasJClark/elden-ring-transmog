@@ -154,7 +154,7 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
     return add_inventory_from_shop(item_id_address, quantity);
 }
 
-void TransmogShop::initialize(MsgRepository *msg_repository)
+void TransmogShop::initialize()
 {
     add_remove_item = ModUtils::scan<AddRemoveItemFn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
@@ -200,7 +200,7 @@ void TransmogShop::initialize(MsgRepository *msg_repository)
          ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
         // Skip invalid/cut items
-        auto protector_name = TransmogMessages::get_protector_name(msg_repository, protector_id);
+        auto protector_name = TransmogMessages::get_protector_name(protector_id);
         if (protector_name.empty() || protector_name.starts_with(u"[ERROR]"))
         {
             continue;

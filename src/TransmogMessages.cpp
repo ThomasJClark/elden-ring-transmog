@@ -1,5 +1,7 @@
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include "ModUtils.hpp"
 #include "TransmogMessages.hpp"
@@ -37,6 +39,12 @@ static string get_steam_language()
     return steam_language != nullptr ? steam_language : "";
 }
 
+namespace CS
+{
+struct MsgRepository;
+}
+static CS::MsgRepository *msg_repository = nullptr;
+
 /**
  * Assigned the list of localized messages based on the player's language preference
  */
@@ -48,11 +56,11 @@ static Messages transmog_messages;
  */
 static int8_t active_transmog_shop_protector_category = -1;
 
-static const char16_t *(*get_message)(MsgRepository *msg_repository, uint32_t unknown,
+static const char16_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_t unknown,
                                       uint32_t bnd_id, int32_t msg_id);
 
-const char16_t *get_message_detour(MsgRepository *msg_repository, uint32_t unknown, uint32_t bnd_id,
-                                   int32_t msg_id)
+const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
+                                   uint32_t bnd_id, int32_t msg_id)
 {
     switch (bnd_id)
     {
@@ -178,8 +186,19 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
     open_regular_shop(unk, begin_id, end_id);
 }
 
-void TransmogMessages::initialize(MsgRepository *msg_repository)
+void TransmogMessages::initialize()
 {
+    auto msg_repository_address = ModUtils::scan<CS::MsgRepository *>({
+        .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
+        .relative_offsets = {{3, 7}},
+    });
+
+    cout << "Waiting for messages..." << endl;
+    while (!(msg_repository = *msg_repository_address))
+    {
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
     ModUtils::hook(
         {
@@ -238,7 +257,7 @@ void TransmogMessages::initialize(MsgRepository *msg_repository)
     }
 }
 
-const u16string_view TransmogMessages::get_protector_name(MsgRepository *msg_repository, int32_t id)
+const u16string_view TransmogMessages::get_protector_name(int32_t id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
     if (result == nullptr)
