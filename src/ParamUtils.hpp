@@ -29,6 +29,11 @@ template <typename T> class ParamTableSequence
   private:
     ParamTable *param_table;
 
+    static inline T *get_row_data(ParamTable *table, ParamRowInfo *row)
+    {
+        return reinterpret_cast<T *>(reinterpret_cast<std::byte *>(table) + row->param_offset);
+    }
+
   public:
     class Iterator
     {
@@ -65,9 +70,7 @@ template <typename T> class ParamTableSequence
 
         std::pair<uint64_t, T &> operator*()
         {
-            auto base_addr = reinterpret_cast<std::byte *>(table);
-            return std::pair<uint64_t, T &>(row->row_id,
-                                            *reinterpret_cast<T *>(base_addr + row->param_offset));
+            return std::pair<uint64_t, T &>(row->row_id, *get_row_data(table, row));
         }
 
         using difference_type = int64_t;
@@ -83,12 +86,18 @@ template <typename T> class ParamTableSequence
 
     T &operator[](uint64_t id)
     {
-        for (auto [row_id, row] : *this)
+        ptrdiff_t begin_index = 0;
+        ptrdiff_t end_index = param_table->num_rows - 1;
+        while (begin_index <= end_index)
         {
-            if (row_id == id)
-            {
-                return row;
-            }
+            auto index = (end_index + begin_index) / 2;
+            auto row = &param_table->rows[index];
+            if (row->row_id < id)
+                begin_index = index + 1;
+            else if (row->row_id > id)
+                end_index = index - 1;
+            else
+                return *get_row_data(param_table, row);
         }
 
         std::stringstream ss;
