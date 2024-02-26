@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include <random>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
@@ -11,11 +12,21 @@
 using namespace TransmogVFX;
 using namespace std;
 
+static constexpr int64_t transmog_head_speffect_id = 690001;
+static constexpr int64_t transmog_body_speffect_id = 690002;
+static constexpr int64_t transmog_vfx_id_begin = 6900000;
+static constexpr int64_t transmog_vfx_id_end = 7000000;
+static constexpr int64_t transmog_set_id = 69000000;
+static constexpr int64_t transmog_set_alt_id = 69010000;
+static constexpr int64_t transmog_reinforce_param_id = 0;
 static constexpr int64_t head_protector_offset = 0;
 static constexpr int64_t body_protector_offset = 100;
 static constexpr int64_t arms_protector_offset = 200;
 static constexpr int64_t legs_protector_offset = 300;
 static constexpr int32_t undo_transmog_sfx_id = 8020;
+
+static int64_t transmog_head_vfx_id;
+static int64_t transmog_body_vfx_id;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
@@ -123,38 +134,40 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
 
 static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t id)
 {
-    switch (id)
+    if (id == transmog_head_speffect_id)
     {
-    case transmog_head_speffect_id:
         result->id = transmog_head_speffect_id;
         result->row = &transmog_head_speffect;
         result->unknown = byte(0x04);
-        break;
-    case transmog_body_speffect_id:
+    }
+    else if (id == transmog_body_speffect_id)
+    {
         result->id = transmog_body_speffect_id;
         result->row = &transmog_body_speffect;
         result->unknown = byte(0x04);
-        break;
-    default:
+    }
+    else
+    {
         get_speffect_param(result, id);
     }
 }
 
 static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, uint32_t id)
 {
-    switch (id)
+    if (id == transmog_head_vfx_id)
     {
-    case transmog_head_vfx_id:
         result->id = transmog_head_vfx_id;
         result->row = &transmog_head_vfx;
         result->unknown = 1;
-        break;
-    case transmog_body_vfx_id:
+    }
+    else if (id == transmog_body_vfx_id)
+    {
         result->id = transmog_body_vfx_id;
         result->row = &transmog_body_vfx;
         result->unknown = 1;
-        break;
-    default:
+    }
+    else
+    {
         get_speffect_vfx_param(result, id);
     }
 }
@@ -237,6 +250,17 @@ void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
         .offset = 10,
         .relative_offsets = {{1, 5}},
     });
+
+    // Hack for seamless co-op: randomize the VFX ID so you don't see the transmog VFX applied
+    // to other players. This needs testing, and also obviously isn't completely reliable.
+    random_device dev;
+    mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> vfx_id_dist(transmog_vfx_id_begin,
+                                                               transmog_vfx_id_end - 2);
+    transmog_head_vfx_id = vfx_id_dist(rng);
+    transmog_body_vfx_id = transmog_head_vfx_id + 1;
+
+    cout << "Randomized VFX IDs: " << transmog_head_vfx_id << " / " << transmog_body_vfx_id << endl;
 
     reset_transmog();
 }
@@ -340,11 +364,11 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
     auto world_chr_man = *world_chr_man_addr;
     if (protector_result.row->protectorCategory == TransmogShop::protector_category_head)
     {
-        apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_head_speffect_id, false);
+        apply_speffect(world_chr_man->main_player, transmog_head_speffect_id, false);
     }
     else
     {
-        apply_speffect(world_chr_man->main_player, TransmogVFX::transmog_body_speffect_id, false);
+        apply_speffect(world_chr_man->main_player, transmog_body_speffect_id, false);
     }
 
     // Show a one-shot SFX on the player depending on the armor category
