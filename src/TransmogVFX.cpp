@@ -371,26 +371,24 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
         apply_speffect(world_chr_man->main_player, transmog_body_speffect_id, false);
     }
 
-    // Show a one-shot SFX on the player depending on the armor category
-    switch (protector_result.row->protectorCategory)
-    {
-    case TransmogShop::protector_category_head:
-        break;
-    case TransmogShop::protector_category_body:
-        break;
-    case TransmogShop::protector_category_arms:
-        break;
-    case TransmogShop::protector_category_legs:
-        break;
-    }
-
     return equip_param_protector;
 }
 
 void TransmogVFX::disable_transmog()
 {
     auto world_chr_man = *world_chr_man_addr;
+
+    // Remove the transmog speffects so the player's appearance returns to normal
     clear_speffect(world_chr_man->main_player, transmog_head_speffect_id);
     clear_speffect(world_chr_man->main_player, transmog_body_speffect_id);
+
+    // Show a cool effect on the player
     spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id, nullptr);
+
+    // Reset the transmog set to bare head/body/arms/legs
+    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    transmog_head = &equip_param_protector[TransmogShop::bare_head_protector_id];
+    transmog_body = &equip_param_protector[TransmogShop::bare_body_protector_id];
+    transmog_arms = &equip_param_protector[TransmogShop::bare_arms_protector_id];
+    transmog_legs = &equip_param_protector[TransmogShop::bare_legs_protector_id];
 }
