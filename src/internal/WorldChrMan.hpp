@@ -87,7 +87,7 @@ struct ChrIns
 
 struct PlayerIns : ChrIns
 {
-    std::byte unk1[0x8];
+    std::byte unk1[0x10];
     PlayerGameData *player_game_data;
     std::byte unk2[0x1b8];
 };
