@@ -47,8 +47,6 @@ add_library(EldenRingTransmogMod SHARED
   src/ParamUtils.cpp
   src/Transmog.hpp
   src/Transmog.cpp
-  src/TransmogEvents.hpp
-  src/TransmogEvents.cpp
   src/TransmogMessages.hpp
   src/TransmogMessages.cpp
   src/TransmogShop.hpp

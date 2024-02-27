@@ -7,6 +7,8 @@
 
 namespace CS
 {
+static constexpr std::byte team_type_host = (std::byte)1;
+
 struct EquipMagicData;
 struct EquipItemData;
 
@@ -82,14 +84,16 @@ struct PlayerGameData
 
 struct ChrIns
 {
-    std::byte unk[0x570];
+    std::byte unk1[0x6C];
+    std::byte team_type;
+    std::byte unk2[0x503];
 };
 
 struct PlayerIns : ChrIns
 {
-    std::byte unk1[0x10];
+    std::byte unk3[0x10];
     PlayerGameData *player_game_data;
-    std::byte unk2[0x1b8];
+    std::byte unk4[0x1b8];
 };
 
 struct WorldChrManImp

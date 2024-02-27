@@ -4,7 +4,6 @@
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
 #include "Transmog.hpp"
-#include "TransmogEvents.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogTalkScript.hpp"
@@ -42,9 +41,6 @@ void Transmog::initialize()
 
         cout << "Hooking talk scripts..." << endl;
         TransmogTalkScript::initialize();
-
-        cout << "Hooking transmog events..." << endl;
-        TransmogEvents::initialize(world_chr_man_addr);
 
         ModUtils::enable_hooks();
 

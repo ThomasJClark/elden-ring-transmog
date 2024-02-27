@@ -132,26 +132,39 @@ static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) =
 
 static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t quantity)
 {
-    auto item_id = *item_id_address;
+    auto result = add_inventory_from_shop(item_id_address, quantity);
 
-    if (item_id >= item_type_goods_begin && item_id < item_type_goods_end)
+    auto item_id = *item_id_address;
+    if (item_id < item_type_goods_begin || item_id >= item_type_goods_end)
     {
-        // If this is a transmog item, update the VFX to apply it
-        auto transmog_goods_id = item_id - item_type_goods_begin;
-        auto transmog_protector_id = get_protector_id_for_transmog_good(transmog_goods_id);
-        if (transmog_protector_id != -1)
+        return result;
+    }
+
+    auto transmog_protector_id =
+        get_protector_id_for_transmog_good(item_id - item_type_goods_begin);
+    if (transmog_protector_id == -1)
+    {
+        return result;
+    }
+
+    // Remove any other items of the same category in the player's inventory, so there's
+    // only one item for each slot
+    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    auto transmog_protector = equip_param_protector[transmog_protector_id];
+    for (auto [protector_id, protector] : equip_param_protector)
+    {
+        if (protector_id != transmog_protector_id &&
+            protector.protectorCategory == transmog_protector.protectorCategory)
         {
-            auto protector = TransmogVFX::set_transmog_protector(transmog_protector_id);
-            if (protector != nullptr)
-            {
-                // Remove any other items of the same category in the player's inventory, so there's
-                // only one item for each slot
-                remove_transmog_goods(protector->protectorCategory);
-            }
+            auto goods_id = get_transmog_goods_id_for_protector(protector_id);
+            add_remove_item(item_type_goods_begin, goods_id, -1);
         }
     }
 
-    return add_inventory_from_shop(item_id_address, quantity);
+    // Update the VFX to apply the new transmog selections
+    TransmogVFX::enable_transmog();
+
+    return result;
 }
 
 void TransmogShop::initialize()

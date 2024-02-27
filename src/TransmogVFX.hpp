@@ -13,14 +13,9 @@ namespace TransmogVFX
 void initialize(CS::WorldChrManImp **);
 
 /**
- * Set the dynamic transmog params to their initial state
+ * Apply the transmog VFX based on the shop items in the player's inventory
  */
-void reset_transmog();
-
-/**
- * Set the given armor piece as the player's appearance
- */
-EquipParamProtector *set_transmog_protector(int64_t equip_param_protector_id);
+void enable_transmog();
 
 /**
  * Remove the transmog VFX from the main character

@@ -61,15 +61,19 @@ struct FindSpEffectVfxParamResult
     uint16_t unknown;
 };
 
+struct InGameStep;
+
 #pragma pack(pop)
 
 typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t speffect_id, bool unk);
 typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t speffect_id);
 typedef void SpawnOneShotVFXOnChrFn(CS::ChrIns *, int32_t dummy_poly_id, int32_t sfx_id, void *unk);
+typedef int GetInventoryIdFn(CS::EquipInventoryData *, int32_t *item_id);
 
-static ApplySpEffectFn *apply_speffect;
-static ClearSpEffectFn *clear_speffect;
-static SpawnOneShotVFXOnChrFn *spawn_one_shot_sfx_on_chr;
+static ApplySpEffectFn *apply_speffect = nullptr;
+static ClearSpEffectFn *clear_speffect = nullptr;
+static SpawnOneShotVFXOnChrFn *spawn_one_shot_sfx_on_chr = nullptr;
+static GetInventoryIdFn *get_inventory_id = nullptr;
 
 typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
@@ -172,6 +176,27 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
+static bool prev_loaded = false;
+
+static void (*in_game_stay_step_load_finish)(InGameStep *) = nullptr;
+
+/**
+ * When the main player is reinitialized, set up the transmog VFX again. This happens
+ * whenever you go through a loading screen.
+ */
+static void in_game_stay_step_load_finish_detour(InGameStep *step)
+{
+    auto world_chr_man = *world_chr_man_addr;
+    auto loaded = world_chr_man != nullptr && world_chr_man->main_player != nullptr;
+    if (loaded && !prev_loaded)
+    {
+        enable_transmog();
+    }
+    prev_loaded = loaded;
+
+    in_game_stay_step_load_finish(step);
+}
+
 void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
 {
     ::world_chr_man_addr = world_chr_man_addr;
@@ -251,6 +276,15 @@ void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
         .relative_offsets = {{1, 5}},
     });
 
+    // TODO AOB
+    get_inventory_id = ModUtils::scan<GetInventoryIdFn>({
+        .offset = 0x24b490,
+    });
+
+    // TODO AOB
+    ModUtils::hook({.offset = 0xabc830}, in_game_stay_step_load_finish_detour,
+                   in_game_stay_step_load_finish);
+
     // Hack for seamless co-op: randomize the VFX ID so you don't see the transmog VFX applied
     // to other players. This needs testing, and also obviously isn't completely reliable.
     random_device dev;
@@ -261,13 +295,6 @@ void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
     transmog_body_vfx_id = transmog_head_vfx_id + 1;
 
     cout << "Randomized VFX IDs: " << transmog_head_vfx_id << " / " << transmog_body_vfx_id << endl;
-
-    reset_transmog();
-}
-
-void TransmogVFX::reset_transmog()
-{
-    cout << "Resetting transmog params" << endl;
 
     // Initialize to bare head/body/arms/legs
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
@@ -313,38 +340,86 @@ void TransmogVFX::reset_transmog()
     transmog_body_vfx.materialParamId = -1;
 }
 
-EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_protector_id)
-{
+static bool head_transmog_enabled = false;
+static bool body_transmog_enabled = false;
 
-    FindEquipParamProtectorResult protector_result;
-    get_equip_param_protector(&protector_result, equip_param_protector_id);
-    if (protector_result.row == nullptr)
+void TransmogVFX::enable_transmog()
+{
+    auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man == nullptr || world_chr_man->main_player == nullptr)
     {
-        cout << "Protector " << equip_param_protector_id << " doesn't exist" << endl;
-        return nullptr;
+        return;
     }
 
-    auto equip_param_protector = protector_result.row;
-
-    // Set the appropriate slot in the transmog protector set to point to the new armor piece
-    switch (protector_result.row->protectorCategory)
+    // Hack: skip checking the inventory if the player is not the host, because inventory isn't
+    // completely copied over for pseudo-multiplayer, and it's not possible for this to have changed
+    // since the last time it was checked. Not sure how this affects seamless co-op.
+    auto main_player = world_chr_man->main_player;
+    if (main_player->team_type != CS::team_type_host)
     {
-    case TransmogShop::protector_category_head:
-        transmog_head = protector_result.row;
-        cout << "Set head transmog to protector " << protector_result.id << endl;
-        break;
-    case TransmogShop::protector_category_body:
-        transmog_body = protector_result.row;
-        cout << "Set body transmog to protector " << protector_result.id << endl;
-        break;
-    case TransmogShop::protector_category_arms:
-        transmog_arms = protector_result.row;
-        cout << "Set arms transmog to protector " << protector_result.id << endl;
-        break;
-    case TransmogShop::protector_category_legs:
-        transmog_legs = protector_result.row;
-        cout << "Set legs transmog to protector " << protector_result.id << endl;
-        break;
+        cout << "Player isn't host - skipping transmog application" << endl;
+    }
+    else
+    {
+        cout << "Applying transmog from inventory..." << endl;
+        head_transmog_enabled = false;
+        body_transmog_enabled = false;
+
+        auto equip_inventory_data =
+            &main_player->player_game_data->equip_game_data.equip_inventory_data;
+
+        // Check which transmog goods are in the player's inventory, and update each slot of the
+        // transmog VFX with the corresponding protectors. Default to bare head/body/arms/legs if
+        // nothing is selected.
+        auto equip_param_protector =
+            ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+        transmog_head = &equip_param_protector[TransmogShop::bare_head_protector_id];
+        transmog_body = &equip_param_protector[TransmogShop::bare_body_protector_id];
+        transmog_arms = &equip_param_protector[TransmogShop::bare_arms_protector_id];
+        transmog_legs = &equip_param_protector[TransmogShop::bare_legs_protector_id];
+
+        for (auto [protector_id, protector] : equip_param_protector)
+        {
+            int32_t transmog_item_id =
+                TransmogShop::item_type_goods_begin +
+                TransmogShop::get_transmog_goods_id_for_protector(protector_id);
+
+            auto inventory_id = get_inventory_id(equip_inventory_data, &transmog_item_id);
+            if (inventory_id == -1)
+            {
+                continue;
+            }
+
+            switch (protector.protectorCategory)
+            {
+            case TransmogShop::protector_category_head:
+                transmog_head = &protector;
+                head_transmog_enabled = true;
+                cout << "Set head transmog to protector " << protector_id << endl;
+                break;
+            case TransmogShop::protector_category_body:
+                transmog_body = &protector;
+                body_transmog_enabled = true;
+                cout << "Set body transmog to protector " << protector_id << endl;
+                break;
+            case TransmogShop::protector_category_arms:
+                transmog_arms = &protector;
+                body_transmog_enabled = true;
+                cout << "Set arms transmog to protector " << protector_id << endl;
+                break;
+            case TransmogShop::protector_category_legs:
+                transmog_legs = &protector;
+                body_transmog_enabled = true;
+                cout << "Set legs transmog to protector " << protector_id << endl;
+                break;
+            }
+        }
+    }
+
+    if (!head_transmog_enabled && !body_transmog_enabled)
+    {
+        cout << "No transmogs enabled" << endl;
+        return;
     }
 
     // Toggle the set between the default and alternate IDs to force the game to pick up the new
@@ -360,23 +435,33 @@ EquipParamProtector *TransmogVFX::set_transmog_protector(int64_t equip_param_pro
         transmog_body_vfx.transformProtectorId = transmog_set_id;
     }
 
-    // Ensure the main player has the transmog speffect
-    auto world_chr_man = *world_chr_man_addr;
-    if (protector_result.row->protectorCategory == TransmogShop::protector_category_head)
+    // Ensure the main player has the transmog effect(s) enabled if they have anything selected
+    if (head_transmog_enabled)
     {
-        apply_speffect(world_chr_man->main_player, transmog_head_speffect_id, false);
+        apply_speffect(main_player, transmog_head_speffect_id, false);
     }
     else
     {
-        apply_speffect(world_chr_man->main_player, transmog_body_speffect_id, false);
+        clear_speffect(main_player, transmog_head_speffect_id);
     }
 
-    return equip_param_protector;
+    if (body_transmog_enabled)
+    {
+        apply_speffect(main_player, transmog_body_speffect_id, false);
+    }
+    else
+    {
+        clear_speffect(main_player, transmog_body_speffect_id);
+    }
 }
 
 void TransmogVFX::disable_transmog()
 {
     auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man == nullptr)
+    {
+        return;
+    }
 
     // Remove the transmog speffects so the player's appearance returns to normal
     clear_speffect(world_chr_man->main_player, transmog_head_speffect_id);
