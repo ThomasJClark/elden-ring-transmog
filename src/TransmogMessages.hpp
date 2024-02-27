@@ -34,6 +34,8 @@ namespace Dialogues
 static constexpr int32_t purchase_item_for_runes = 231000;
 }
 
+const std::u16string cut_item_prefix = u"[ERROR]";
+
 /**
  * Determine the player's selected language, then hook the internal get_message() function to
  * return strings for the transmog menu

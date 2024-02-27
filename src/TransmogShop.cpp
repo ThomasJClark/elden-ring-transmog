@@ -199,9 +199,16 @@ void TransmogShop::initialize()
     for (auto [protector_id, protector_row] :
          ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
-        // Skip invalid/cut items
+        // Skip invalid items, and cut items that don't have a name (these are usually duplicates
+        // used for NPCs)
         auto protector_name = TransmogMessages::get_protector_name(protector_id);
-        if (protector_name.empty() || protector_name.starts_with(u"[ERROR]"))
+        if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
+        {
+            continue;
+        }
+
+        // Skip Grass Hair Ornament, which is missing an icon
+        if (protector_id == 920000)
         {
             continue;
         }

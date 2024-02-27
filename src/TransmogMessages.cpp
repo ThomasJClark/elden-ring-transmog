@@ -100,14 +100,22 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
+            // Show bare head/body/arms/legs as "Invisible"
             if (TransmogShop::is_invisible_protector_id(protector_id))
             {
                 return transmog_messages.invisible.c_str();
             }
-            else
+
+            u16string_view protector_name =
+                get_message(msg_repository, unknown, msgbnd_protector_name, protector_id);
+
+            // Remove the "[ERROR]" prefix from cut items in the transmog shop
+            if (protector_name.starts_with(cut_item_prefix))
             {
-                return get_message(msg_repository, unknown, msgbnd_protector_name, protector_id);
+                protector_name = protector_name.substr(cut_item_prefix.size());
             }
+
+            return protector_name.data();
         }
         break;
     }
