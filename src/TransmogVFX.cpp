@@ -8,6 +8,7 @@
 #include "ParamUtils.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
+#include "internal/WorldChrMan.hpp"
 
 using namespace TransmogVFX;
 using namespace std;
@@ -197,10 +198,8 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
     in_game_stay_step_load_finish(step);
 }
 
-void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
+void TransmogVFX::initialize()
 {
-    ::world_chr_man_addr = world_chr_man_addr;
-
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
     ModUtils::hook(
@@ -234,6 +233,14 @@ void TransmogVFX::initialize(CS::WorldChrManImp **world_chr_man_addr)
             .offset = -106,
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
+
+    world_chr_man_addr = ModUtils::scan<CS::WorldChrManImp *>({
+        .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
+               "48 85 c0"              // test rax, rax
+               "74 0f"                 // jz end_label
+               "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
+        .relative_offsets = {{3, 7}},
+    });
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
