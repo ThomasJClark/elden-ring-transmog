@@ -13,10 +13,10 @@
 using namespace TransmogVFX;
 using namespace std;
 
-static constexpr int64_t transmog_head_speffect_id = 690001;
-static constexpr int64_t transmog_body_speffect_id = 690002;
-static constexpr int64_t transmog_vfx_id_begin = 6900000;
-static constexpr int64_t transmog_vfx_id_end = 7000000;
+static constexpr int64_t transmog_speffect_id_begin = 169000000;
+static constexpr int64_t transmog_speffect_id_end = 170000000;
+static constexpr int64_t transmog_head_vfx_id = 6900100;
+static constexpr int64_t transmog_body_vfx_id = 6900101;
 static constexpr int64_t transmog_set_id = 69000000;
 static constexpr int64_t transmog_set_alt_id = 69010000;
 static constexpr int64_t transmog_reinforce_param_id = 0;
@@ -26,8 +26,8 @@ static constexpr int64_t arms_protector_offset = 200;
 static constexpr int64_t legs_protector_offset = 300;
 static constexpr int32_t undo_transmog_sfx_id = 8020;
 
-static int64_t transmog_head_vfx_id;
-static int64_t transmog_body_vfx_id;
+static int64_t transmog_head_speffect_id;
+static int64_t transmog_body_speffect_id;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
@@ -292,16 +292,17 @@ void TransmogVFX::initialize()
     ModUtils::hook({.offset = 0xabc830}, in_game_stay_step_load_finish_detour,
                    in_game_stay_step_load_finish);
 
-    // Hack for seamless co-op: randomize the VFX ID so you don't see the transmog VFX applied
+    // Hack for seamless co-op: randomize the SpEffect ID so you don't see the transmog VFX applied
     // to other players. This needs testing, and also obviously isn't completely reliable.
     random_device dev;
     mt19937 rng(dev());
-    uniform_int_distribution<mt19937::result_type> vfx_id_dist(transmog_vfx_id_begin,
-                                                               transmog_vfx_id_end - 2);
-    transmog_head_vfx_id = vfx_id_dist(rng);
-    transmog_body_vfx_id = transmog_head_vfx_id + 1;
+    uniform_int_distribution<mt19937::result_type> speffect_id_dist(transmog_speffect_id_begin,
+                                                                    transmog_speffect_id_end - 2);
+    transmog_head_speffect_id = speffect_id_dist(rng);
+    transmog_body_speffect_id = transmog_head_speffect_id + 1;
 
-    cout << "Randomized VFX IDs: " << transmog_head_vfx_id << " / " << transmog_body_vfx_id << endl;
+    cout << "Randomized SpEffect IDs: " << transmog_head_speffect_id << " / "
+         << transmog_body_speffect_id << endl;
 
     // Initialize to bare head/body/arms/legs
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
