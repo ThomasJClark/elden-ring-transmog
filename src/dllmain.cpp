@@ -19,8 +19,6 @@ bool WINAPI DllMain(HINSTANCE hinstDLL, uint32_t fdwReason, void *lpvReserved)
         freopen_s(&stream, "CONOUT$", "w", stdout);
         freopen_s(&stream, "CONOUT$", "w", stderr);
         freopen_s(&stream, "CONIN$", "r", stdin);
-#else
-        cout.rdbuf(nullptr);
 #endif
         try
         {
