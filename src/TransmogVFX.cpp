@@ -293,9 +293,20 @@ void TransmogVFX::initialize()
         .relative_offsets = {{1, 5}},
     });
 
-    // TODO AOB
-    ModUtils::hook({.offset = 0xabc830}, in_game_stay_step_load_finish_detour,
-                   in_game_stay_step_load_finish);
+    auto in_game_stay_step_vfptr = ModUtils::scan<byte *>({
+        .aob = "b9 28 01 00 00"  // mov ecx, 0x128
+               "e8 ?? ?? ?? ??"  // call ReserveMemory
+               "48 89 44 24 70"  // mov [rsp + local_res18], rax
+               "48 85 c0"        // test rax, rax
+               "74 0b"           // jz label
+               "48 8b c8"        // mov rcx, rax
+               "e8 ?? ?? ?? ??", // call ???
+        .offset = 23,
+        .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
+    });
+
+    ModUtils::hook({.offset = in_game_stay_step_vfptr[12] - ModUtils::scan<byte>({})},
+                   in_game_stay_step_load_finish_detour, in_game_stay_step_load_finish);
 
     // Hack for seamless co-op: randomize the SpEffect ID so you don't see the transmog VFX applied
     // to other players. This needs testing, and also obviously isn't completely reliable.
