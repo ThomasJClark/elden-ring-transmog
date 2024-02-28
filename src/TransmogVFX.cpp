@@ -283,9 +283,14 @@ void TransmogVFX::initialize()
         .relative_offsets = {{1, 5}},
     });
 
-    // TODO AOB
     get_inventory_id = ModUtils::scan<GetInventoryIdFn>({
-        .offset = 0x24b490,
+        .aob = "48 8d 8f 58 01 00 00" // lea rcx, [rdi + 0x158] ; &equipGameData->equipInventoryData
+               "e8 ?? ?? ?? ??"       // call GetInventoryId
+               "8b d8"                // mov ebx, eax
+               "85 c0"                // test eax, eax
+               "78 6a",               // js label
+        .offset = 7,
+        .relative_offsets = {{1, 5}},
     });
 
     // TODO AOB
