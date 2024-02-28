@@ -62,6 +62,8 @@ add_library(EldenRingTransmogMod SHARED
   src/internal/WorldChrMan.hpp
   src/messages.hpp)
 
+set_target_properties(EldenRingTransmogMod PROPERTIES OUTPUT_NAME "ertransmogrify")
+
 target_link_libraries(EldenRingTransmogMod
   minhook
   ertga
