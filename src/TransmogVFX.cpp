@@ -343,6 +343,10 @@ void TransmogVFX::initialize()
     base_speffect.effectTargetFriendlyTarget = true;
     base_speffect.effectTargetSelfTarget = true;
 
+    // TODO test if this is enough to make it client-side only or if the ID randomization is really
+    // necessary
+    base_speffect.isDisableNetSync = true;
+
     transmog_head_speffect = base_speffect;
     transmog_head_speffect.vfxId = transmog_head_vfx_id;
 
