@@ -16,10 +16,14 @@ static constexpr int64_t bare_arms_protector_id = 10200;
 static constexpr int64_t bare_legs_protector_id = 10300;
 static constexpr int64_t transmog_goods_start_id = 6900000;
 static constexpr int64_t transmog_goods_end_id = 7000000;
+static constexpr int64_t transmog_eyes_dragon_communion_goods_id = transmog_goods_end_id;
+static constexpr int64_t transmog_eyes_bloody_finger_goods_id = transmog_goods_end_id + 1;
+static constexpr int64_t transmog_eyes_frenzied_flame_goods_id = transmog_goods_end_id + 2;
 static constexpr int64_t transmog_head_shop_menu_id = 4000000;
 static constexpr int64_t transmog_body_shop_menu_id = 4100000;
 static constexpr int64_t transmog_arms_shop_menu_id = 4200000;
 static constexpr int64_t transmog_legs_shop_menu_id = 4300000;
+static constexpr int64_t transmog_eyes_shop_menu_id = 4400000;
 static constexpr int64_t transmog_shop_max_size = 100000;
 
 /**

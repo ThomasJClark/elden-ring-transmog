@@ -20,6 +20,7 @@ extern OpenShopState transmog_head_state;
 extern OpenShopState transmog_body_state;
 extern OpenShopState transmog_arms_state;
 extern OpenShopState transmog_legs_state;
+extern OpenShopState transmog_eyes_state;
 extern PassState disable_transmog_state;
 
 // TalkESD state for the main "Transmogrify armor" menu
@@ -28,7 +29,7 @@ TransmogMenuState transmog_menu_state(69000, &transmog_menu_next_state);
 // TalkESD state that advances to the next state based on the menu selection
 TransmogMenuNextState transmog_menu_next_state(69001, &transmog_head_state, &transmog_body_state,
                                                &transmog_arms_state, &transmog_legs_state,
-                                               &disable_transmog_state);
+                                               &disable_transmog_state, &transmog_eyes_state);
 
 // TalkESD states to open the menu for each protector category
 OpenShopState transmog_head_state(69002, TransmogShop::transmog_head_shop_menu_id,
@@ -51,8 +52,13 @@ OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_i
                                       TransmogShop::transmog_shop_max_size - 1,
                                   &transmog_menu_state);
 
+OpenShopState transmog_eyes_state(69006, TransmogShop::transmog_eyes_shop_menu_id,
+                                  TransmogShop::transmog_eyes_shop_menu_id +
+                                      TransmogShop::transmog_shop_max_size - 1,
+                                  &transmog_menu_state);
+
 // TalkESD state that disables transmogrification
-PassState disable_transmog_state(69006, &transmog_menu_state);
+PassState disable_transmog_state(69007, &transmog_menu_state);
 }; // namespace
 
 // AddTalkListData(69, "Transmogrify armor", -1)

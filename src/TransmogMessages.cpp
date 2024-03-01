@@ -117,6 +117,22 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
 
             return protector_name.data();
         }
+        // Use existing messages for eye transmogs
+        else if (msg_id == TransmogShop::transmog_eyes_dragon_communion_goods_id)
+        {
+            return get_message(msg_repository, unknown, msgbnd_menu_text,
+                               MenuText::dragon_communion);
+        }
+        else if (msg_id == TransmogShop::transmog_eyes_bloody_finger_goods_id)
+        {
+            return get_message(msg_repository, unknown, msgbnd_menu_text, MenuText::bloody_finger);
+        }
+        else if (msg_id == TransmogShop::transmog_eyes_frenzied_flame_goods_id)
+        {
+            return get_message(msg_repository, unknown, msgbnd_goods_name,
+                               GoodsName::frenzied_flame);
+        }
+
         break;
     }
 

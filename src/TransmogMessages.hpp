@@ -22,6 +22,8 @@ static constexpr int32_t transmog_head = 690000;
 static constexpr int32_t transmog_body = 690001;
 static constexpr int32_t transmog_arms = 690002;
 static constexpr int32_t transmog_legs = 690003;
+static constexpr int32_t dragon_communion = 225000;
+static constexpr int32_t bloody_finger = 331102;
 } // namespace MenuText
 
 namespace LineHelp
@@ -32,6 +34,11 @@ static constexpr int32_t select_item_for_purchase = 231000;
 namespace Dialogues
 {
 static constexpr int32_t purchase_item_for_runes = 231000;
+}
+
+namespace GoodsName
+{
+static constexpr int32_t frenzied_flame = 7310;
 }
 
 const std::u16string cut_item_prefix = u"[ERROR]";

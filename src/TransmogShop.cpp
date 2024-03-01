@@ -45,6 +45,7 @@ static ShopLineupParam transmog_head_shop_menu = {0};
 static ShopLineupParam transmog_body_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
 static ShopLineupParam transmog_legs_shop_menu = {0};
+static ShopLineupParam transmog_eyes_shop_menu = {0};
 
 static unordered_map<int32_t, ShopLineupParam> transmog_shop_lineups;
 static unordered_map<int32_t, EquipParamGoods> transmog_goods;
@@ -77,6 +78,11 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
         result->id = transmog_legs_shop_menu_id;
         result->row = &transmog_legs_shop_menu;
         break;
+    case transmog_eyes_shop_menu_id:
+        result->shop_type = (byte)0;
+        result->id = transmog_eyes_shop_menu_id;
+        result->row = &transmog_eyes_shop_menu;
+        break;
     default:
         get_shop_menu(result, shop_type, begin_id, end_id);
     }
@@ -89,7 +95,7 @@ static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, byte sho
 void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type, int32_t id)
 {
     if (shop_type == byte(0) && id >= transmog_head_shop_menu_id &&
-        id < transmog_legs_shop_menu_id + transmog_shop_max_size)
+        id < transmog_eyes_shop_menu_id + transmog_shop_max_size)
     {
         auto entry = transmog_shop_lineups.find(id);
         if (entry != transmog_shop_lineups.end())
@@ -113,7 +119,7 @@ static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int32_t 
 
 void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 {
-    if (id >= transmog_goods_start_id && id < transmog_goods_end_id)
+    if (id >= transmog_goods_start_id && id <= transmog_eyes_frenzied_flame_goods_id)
     {
         auto transmog_good = transmog_goods.find(id);
         if (transmog_good != transmog_goods.end())
@@ -281,6 +287,53 @@ void TransmogShop::initialize()
             .setNum = 1,
             .iconId = -1,
             .nameMsgId = -1,
+        };
+    }
+
+    auto transmog_eyes_configs = vector<pair<int32_t, uint16_t>>{
+        {(int32_t)transmog_eyes_dragon_communion_goods_id, 11248},
+        {(int32_t)transmog_eyes_bloody_finger_goods_id, 626},
+        {(int32_t)transmog_eyes_frenzied_flame_goods_id, 11249},
+    };
+
+    auto shop_lineup_id = transmog_eyes_shop_menu_id;
+    for (auto [goods_id, icon_id] : transmog_eyes_configs)
+    {
+        transmog_shop_lineups[++shop_lineup_id] = {
+            .equipId = goods_id,
+            .value = -1,
+            .mtrlId = -1,
+            .sellQuantity = -1,
+            .equipType = 3,
+            .setNum = 1,
+            .iconId = -1,
+            .nameMsgId = -1,
+        };
+        transmog_goods[goods_id] = {
+            .refId_default = -1,
+            .sfxVariationId = -1,
+            .weight = 1,
+            .replaceItemId = -1,
+            .appearanceReplaceItemId = -1,
+            .yesNoDialogMessageId = -1,
+            .potGroupId = -1,
+            .iconId = icon_id,
+            .compTrophySedId = -1,
+            .trophySeqId = -1,
+            .maxNum = 1,
+            .goodsType = 1,
+            .refId_1 = -1,
+            .refVirtualWepId = -1,
+            .castSfxId = -1,
+            .fireSfxId = -1,
+            .effectSfxId = -1,
+            .showLogCondType = 1,
+            .showDialogCondType = 2,
+            .sortGroupId = 255,
+            .isUseNoAttackRegion = 1,
+            .aiUseJudgeId = -1,
+            .reinforceGoodsId = -1,
+            .reinforceMaterialId = -1,
         };
     }
 

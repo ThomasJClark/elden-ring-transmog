@@ -96,7 +96,12 @@ class TransmogMenuState : public EzState::State
     EzState::CommandArg transmog_legs_arg_list[3] = {transmog_legs_talk_list_index,
                                                      transmog_legs_menu_text_id, unk};
 
-    EzState::IntValue disable_transmog_talk_list_index = 5;
+    EzState::IntValue transmog_eyes_talk_list_index = 5;
+    EzState::IntValue transmog_eyes_menu_text_id = 23101002; // TODO "Transmogrify Eyes"
+    EzState::CommandArg transmog_eyes_arg_list[3] = {transmog_eyes_talk_list_index,
+                                                     transmog_eyes_menu_text_id, unk};
+
+    EzState::IntValue disable_transmog_talk_list_index = 6;
     EzState::IntValue disable_transmog_menu_text_id =
         TransmogMessages::EventTextForTalk::undo_transmog;
     EzState::CommandArg disable_transmog_arg_list[3] = {disable_transmog_talk_list_index,
@@ -109,7 +114,7 @@ class TransmogMenuState : public EzState::State
     EzState::IntValue generic_dialog_shop_message = 0;
     EzState::CommandArg show_shop_message_arg_list[1] = {generic_dialog_shop_message};
 
-    EzState::Call entry_commands[9] = {
+    EzState::Call entry_commands[10] = {
         // CloseShopMessage()
         {EzState::Commands::close_shop_message},
         // ClearTalkListData()
@@ -122,7 +127,9 @@ class TransmogMenuState : public EzState::State
         {EzState::Commands::add_talk_list_data, transmog_arms_arg_list},
         // AddTalkListData(4, "Transmogrify legs", -1)
         {EzState::Commands::add_talk_list_data, transmog_legs_arg_list},
-        // AddTalkListData(5, "Untransmogrify equipped armor", -1)
+        // AddTalkListData(5, "Transmogrify eyes", -1)
+        {EzState::Commands::add_talk_list_data, transmog_eyes_arg_list},
+        // AddTalkListData(6, "Untransmogrify equipped armor", -1)
         {EzState::Commands::add_talk_list_data, disable_transmog_arg_list},
         // AddTalkListData(99, "Cancel", -1)
         {EzState::Commands::add_talk_list_data, cancel_arg_list},
@@ -170,17 +177,21 @@ class TransmogMenuNextState : public EzState::State
     EzState::Transition select_transmog_body_transition;
     EzState::Transition select_transmog_arms_transition;
     EzState::Transition select_transmog_legs_transition;
+    EzState::Transition select_transmog_eyes_transition;
     EzState::Transition select_disable_transmog_transition;
     EzState::Transition return_transition;
-    EzState::Transition *transitions[6] = {
-        &select_transmog_head_transition,    &select_transmog_body_transition,
-        &select_transmog_arms_transition,    &select_transmog_legs_transition,
-        &select_disable_transmog_transition, &return_transition};
+    EzState::Transition *transitions[7] = {&select_transmog_head_transition,
+                                           &select_transmog_body_transition,
+                                           &select_transmog_arms_transition,
+                                           &select_transmog_legs_transition,
+                                           &select_transmog_eyes_transition,
+                                           &select_disable_transmog_transition,
+                                           &return_transition};
 
   public:
     TransmogMenuNextState(int32_t id, EzState::State *transmog_head_state,
                           EzState::State *transmog_body_state, EzState::State *transmog_arms_state,
-                          EzState::State *transmog_legs_state,
+                          EzState::State *transmog_legs_state, EzState::State *transmog_eyes_state,
                           EzState::State *disable_transmog_state)
 
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
@@ -193,7 +204,9 @@ class TransmogMenuNextState : public EzState::State
           // GetTalkListEntryResult() == 4
           select_transmog_legs_transition(transmog_legs_state, "\xaf\x44\x95\xa1"),
           // GetTalkListEntryResult() == 5
-          select_disable_transmog_transition(disable_transmog_state, "\xaf\x45\x95\xa1"),
+          select_transmog_eyes_transition(transmog_eyes_state, "\xaf\x45\x95\xa1"),
+          // GetTalkListEntryResult() == 6
+          select_disable_transmog_transition(disable_transmog_state, "\xaf\x46\x95\xa1"),
           return_transition(nullptr, "\x41\xa1")
     {
     }
