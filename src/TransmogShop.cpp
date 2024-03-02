@@ -226,6 +226,14 @@ void TransmogShop::initialize()
             continue;
         }
 
+        // Skip the Roundtable Set, which is an unobtainable set present in Reforged that doesn't
+        // have a model
+        if (protector_id == 955000 || protector_id == 955100 || protector_id == 955200 ||
+            protector_id == 955300 || protector_id == 956100)
+        {
+            continue;
+        }
+
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
         transmog_goods[goods_id] = {
             .refId_default = -1,
