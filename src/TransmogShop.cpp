@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <tga/paramdefs.h>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
@@ -12,6 +13,14 @@ using namespace TransmogShop;
 using namespace std;
 
 static constexpr uint16_t invisible_icon_id = 3142;
+
+static const unordered_set<uint64_t> exluded_protector_ids = {
+    // Skip Grass Hair Ornament, which is a cut helmet that's missing an icon
+    920000,
+
+    // Skip the Roundtable Set, which is an unobtainable set present in Reforged that doesn't
+    // have a model
+    955000, 955100, 955200, 955300, 956100};
 
 typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
 static AddRemoveItemFn *add_remove_item = nullptr;
@@ -212,24 +221,15 @@ void TransmogShop::initialize()
     for (auto [protector_id, protector_row] :
          ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
+        if (exluded_protector_ids.contains(protector_id))
+        {
+            continue;
+        }
+
         // Skip invalid items, and cut items that don't have a name (these are usually duplicates
         // used for NPCs)
         auto protector_name = TransmogMessages::get_protector_name(protector_id);
         if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
-        {
-            continue;
-        }
-
-        // Skip Grass Hair Ornament, which is missing an icon
-        if (protector_id == 920000)
-        {
-            continue;
-        }
-
-        // Skip the Roundtable Set, which is an unobtainable set present in Reforged that doesn't
-        // have a model
-        if (protector_id == 955000 || protector_id == 955100 || protector_id == 955200 ||
-            protector_id == 955300 || protector_id == 956100)
         {
             continue;
         }
