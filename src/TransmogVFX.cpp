@@ -26,6 +26,9 @@ static constexpr int64_t arms_protector_offset = 200;
 static constexpr int64_t legs_protector_offset = 300;
 static constexpr int32_t undo_transmog_sfx_id = 8020;
 
+static auto mimc_tear_speffect_ids = {290200, 290201, 290202, 290203, 290204, 290205,
+                                      290206, 290207, 290208, 290209, 290210};
+
 static int64_t transmog_head_speffect_id;
 static int64_t transmog_body_speffect_id;
 
@@ -490,6 +493,17 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
             spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id,
                                       nullptr);
         }
+    }
+
+    // Apply the VFX to Mimic Tear as well. Mimic Tear can't be spawned in at the same time that
+    // the transmog shop is open, apply_speffect()/clear_speffect() wouldn't work here. Instead,
+    // patch the SpEffects for Mimic Tear's spirit summon scaling.
+    auto speffect_param = ParamUtils::get_param<SpEffectParam>(L"SpEffectParam");
+    for (auto speffect_id : mimc_tear_speffect_ids)
+    {
+        auto &speffect = speffect_param[speffect_id];
+        speffect.vfxId = new_head_transmog_enabled ? transmog_head_vfx_id : -1;
+        speffect.vfxId1 = new_body_transmog_enabled ? transmog_body_vfx_id : -1;
     }
 
     head_transmog_enabled = new_head_transmog_enabled;
