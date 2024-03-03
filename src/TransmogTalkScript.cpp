@@ -174,8 +174,8 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 
     if (state == &disable_transmog_state)
     {
-        TransmogVFX::disable_transmog();
         TransmogShop::remove_transmog_goods();
+        TransmogVFX::refresh_transmog();
     }
 
     ezstate_enter_state(state, machine, unk);

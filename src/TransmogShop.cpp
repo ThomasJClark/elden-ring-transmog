@@ -162,7 +162,7 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
     }
 
     // Update the VFX to apply the new transmog selections
-    TransmogVFX::enable_transmog();
+    TransmogVFX::refresh_transmog();
 
     return result;
 }

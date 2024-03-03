@@ -13,10 +13,5 @@ void initialize();
 /**
  * Apply the transmog VFX based on the shop items in the player's inventory
  */
-void enable_transmog();
-
-/**
- * Remove the transmog VFX from the main character
- */
-void disable_transmog();
+void refresh_transmog(bool show_sfx = true);
 } // namespace TransmogVFX
