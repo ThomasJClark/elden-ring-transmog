@@ -240,6 +240,7 @@ void TransmogShop::initialize()
             .sfxVariationId = -1,
             .weight = 1,
             .replaceItemId = -1,
+            .sortId = protector_row.sortId,
             .appearanceReplaceItemId = -1,
             .yesNoDialogMessageId = -1,
             .potGroupId = -1,
