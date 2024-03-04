@@ -320,13 +320,6 @@ void TransmogVFX::initialize()
     cout << "Randomized SpEffect IDs: " << transmog_head_speffect_id << " / "
          << transmog_body_speffect_id << endl;
 
-    // Initialize to bare head/body/arms/legs
-    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
-    transmog_head = &equip_param_protector[TransmogShop::bare_head_protector_id];
-    transmog_body = &equip_param_protector[TransmogShop::bare_body_protector_id];
-    transmog_arms = &equip_param_protector[TransmogShop::bare_arms_protector_id];
-    transmog_legs = &equip_param_protector[TransmogShop::bare_legs_protector_id];
-
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
     transmog_reinforce_param =
         ParamUtils::get_param<ReinforceParamProtector>(L"ReinforceParamProtector")[0];
@@ -368,9 +361,6 @@ void TransmogVFX::initialize()
     transmog_body_vfx.materialParamId = -1;
 }
 
-static bool head_transmog_enabled = false;
-static bool body_transmog_enabled = false;
-
 void TransmogVFX::refresh_transmog(bool show_sfx)
 {
     auto world_chr_man = *world_chr_man_addr;
@@ -379,8 +369,10 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         return;
     }
 
-    bool new_head_transmog_enabled = head_transmog_enabled;
-    bool new_body_transmog_enabled = body_transmog_enabled;
+    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+
+    bool previous_transmog_enabled = transmog_head != nullptr || transmog_body != nullptr ||
+                                     transmog_arms != nullptr || transmog_legs != nullptr;
 
     // Hack: skip checking the inventory if the player is not the host, because inventory isn't
     // completely copied over for pseudo-multiplayer, and it's not possible for this to have changed
@@ -398,18 +390,11 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
             &main_player->player_game_data->equip_game_data.equip_inventory_data;
 
         // Check which transmog goods are in the player's inventory, and update each slot of the
-        // transmog VFX with the corresponding protectors. Default to bare head/body/arms/legs if
-        // nothing is selected.
-        auto equip_param_protector =
-            ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
-        transmog_head = &equip_param_protector[TransmogShop::bare_head_protector_id];
-        transmog_body = &equip_param_protector[TransmogShop::bare_body_protector_id];
-        transmog_arms = &equip_param_protector[TransmogShop::bare_arms_protector_id];
-        transmog_legs = &equip_param_protector[TransmogShop::bare_legs_protector_id];
-
-        new_head_transmog_enabled = false;
-        new_body_transmog_enabled = false;
-
+        // transmog VFX with the corresponding protectors.
+        transmog_head = nullptr;
+        transmog_body = nullptr;
+        transmog_arms = nullptr;
+        transmog_legs = nullptr;
         for (auto [protector_id, protector] : equip_param_protector)
         {
             int32_t transmog_item_id =
@@ -426,25 +411,51 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
             {
             case TransmogShop::protector_category_head:
                 transmog_head = &protector;
-                new_head_transmog_enabled = true;
                 cout << "Set head transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_body:
                 transmog_body = &protector;
-                new_body_transmog_enabled = true;
                 cout << "Set body transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_arms:
                 transmog_arms = &protector;
-                new_body_transmog_enabled = true;
                 cout << "Set arms transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_legs:
                 transmog_legs = &protector;
-                new_body_transmog_enabled = true;
                 cout << "Set legs transmog to protector " << protector_id << endl;
                 break;
             }
+        }
+    }
+
+    bool head_transmog_enabled = transmog_head != nullptr;
+    bool body_transmog_enabled =
+        transmog_body != nullptr || transmog_arms != nullptr || transmog_legs != nullptr;
+    bool transmog_enabled = head_transmog_enabled || body_transmog_enabled;
+
+    // Body/arms/legs have to be combined in one spffect. If transmog is enabled on some but not
+    // all of them, default the others to the player's current armor
+    if (body_transmog_enabled)
+    {
+        auto &chr_asm = main_player->player_game_data->equip_game_data.chr_asm;
+        if (transmog_body == nullptr)
+        {
+            transmog_body = &equip_param_protector[chr_asm.body_protector_id];
+            TransmogShop::add_transmog_good(chr_asm.body_protector_id);
+            cout << "Defaulting body to protector " << chr_asm.body_protector_id << endl;
+        }
+        if (transmog_arms == nullptr)
+        {
+            transmog_arms = &equip_param_protector[chr_asm.arms_protector_id];
+            TransmogShop::add_transmog_good(chr_asm.arms_protector_id);
+            cout << "Defaulting arms to protector " << chr_asm.arms_protector_id << endl;
+        }
+        if (transmog_legs == nullptr)
+        {
+            transmog_legs = &equip_param_protector[chr_asm.legs_protector_id];
+            TransmogShop::add_transmog_good(chr_asm.legs_protector_id);
+            cout << "Defaulting legs to protector " << chr_asm.legs_protector_id << endl;
         }
     }
 
@@ -462,7 +473,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     }
 
     // Ensure the main player has the transmog effect(s) enabled if they have anything selected
-    if (new_head_transmog_enabled)
+    if (head_transmog_enabled)
     {
         apply_speffect(main_player, transmog_head_speffect_id, false);
     }
@@ -471,7 +482,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         clear_speffect(main_player, transmog_head_speffect_id);
     }
 
-    if (new_body_transmog_enabled)
+    if (body_transmog_enabled)
     {
         apply_speffect(main_player, transmog_body_speffect_id, false);
     }
@@ -483,9 +494,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     // When transmog is enabled or disabled, show a cool effect on the player
     if (show_sfx)
     {
-        auto prev_transmog_enabled = head_transmog_enabled || body_transmog_enabled;
-        auto new_transmog_enabled = new_head_transmog_enabled || new_body_transmog_enabled;
-        if (prev_transmog_enabled != new_transmog_enabled)
+        if (previous_transmog_enabled != transmog_enabled)
         {
             spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id,
                                       nullptr);
@@ -497,10 +506,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     // replace the mimic tear spawn-in VFX with this
     auto speffect_param = ParamUtils::get_param<SpEffectParam>(L"SpEffectParam");
     auto &speffect = speffect_param[16316];
-    speffect.vfxId = new_head_transmog_enabled ? transmog_head_vfx_id : -1;
-    speffect.vfxId1 = new_body_transmog_enabled ? transmog_body_vfx_id : -1;
+    speffect.vfxId = head_transmog_enabled ? transmog_head_vfx_id : -1;
+    speffect.vfxId1 = body_transmog_enabled ? transmog_body_vfx_id : -1;
     speffect.effectEndurance = -1;
-
-    head_transmog_enabled = new_head_transmog_enabled;
-    body_transmog_enabled = new_body_transmog_enabled;
 }

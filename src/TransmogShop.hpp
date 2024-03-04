@@ -32,6 +32,11 @@ void initialize();
  */
 void remove_transmog_goods(int8_t protector_category = -1);
 
+/**
+ * Add a transmog good to the player's inventory
+ */
+void add_transmog_good(uint64_t protector_id);
+
 inline bool is_invisible_protector_id(int64_t protector_id)
 {
     return protector_id == bare_head_protector_id || protector_id == bare_body_protector_id ||

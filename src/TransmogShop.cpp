@@ -342,3 +342,10 @@ void TransmogShop::remove_transmog_goods(int8_t protector_category)
         }
     }
 }
+
+void TransmogShop::add_transmog_good(uint64_t protector_id)
+{
+    auto goods_id =
+        (int32_t)(item_type_goods_begin + get_transmog_goods_id_for_protector(protector_id));
+    add_inventory_from_shop(&goods_id, 1);
+}
