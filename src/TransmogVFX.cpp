@@ -66,8 +66,8 @@ struct InGameStep;
 
 #pragma pack(pop)
 
-typedef int32_t ApplySpEffectFn(CS::PlayerIns *, uint32_t speffect_id, bool unk);
-typedef int32_t ClearSpEffectFn(CS::PlayerIns *, uint32_t speffect_id);
+typedef int32_t ApplySpEffectFn(CS::ChrIns *, uint32_t speffect_id, bool unk);
+typedef int32_t ClearSpEffectFn(CS::ChrIns *, uint32_t speffect_id);
 typedef void SpawnOneShotVFXOnChrFn(CS::ChrIns *, int32_t dummy_poly_id, int32_t sfx_id, void *unk);
 typedef int GetInventoryIdFn(CS::EquipInventoryData *, int32_t *item_id);
 
@@ -95,6 +95,21 @@ static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
 static CS::WorldChrManImp **world_chr_man_addr;
+
+static inline bool is_head_transmog_enabled()
+{
+    return transmog_head != nullptr;
+}
+
+static inline bool is_body_transmog_enabled()
+{
+    return transmog_body != nullptr || transmog_arms != nullptr | transmog_legs != nullptr;
+}
+
+static inline bool is_transmog_enabled()
+{
+    return is_head_transmog_enabled() || is_body_transmog_enabled();
+}
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
@@ -175,6 +190,33 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     {
         get_speffect_vfx_param(result, id);
     }
+}
+
+static void (*copy_player_character_data)(CS::ChrIns *, CS::ChrIns *) = nullptr;
+
+/**
+ * When the player character is copied onto an NPC (Mimic Tear), apply the relevant transmog VFX to
+ * the NPC
+ */
+static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *source)
+{
+    auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man != nullptr && world_chr_man->main_player == source)
+    {
+        if (is_head_transmog_enabled())
+        {
+            cout << "Applying head transmog to Mimic Tear" << endl;
+            apply_speffect(target, transmog_head_speffect_id, false);
+        }
+
+        if (is_body_transmog_enabled())
+        {
+            cout << "Applying body transmog to Mimic Tear" << endl;
+            apply_speffect(target, transmog_body_speffect_id, false);
+        }
+    }
+
+    copy_player_character_data(target, source);
 }
 
 static bool prev_loaded = false;
@@ -305,6 +347,16 @@ void TransmogVFX::initialize()
         .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
     });
 
+    ModUtils::hook(
+        {
+            .aob = "c7 44 24 30 00 00 00 00" // mov [rsp + 0x30], 0x0
+                   "48 8d 54 24 28"          // lea rdx, [rsp + 0x28]
+                   "48 8b 8b 80 05 00 00"    // mov rcx, [rbx + 0x580]
+                   "e8 ?? ?? ?? ??",         // call PlayerGameData::PopulatePcInfoBuffer
+            .offset = -216,
+        },
+        copy_player_character_data_detour, copy_player_character_data);
+
     ModUtils::hook({.offset = in_game_stay_step_vfptr[12] - ModUtils::scan<byte>({})},
                    in_game_stay_step_load_finish_detour, in_game_stay_step_load_finish);
 
@@ -371,8 +423,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
 
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
 
-    bool previous_transmog_enabled = transmog_head != nullptr || transmog_body != nullptr ||
-                                     transmog_arms != nullptr || transmog_legs != nullptr;
+    bool previous_transmog_enabled = is_transmog_enabled();
 
     // Hack: skip checking the inventory if the player is not the host, because inventory isn't
     // completely copied over for pseudo-multiplayer, and it's not possible for this to have changed
@@ -429,14 +480,9 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         }
     }
 
-    bool head_transmog_enabled = transmog_head != nullptr;
-    bool body_transmog_enabled =
-        transmog_body != nullptr || transmog_arms != nullptr || transmog_legs != nullptr;
-    bool transmog_enabled = head_transmog_enabled || body_transmog_enabled;
-
     // Body/arms/legs have to be combined in one spffect. If transmog is enabled on some but not
     // all of them, default the others to the player's current armor
-    if (body_transmog_enabled)
+    if (is_body_transmog_enabled())
     {
         auto &chr_asm = main_player->player_game_data->equip_game_data.chr_asm;
         if (transmog_body == nullptr)
@@ -473,7 +519,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     }
 
     // Ensure the main player has the transmog effect(s) enabled if they have anything selected
-    if (head_transmog_enabled)
+    if (is_head_transmog_enabled())
     {
         apply_speffect(main_player, transmog_head_speffect_id, false);
     }
@@ -482,7 +528,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         clear_speffect(main_player, transmog_head_speffect_id);
     }
 
-    if (body_transmog_enabled)
+    if (is_body_transmog_enabled())
     {
         apply_speffect(main_player, transmog_body_speffect_id, false);
     }
@@ -494,19 +540,10 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     // When transmog is enabled or disabled, show a cool effect on the player
     if (show_sfx)
     {
-        if (previous_transmog_enabled != transmog_enabled)
+        if (previous_transmog_enabled != is_transmog_enabled())
         {
             spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id,
                                       nullptr);
         }
     }
-
-    // Apply the VFX to Mimic Tear as well. Mimic Tear can't be spawned in at the same time that
-    // the transmog shop is open, so apply_speffect()/clear_speffect() wouldn't work here. Instead,
-    // replace the mimic tear spawn-in VFX with this
-    auto speffect_param = ParamUtils::get_param<SpEffectParam>(L"SpEffectParam");
-    auto &speffect = speffect_param[16316];
-    speffect.vfxId = head_transmog_enabled ? transmog_head_vfx_id : -1;
-    speffect.vfxId1 = body_transmog_enabled ? transmog_body_vfx_id : -1;
-    speffect.effectEndurance = -1;
 }
