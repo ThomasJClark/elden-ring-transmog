@@ -14,6 +14,7 @@ void deinitialize();
 struct ScanArgs
 {
     const std::string aob;
+    void *address = nullptr;
     const ptrdiff_t offset = 0;
     const std::vector<std::pair<ptrdiff_t, ptrdiff_t>> relative_offsets = {};
 };

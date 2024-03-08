@@ -51,17 +51,27 @@ void ModUtils::deinitialize()
 
 void *ModUtils::scan(const ScanArgs &args)
 {
-    auto match =
-        args.aob.empty()
-            ? &memory.front()
-            : reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
+    byte *match;
+    if (args.address != nullptr)
+    {
+        match = reinterpret_cast<byte *>(args.address);
+    }
+    else if (!args.aob.empty())
+    {
+        match = reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
+    }
+    else
+    {
+        match = &memory.front();
+    }
+
     if (match != nullptr)
     {
         match += args.offset;
 
         for (auto [first, second] : args.relative_offsets)
         {
-            ptrdiff_t offset = *reinterpret_cast<int32_t *>(&match[first]) + second;
+            ptrdiff_t offset = *reinterpret_cast<const int32_t *>(&match[first]) + second;
             match += offset;
         }
 

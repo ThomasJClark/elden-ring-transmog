@@ -62,6 +62,13 @@ struct FindSpEffectVfxParamResult
     uint16_t unknown;
 };
 
+struct FindPostureControlParamProResult
+{
+    int32_t id;
+    byte padding[4];
+    PostureControlParam_Pro *row;
+};
+
 struct InGameStep;
 
 #pragma pack(pop)
@@ -192,6 +199,42 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
+typedef int32_t GetPostureControlInnerFn(FindPostureControlParamProResult *, int8_t, int32_t);
+static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
+
+static int32_t (*get_posture_control)(CS::ChrAsm **, int8_t, int32_t, int32_t) = nullptr;
+
+/**
+ * Override the player's resting posture to be based on the body transmog instead of the actual
+ * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
+ * goofy if this isn't tied to the selected chest transmog.
+ */
+static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm, int8_t unk1,
+                                          int32_t posture_control_group, int32_t unk2)
+{
+    auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man != nullptr && transmog_body != nullptr)
+    {
+        auto main_player_chr_asm =
+            &world_chr_man->main_player->player_game_data->equip_game_data.chr_asm;
+
+        if (memcmp(main_player_chr_asm, *chr_asm, sizeof(CS::ChrAsm)) == 0)
+        {
+            auto posture_control_id = 100 * posture_control_group + transmog_body->postureControlId;
+            auto posture_control_param =
+                ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
+            FindPostureControlParamProResult posture_control_result = {
+                .id = posture_control_id,
+                .row = &posture_control_param[posture_control_id],
+            };
+
+            return get_posture_control_inner(&posture_control_result, unk1, unk2);
+        }
+    }
+
+    return get_posture_control(chr_asm, unk1, posture_control_group, unk2);
+}
+
 static void (*copy_player_character_data)(CS::ChrIns *, CS::ChrIns *) = nullptr;
 
 /**
@@ -286,29 +329,27 @@ void TransmogVFX::initialize()
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
-    string enable_disable_grace_warp_aob = "45 33 c0"        // xor r8d, r8d
-                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
-                                           "48 8b cf"        // mov rcx, rdi
-                                           "e8 ?? ?? ?? ??"  // call ChrIns::ApplyEffect
-                                           "eb 16"           // jmp end_label
-                                           "e8 ?? ?? ?? ??"  // call HasSpEffect
-                                           "84 c0"           // test al, al
-                                           "74 0d"           // jz end_label
-                                           "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
-                                           "48 8b cf"        // mov rcx, rdi
-                                           "e8 ?? ?? ?? ??"; // call ChrIns::ClearSpEffect
-
-    ptrdiff_t disable_enable_grace_warp_offset =
-        ModUtils::scan<byte>({.aob = enable_disable_grace_warp_aob}) -
-        ModUtils::scan<byte>({.offset = 0});
+    auto disable_enable_grace_warp_address = ModUtils::scan<byte>({
+        .aob = "45 33 c0"        // xor r8d, r8d
+               "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+               "48 8b cf"        // mov rcx, rdi
+               "e8 ?? ?? ?? ??"  // call ChrIns::ApplyEffect
+               "eb 16"           // jmp end_label
+               "e8 ?? ?? ?? ??"  // call HasSpEffect
+               "84 c0"           // test al, al
+               "74 0d"           // jz end_label
+               "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
+               "48 8b cf"        // mov rcx, rdi
+               "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect});
+    });
 
     apply_speffect = ModUtils::scan<ApplySpEffectFn>({
-        .offset = disable_enable_grace_warp_offset + 11,
+        .address = disable_enable_grace_warp_address + 11,
         .relative_offsets = {{1, 5}},
     });
 
     clear_speffect = ModUtils::scan<ClearSpEffectFn>({
-        .offset = disable_enable_grace_warp_offset + 35,
+        .address = disable_enable_grace_warp_address + 35,
         .relative_offsets = {{1, 5}},
     });
 
@@ -326,7 +367,8 @@ void TransmogVFX::initialize()
     });
 
     get_inventory_id = ModUtils::scan<GetInventoryIdFn>({
-        .aob = "48 8d 8f 58 01 00 00" // lea rcx, [rdi + 0x158] ; &equipGameData->equipInventoryData
+        .aob = "48 8d 8f 58 01 00 00" // lea rcx, [rdi + 0x158] ;
+                                      // &equipGameData->equipInventoryData
                "e8 ?? ?? ?? ??"       // call GetInventoryId
                "8b d8"                // mov ebx, eax
                "85 c0"                // test eax, eax
@@ -345,6 +387,24 @@ void TransmogVFX::initialize()
                "e8 ?? ?? ?? ??", // call ???
         .offset = 23,
         .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
+    });
+
+    auto get_posture_control_original = ModUtils::hook(
+        {
+            .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
+                   "?? ?? ?? ?? ??"       // ??
+                   "6b d6 64"             // imul edx, esi, 100
+                   "48 8d 4c 24 20"       // lea rcx, postureControlResult.id
+                   "4c 89 74 24 28"       // mov postureControlResult.row, r14
+                   "03 d0"                // add edx, eax
+                   "89 54 24 20",         // mov postureControlResult.id, edx
+            .offset = -127,
+        },
+        get_posture_control_detour, get_posture_control);
+
+    get_posture_control_inner = ModUtils::scan<GetPostureControlInnerFn>({
+        .address = (byte *)get_posture_control_original + 175,
+        .relative_offsets = {{1, 5}},
     });
 
     ModUtils::hook(
