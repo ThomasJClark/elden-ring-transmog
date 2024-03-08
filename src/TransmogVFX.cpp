@@ -250,13 +250,13 @@ static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *so
     {
         if (is_head_transmog_enabled())
         {
-            cout << "Applying head transmog to Mimic Tear" << endl;
+            cout << "[transmog] Applying head transmog to Mimic Tear" << endl;
             apply_speffect(target, transmog_head_speffect_id, false);
         }
 
         if (is_body_transmog_enabled())
         {
-            cout << "Applying body transmog to Mimic Tear" << endl;
+            cout << "[transmog] Applying body transmog to Mimic Tear" << endl;
             apply_speffect(target, transmog_body_speffect_id, false);
         }
     }
@@ -287,6 +287,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 
 void TransmogVFX::initialize()
 {
+
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
     ModUtils::hook(
@@ -437,7 +438,7 @@ void TransmogVFX::initialize()
     transmog_head_speffect_id = speffect_id_dist(rng);
     transmog_body_speffect_id = transmog_head_speffect_id + 1;
 
-    cout << "Randomized SpEffect IDs: " << transmog_head_speffect_id << " / "
+    cout << "[transmog] Randomized SpEffect IDs: " << transmog_head_speffect_id << " / "
          << transmog_body_speffect_id << endl;
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
@@ -506,12 +507,12 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     // the last time it was checked.
     if (game_data_man->ceremony_type != CS::ceremony_type_none)
     {
-        cout << "Ceremony " << (int)game_data_man->ceremony_type
+        cout << "[transmog] Ceremony " << (int)game_data_man->ceremony_type
              << " active - skipping transmog application" << endl;
     }
     else
     {
-        cout << "Applying transmog from inventory..." << endl;
+        cout << "[transmog] Applying transmog from inventory..." << endl;
 
         auto equip_inventory_data =
             &main_player->player_game_data->equip_game_data.equip_inventory_data;
@@ -538,19 +539,19 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
             {
             case TransmogShop::protector_category_head:
                 transmog_head = &protector;
-                cout << "Set head transmog to protector " << protector_id << endl;
+                cout << "[transmog] Set head transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_body:
                 transmog_body = &protector;
-                cout << "Set body transmog to protector " << protector_id << endl;
+                cout << "[transmog] Set body transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_arms:
                 transmog_arms = &protector;
-                cout << "Set arms transmog to protector " << protector_id << endl;
+                cout << "[transmog] Set arms transmog to protector " << protector_id << endl;
                 break;
             case TransmogShop::protector_category_legs:
                 transmog_legs = &protector;
-                cout << "Set legs transmog to protector " << protector_id << endl;
+                cout << "[transmog] Set legs transmog to protector " << protector_id << endl;
                 break;
             }
         }
@@ -565,19 +566,19 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         {
             transmog_body = &equip_param_protector[chr_asm.body_protector_id];
             TransmogShop::add_transmog_good(chr_asm.body_protector_id);
-            cout << "Defaulting body to protector " << chr_asm.body_protector_id << endl;
+            cout << "[transmog] Defaulting body to protector " << chr_asm.body_protector_id << endl;
         }
         if (transmog_arms == nullptr)
         {
             transmog_arms = &equip_param_protector[chr_asm.arms_protector_id];
             TransmogShop::add_transmog_good(chr_asm.arms_protector_id);
-            cout << "Defaulting arms to protector " << chr_asm.arms_protector_id << endl;
+            cout << "[transmog] Defaulting arms to protector " << chr_asm.arms_protector_id << endl;
         }
         if (transmog_legs == nullptr)
         {
             transmog_legs = &equip_param_protector[chr_asm.legs_protector_id];
             TransmogShop::add_transmog_good(chr_asm.legs_protector_id);
-            cout << "Defaulting legs to protector " << chr_asm.legs_protector_id << endl;
+            cout << "[transmog] Defaulting legs to protector " << chr_asm.legs_protector_id << endl;
         }
     }
 

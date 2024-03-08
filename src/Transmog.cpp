@@ -15,27 +15,27 @@ thread mod_thread;
 
 void Transmog::initialize()
 {
-    cout << "Initializing mod..." << endl;
+    cout << "[transmog] Initializing mod..." << endl;
     ModUtils::initialize();
 
     mod_thread = thread([]() {
         ParamUtils::initialize();
 
-        cout << "Hooking transmog messages..." << endl;
+        cout << "[transmog] Hooking transmog messages..." << endl;
         TransmogMessages::initialize();
 
-        cout << "Adding transmog VFX..." << endl;
+        cout << "[transmog] Adding transmog VFX..." << endl;
         TransmogVFX::initialize();
 
-        cout << "Adding transmog shops..." << endl;
+        cout << "[transmog] Adding transmog shops..." << endl;
         TransmogShop::initialize();
 
-        cout << "Hooking talk scripts..." << endl;
+        cout << "[transmog] Hooking talk scripts..." << endl;
         TransmogTalkScript::initialize();
 
         ModUtils::enable_hooks();
 
-        cout << "Initialized transmog" << endl;
+        cout << "[transmog] Initialized transmog" << endl;
     });
 }
 

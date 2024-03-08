@@ -124,8 +124,8 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
                 else if (is_add_talk_list_data_call(
                              call, TransmogMessages::EventTextForTalk::transmog_armor))
                 {
-                    cout << "Not patching state group x" << (0x7fffffff - state_group->id)
-                         << ", already patched" << endl;
+                    cout << "[transmog] Not patching state group x"
+                         << (0x7fffffff - state_group->id) << ", already patched" << endl;
                     return;
                 }
             }
@@ -168,7 +168,7 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
             // When closing the transmog menu, return to the main site of grace menu
             transmog_menu_next_state.set_return_state(state_group->initial_state);
 
-            cout << "Patched state group x" << (0x7fffffff - state_group->id) << endl;
+            cout << "[transmog] Patched state group x" << (0x7fffffff - state_group->id) << endl;
         }
     }
 

@@ -18,7 +18,7 @@ void ParamUtils::initialize()
         .relative_offsets = {{3, 7}},
     });
 
-    cout << "Waiting for params..." << endl;
+    cout << "[transmog] Waiting for params..." << endl;
     while (true)
     {
         auto param_list = *param_list_address;

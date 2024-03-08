@@ -201,7 +201,7 @@ void TransmogMessages::initialize()
         .relative_offsets = {{3, 7}},
     });
 
-    cout << "Waiting for messages..." << endl;
+    cout << "[transmog] Waiting for messages..." << endl;
     while (!(msg_repository = *msg_repository_address))
     {
         this_thread::sleep_for(chrono::milliseconds(100));
@@ -237,12 +237,12 @@ void TransmogMessages::initialize()
     auto messages_iterator = transmog_messages_by_lang.find(language);
     if (messages_iterator == transmog_messages_by_lang.end())
     {
-        cout << "Detected game language = " << language << " (not supported)" << endl;
+        cout << "[transmog] Detected game language = " << language << " (not supported)" << endl;
         transmog_messages = transmog_messages_by_lang.at("english");
     }
     else
     {
-        cout << "Detected game language = " << language << endl;
+        cout << "[transmog] Detected game language = " << language << endl;
         transmog_messages = messages_iterator->second;
     }
 
@@ -250,7 +250,7 @@ void TransmogMessages::initialize()
     u16string_view calibrations_ver = get_message(msg_repository, 0, msgbnd_menu_text, 401322);
     if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
     {
-        cout << "Detected ELDEN RING Reforged - enabling menu icons" << endl;
+        cout << "[transmog] Detected ELDEN RING Reforged - enabling menu icons" << endl;
 
         auto prepend_icon = [](u16string &str, u16string const &icon) {
             str = u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
