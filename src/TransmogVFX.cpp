@@ -8,6 +8,7 @@
 #include "ParamUtils.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
+#include "internal/GameMan.hpp"
 #include "internal/WorldChrMan.hpp"
 
 using namespace TransmogVFX;
@@ -102,6 +103,7 @@ static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
 static CS::WorldChrManImp **world_chr_man_addr;
+static CS::GameMan **game_man_addr;
 
 static inline bool is_head_transmog_enabled()
 {
@@ -327,6 +329,12 @@ void TransmogVFX::initialize()
         .relative_offsets = {{3, 7}},
     });
 
+    game_man_addr = ModUtils::scan<CS::GameMan *>({
+        .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
+               "80 B8 ?? ?? ?? ?? 0D 0F 94 C0 C3",
+        .relative_offsets = {{3, 7}},
+    });
+
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
     auto disable_enable_grace_warp_address = ModUtils::scan<byte>({
@@ -475,6 +483,12 @@ void TransmogVFX::initialize()
 
 void TransmogVFX::refresh_transmog(bool show_sfx)
 {
+    auto game_data_man = *game_man_addr;
+    if (game_data_man == nullptr)
+    {
+        return;
+    }
+
     auto world_chr_man = *world_chr_man_addr;
     if (world_chr_man == nullptr || world_chr_man->main_player == nullptr)
     {
@@ -485,13 +499,15 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
 
     bool previous_transmog_enabled = is_transmog_enabled();
 
-    // Hack: skip checking the inventory if the player is not the host, because inventory isn't
-    // completely copied over for pseudo-multiplayer, and it's not possible for this to have changed
-    // since the last time it was checked. Not sure how this affects seamless co-op.
     auto main_player = world_chr_man->main_player;
-    if (main_player->team_type != CS::team_type_host)
+
+    // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
+    // inventory isn't completely copied over, and it's not possible for this to have changed since
+    // the last time it was checked.
+    if (game_data_man->ceremony_type != CS::ceremony_type_none)
     {
-        cout << "Player isn't host - skipping transmog application" << endl;
+        cout << "Ceremony " << (int)game_data_man->ceremony_type
+             << " active - skipping transmog application" << endl;
     }
     else
     {

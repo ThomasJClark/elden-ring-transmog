@@ -7,8 +7,6 @@
 
 namespace CS
 {
-static constexpr std::byte team_type_host = (std::byte)1;
-
 struct EquipMagicData;
 struct EquipItemData;
 
