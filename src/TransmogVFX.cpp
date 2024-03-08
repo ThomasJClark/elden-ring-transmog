@@ -202,9 +202,10 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
 }
 
 typedef int32_t GetPostureControlInnerFn(FindPostureControlParamProResult *, int8_t, int32_t);
-static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
+typedef int32_t GetPostureControlFn(CS::ChrAsm **, int8_t, int32_t, int32_t);
 
-static int32_t (*get_posture_control)(CS::ChrAsm **, int8_t, int32_t, int32_t) = nullptr;
+static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
+static GetPostureControlFn *get_posture_control = nullptr;
 
 /**
  * Override the player's resting posture to be based on the body transmog instead of the actual
@@ -398,23 +399,33 @@ void TransmogVFX::initialize()
         .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
     });
 
-    auto get_posture_control_original = ModUtils::hook(
-        {
-            .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
-                   "?? ?? ?? ?? ??"       // ??
-                   "6b d6 64"             // imul edx, esi, 100
-                   "48 8d 4c 24 20"       // lea rcx, postureControlResult.id
-                   "4c 89 74 24 28"       // mov postureControlResult.row, r14
-                   "03 d0"                // add edx, eax
-                   "89 54 24 20",         // mov postureControlResult.id, edx
-            .offset = -127,
-        },
-        get_posture_control_detour, get_posture_control);
-
-    get_posture_control_inner = ModUtils::scan<GetPostureControlInnerFn>({
-        .address = (byte *)get_posture_control_original + 175,
-        .relative_offsets = {{1, 5}},
+    auto get_posture_control_original = ModUtils::scan<void>({
+        .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
+               "?? ?? ?? ?? ??"       // ??
+               "6b d6 64"             // imul edx, esi, 100
+               "48 8d 4c 24 20"       // lea rcx, postureControlResult.id
+               "4c 89 74 24 28"       // mov postureControlResult.row, r14
+               "03 d0"                // add edx, eax
+               "89 54 24 20",         // mov postureControlResult.id, edx
+        .offset = -127,
     });
+
+    // First Person Souls has a memory hack that changes this function. If we can't find it, let's
+    // assume another mod is doing something more important with it.
+    if (get_posture_control_original != nullptr)
+    {
+        ModUtils::hook({.address = get_posture_control_original}, get_posture_control_detour,
+                       get_posture_control);
+
+        get_posture_control_inner = ModUtils::scan<GetPostureControlInnerFn>({
+            .address = (byte *)get_posture_control_original + 175,
+            .relative_offsets = {{1, 5}},
+        });
+    }
+    else
+    {
+        cout << "[transmog] Couldn't find GetPostureControl(), skipping posture fix" << endl;
+    }
 
     ModUtils::hook(
         {
