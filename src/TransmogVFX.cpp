@@ -6,11 +6,11 @@
 
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
+#include "PlayerUtils.hpp"
 #include "TransmogConfig.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
 #include "internal/GameMan.hpp"
-#include "internal/WorldChrMan.hpp"
 
 using namespace TransmogVFX;
 using namespace std;
@@ -78,12 +78,10 @@ struct InGameStep;
 typedef int32_t ApplySpEffectFn(CS::ChrIns *, uint32_t speffect_id, bool unk);
 typedef int32_t ClearSpEffectFn(CS::ChrIns *, uint32_t speffect_id);
 typedef void SpawnOneShotVFXOnChrFn(CS::ChrIns *, int32_t dummy_poly_id, int32_t sfx_id, void *unk);
-typedef int GetInventoryIdFn(CS::EquipInventoryData *, int32_t *item_id);
 
 static ApplySpEffectFn *apply_speffect = nullptr;
 static ClearSpEffectFn *clear_speffect = nullptr;
 static SpawnOneShotVFXOnChrFn *spawn_one_shot_sfx_on_chr = nullptr;
-static GetInventoryIdFn *get_inventory_id = nullptr;
 
 typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
 typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
@@ -103,7 +101,6 @@ static SpEffectParam transmog_body_speffect = {0};
 static SpEffectVfxParam transmog_head_vfx = {0};
 static SpEffectVfxParam transmog_body_vfx = {0};
 
-static CS::WorldChrManImp **world_chr_man_addr;
 static CS::GameMan **game_man_addr;
 
 static inline bool is_head_transmog_enabled()
@@ -216,12 +213,10 @@ static GetPostureControlFn *get_posture_control = nullptr;
 static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm, int8_t unk1,
                                           int32_t posture_control_group, int32_t unk2)
 {
-    auto world_chr_man = *world_chr_man_addr;
-    if (world_chr_man != nullptr && transmog_body != nullptr)
+    auto main_player = PlayerUtils::get_main_player();
+    if (main_player != nullptr && transmog_body != nullptr)
     {
-        auto main_player_chr_asm =
-            &world_chr_man->main_player->player_game_data->equip_game_data.chr_asm;
-
+        auto main_player_chr_asm = &main_player->player_game_data->equip_game_data.chr_asm;
         if (memcmp(main_player_chr_asm, *chr_asm, sizeof(CS::ChrAsm)) == 0)
         {
             auto posture_control_id = 100 * posture_control_group + transmog_body->postureControlId;
@@ -247,8 +242,7 @@ static void (*copy_player_character_data)(CS::ChrIns *, CS::ChrIns *) = nullptr;
  */
 static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *source)
 {
-    auto world_chr_man = *world_chr_man_addr;
-    if (world_chr_man != nullptr && world_chr_man->main_player == source)
+    if (source == PlayerUtils::get_main_player())
     {
         if (is_head_transmog_enabled())
         {
@@ -276,8 +270,7 @@ static void (*in_game_stay_step_load_finish)(InGameStep *) = nullptr;
  */
 static void in_game_stay_step_load_finish_detour(InGameStep *step)
 {
-    auto world_chr_man = *world_chr_man_addr;
-    auto loaded = world_chr_man != nullptr && world_chr_man->main_player != nullptr;
+    auto loaded = PlayerUtils::get_main_player() != nullptr;
     if (loaded && !prev_loaded)
     {
         refresh_transmog(false);
@@ -324,14 +317,6 @@ void TransmogVFX::initialize()
         },
         get_speffect_vfx_param_detour, get_speffect_vfx_param);
 
-    world_chr_man_addr = ModUtils::scan<CS::WorldChrManImp *>({
-        .aob = "48 8b 05 ?? ?? ?? ??"  // mov rax, [WorldChrMan]
-               "48 85 c0"              // test rax, rax
-               "74 0f"                 // jz end_label
-               "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
-        .relative_offsets = {{3, 7}},
-    });
-
     game_man_addr = ModUtils::scan<CS::GameMan *>({
         .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
                "80 B8 ?? ?? ?? ?? 0D 0F 94 C0 C3",
@@ -374,17 +359,6 @@ void TransmogVFX::initialize()
                "48 3b fe"       // cmp rdi, rsi
                "75 e5",         // jnz start
         .offset = 10,
-        .relative_offsets = {{1, 5}},
-    });
-
-    get_inventory_id = ModUtils::scan<GetInventoryIdFn>({
-        .aob = "48 8d 8f 58 01 00 00" // lea rcx, [rdi + 0x158] ;
-                                      // &equipGameData->equipInventoryData
-               "e8 ?? ?? ?? ??"       // call GetInventoryId
-               "8b d8"                // mov ebx, eax
-               "85 c0"                // test eax, eax
-               "78 6a",               // js label
-        .offset = 7,
         .relative_offsets = {{1, 5}},
     });
 
@@ -505,8 +479,8 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
         return;
     }
 
-    auto world_chr_man = *world_chr_man_addr;
-    if (world_chr_man == nullptr || world_chr_man->main_player == nullptr)
+    auto main_player = PlayerUtils::get_main_player();
+    if (main_player == nullptr)
     {
         return;
     }
@@ -514,8 +488,6 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
 
     bool previous_transmog_enabled = is_transmog_enabled();
-
-    auto main_player = world_chr_man->main_player;
 
     // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
     // inventory isn't completely copied over, and it's not possible for this to have changed since
@@ -544,30 +516,27 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
                 TransmogShop::item_type_goods_begin +
                 TransmogShop::get_transmog_goods_id_for_protector(protector_id);
 
-            auto inventory_id = get_inventory_id(equip_inventory_data, &transmog_item_id);
-            if (inventory_id == -1)
+            if (PlayerUtils::has_item_in_inventory(main_player, transmog_item_id))
             {
-                continue;
-            }
-
-            switch (protector.protectorCategory)
-            {
-            case TransmogShop::protector_category_head:
-                transmog_head = &protector;
-                cout << "[transmog] Set head transmog to protector " << protector_id << endl;
-                break;
-            case TransmogShop::protector_category_body:
-                transmog_body = &protector;
-                cout << "[transmog] Set body transmog to protector " << protector_id << endl;
-                break;
-            case TransmogShop::protector_category_arms:
-                transmog_arms = &protector;
-                cout << "[transmog] Set arms transmog to protector " << protector_id << endl;
-                break;
-            case TransmogShop::protector_category_legs:
-                transmog_legs = &protector;
-                cout << "[transmog] Set legs transmog to protector " << protector_id << endl;
-                break;
+                switch (protector.protectorCategory)
+                {
+                case TransmogShop::protector_category_head:
+                    transmog_head = &protector;
+                    cout << "[transmog] Set head transmog to protector " << protector_id << endl;
+                    break;
+                case TransmogShop::protector_category_body:
+                    transmog_body = &protector;
+                    cout << "[transmog] Set body transmog to protector " << protector_id << endl;
+                    break;
+                case TransmogShop::protector_category_arms:
+                    transmog_arms = &protector;
+                    cout << "[transmog] Set arms transmog to protector " << protector_id << endl;
+                    break;
+                case TransmogShop::protector_category_legs:
+                    transmog_legs = &protector;
+                    cout << "[transmog] Set legs transmog to protector " << protector_id << endl;
+                    break;
+                }
             }
         }
     }
@@ -634,8 +603,7 @@ void TransmogVFX::refresh_transmog(bool show_sfx)
     {
         if (previous_transmog_enabled != is_transmog_enabled())
         {
-            spawn_one_shot_sfx_on_chr(world_chr_man->main_player, 900, undo_transmog_sfx_id,
-                                      nullptr);
+            spawn_one_shot_sfx_on_chr(main_player, 900, undo_transmog_sfx_id, nullptr);
         }
     }
 }

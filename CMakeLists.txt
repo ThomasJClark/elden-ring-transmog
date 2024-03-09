@@ -54,6 +54,8 @@ add_library(EldenRingTransmogMod SHARED
   src/ModUtils.cpp
   src/ParamUtils.hpp
   src/ParamUtils.cpp
+  src/PlayerUtils.hpp
+  src/PlayerUtils.cpp
   src/TransmogConfig.hpp
   src/TransmogConfig.cpp
   src/TransmogMessages.hpp
@@ -73,6 +75,10 @@ add_library(EldenRingTransmogMod SHARED
   src/messages.hpp)
 
 set_target_properties(EldenRingTransmogMod PROPERTIES OUTPUT_NAME "ertransmogrify")
+
+add_custom_command(TARGET EldenRingTransmogMod POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/ertransmogrify.ini
+  COMMAND_EXPAND_LISTS)
 
 target_link_libraries(EldenRingTransmogMod
   minhook

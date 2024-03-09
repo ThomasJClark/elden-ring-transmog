@@ -7,6 +7,7 @@
 
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
+#include "PlayerUtils.hpp"
 #include "TransmogConfig.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
@@ -35,12 +36,13 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
             TransmogConfig::load_config(dll_filename);
         }
 
-        try
-        {
-            ModUtils::initialize();
+        mod_thread = thread([]() {
+            try
+            {
+                ModUtils::initialize();
 
-            mod_thread = thread([]() {
                 ParamUtils::initialize();
+                PlayerUtils::initialize();
 
                 cout << "[transmog] Hooking transmog messages..." << endl;
                 TransmogMessages::initialize();
@@ -57,13 +59,13 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 ModUtils::enable_hooks();
 
                 cout << "[transmog] Initialized transmog" << endl;
-            });
-        }
-        catch (runtime_error const &e)
-        {
-            cerr << "[transmog] Error initializing mod: " << e.what() << endl;
-            return false;
-        }
+            }
+            catch (runtime_error const &e)
+            {
+                cerr << "[transmog] Error initializing mod: " << e.what() << endl;
+                ModUtils::deinitialize();
+            }
+        });
     }
     else if (fdw_reason == DLL_PROCESS_DETACH && lpv_reserved != nullptr)
     {

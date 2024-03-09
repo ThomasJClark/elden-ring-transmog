@@ -5,6 +5,7 @@
 
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
+#include "PlayerUtils.hpp"
 #include "TransmogConfig.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
@@ -96,7 +97,39 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
 
 static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, byte shop_type, int32_t id);
 
-void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type, int32_t id)
+/**
+ * Check if a protector is available for transmogrification
+ */
+static inline bool is_protector_unlocked(int32_t goods_id)
+{
+    // If this config option is true, any armor can be chosen without obtaining it first
+    if (TransmogConfig::include_unobtained_armor)
+    {
+        return true;
+    }
+
+    auto main_player = PlayerUtils::get_main_player();
+
+    // If the player already chose a transmog, show it even if it's not unlocked. This can happen
+    // if they discard the armor piece or change their include_unobtained_armor setting and restart
+    // the game.
+    if (PlayerUtils::has_item_in_inventory(main_player, item_type_goods_begin + goods_id))
+    {
+        return true;
+    }
+
+    // Otherwise, only show armor pieces that the player has in their inventory
+    auto protector_id = get_protector_id_for_transmog_good(goods_id);
+    if (PlayerUtils::has_item_in_inventory(main_player, item_type_protector_begin + protector_id))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type,
+                                         int32_t id)
 {
     if (shop_type == byte(0) && id >= transmog_head_shop_menu_id &&
         id < transmog_legs_shop_menu_id + transmog_shop_max_size)
@@ -104,16 +137,18 @@ void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_t
         auto entry = transmog_shop_lineups.find(id);
         if (entry != transmog_shop_lineups.end())
         {
-            result->shop_type = shop_type;
-            result->id = id;
-            result->row = &entry->second;
-            return;
+            auto &row = entry->second;
+            if (is_protector_unlocked(row.equipId))
+            {
+                result->shop_type = shop_type;
+                result->id = id;
+                result->row = &row;
+                return;
+            }
         }
-        else
-        {
-            result->row = nullptr;
-            return;
-        }
+
+        result->row = nullptr;
+        return;
     }
 
     get_shop_lineup_param(result, shop_type, id);

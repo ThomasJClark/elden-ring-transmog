@@ -4,6 +4,7 @@
 
 namespace TransmogShop
 {
+static constexpr uint32_t item_type_protector_begin = 0x10000000;
 static constexpr uint32_t item_type_goods_begin = 0x40000000;
 static constexpr uint32_t item_type_goods_end = 0x50000000;
 static constexpr uint8_t protector_category_head = 0;
