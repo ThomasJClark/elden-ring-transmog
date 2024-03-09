@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "ModUtils.hpp"
+#include "TransmogConfig.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "messages.hpp"
@@ -65,20 +66,23 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
     switch (bnd_id)
     {
     case msgbnd_event_text_for_talk:
-        switch (msg_id)
+        if (TransmogConfig::patch_grace_talk_script)
         {
-        case EventTextForTalk::transmog_armor:
-            return transmog_messages.transmog_armor.c_str();
-        case EventTextForTalk::transmog_head:
-            return transmog_messages.transmog_head.c_str();
-        case EventTextForTalk::transmog_body:
-            return transmog_messages.transmog_body.c_str();
-        case EventTextForTalk::transmog_arms:
-            return transmog_messages.transmog_arms.c_str();
-        case EventTextForTalk::transmog_legs:
-            return transmog_messages.transmog_legs.c_str();
-        case EventTextForTalk::undo_transmog:
-            return transmog_messages.undo_transmog.c_str();
+            switch (msg_id)
+            {
+            case EventTextForTalk::transmog_armor:
+                return transmog_messages.transmog_armor.c_str();
+            case EventTextForTalk::transmog_head:
+                return transmog_messages.transmog_head.c_str();
+            case EventTextForTalk::transmog_body:
+                return transmog_messages.transmog_body.c_str();
+            case EventTextForTalk::transmog_arms:
+                return transmog_messages.transmog_arms.c_str();
+            case EventTextForTalk::transmog_legs:
+                return transmog_messages.transmog_legs.c_str();
+            case EventTextForTalk::undo_transmog:
+                return transmog_messages.undo_transmog.c_str();
+            }
         }
         break;
 
@@ -246,22 +250,26 @@ void TransmogMessages::initialize()
         transmog_messages = messages_iterator->second;
     }
 
-    // For Elden Ring Reforged, add icons to match other menu text
-    u16string_view calibrations_ver = get_message(msg_repository, 0, msgbnd_menu_text, 401322);
-    if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
+    if (TransmogConfig::patch_grace_talk_script)
     {
-        cout << "[transmog] Detected ELDEN RING Reforged - enabling menu icons" << endl;
+        // For Elden Ring Reforged, add icons to match other menu text
+        u16string_view calibrations_ver = get_message(msg_repository, 0, msgbnd_menu_text, 401322);
+        if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
+        {
+            cout << "[transmog] Detected ELDEN RING Reforged - enabling menu icons" << endl;
 
-        auto prepend_icon = [](u16string &str, u16string const &icon) {
-            str = u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
-        };
+            auto prepend_icon = [](u16string &str, u16string const &icon) {
+                str =
+                    u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
+            };
 
-        prepend_icon(transmog_messages.transmog_armor, u"SB_ERR_Grace_AlterGarments.png");
-        prepend_icon(transmog_messages.transmog_head, u"SB_ERR_A_Mind");
-        prepend_icon(transmog_messages.transmog_body, u"SB_ERR_A_Vigor");
-        prepend_icon(transmog_messages.transmog_arms, u"SB_ERR_A_Strength");
-        prepend_icon(transmog_messages.transmog_legs, u"SB_ERR_A_Endurance");
-        prepend_icon(transmog_messages.undo_transmog, u"SB_ERR_Grace_AlterGarments.png");
+            prepend_icon(transmog_messages.transmog_armor, u"SB_ERR_Grace_AlterGarments.png");
+            prepend_icon(transmog_messages.transmog_head, u"SB_ERR_A_Mind");
+            prepend_icon(transmog_messages.transmog_body, u"SB_ERR_A_Vigor");
+            prepend_icon(transmog_messages.transmog_arms, u"SB_ERR_A_Strength");
+            prepend_icon(transmog_messages.transmog_legs, u"SB_ERR_A_Endurance");
+            prepend_icon(transmog_messages.undo_transmog, u"SB_ERR_Grace_AlterGarments.png");
+        }
     }
 }
 

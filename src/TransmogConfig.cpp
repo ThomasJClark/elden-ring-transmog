@@ -9,6 +9,7 @@ using namespace std;
 bool TransmogConfig::include_unobtained_armor = true;
 bool TransmogConfig::include_cut_armor = true;
 bool TransmogConfig::transmog_affects_posture = true;
+bool TransmogConfig::patch_grace_talk_script = true;
 
 void TransmogConfig::load_config(const wstring_view &dll_filename)
 {
@@ -30,9 +31,13 @@ void TransmogConfig::load_config(const wstring_view &dll_filename)
 
         if (config.has("transmog_affects_posture"))
             transmog_affects_posture = config["transmog_affects_posture"] != "false";
+
+        if (config.has("patch_grace_talk_script"))
+            patch_grace_talk_script = config["patch_grace_talk_script"] != "false";
     }
 
     cout << "[transmog] include_unobtained_armor = " << include_unobtained_armor << endl;
     cout << "[transmog] include_cut_armor = " << include_cut_armor << endl;
     cout << "[transmog] transmog_affects_posture = " << transmog_affects_posture << endl;
+    cout << "[transmog] patch_grace_talk_script = " << patch_grace_talk_script << endl;
 }

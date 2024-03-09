@@ -53,8 +53,11 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 cout << "[transmog] Adding transmog shops..." << endl;
                 TransmogShop::initialize();
 
-                cout << "[transmog] Hooking talk scripts..." << endl;
-                TransmogTalkScript::initialize();
+                if (TransmogConfig::patch_grace_talk_script)
+                {
+                    cout << "[transmog] Hooking talk scripts..." << endl;
+                    TransmogTalkScript::initialize();
+                }
 
                 ModUtils::enable_hooks();
 

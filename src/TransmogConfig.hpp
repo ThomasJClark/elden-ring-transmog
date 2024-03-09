@@ -24,4 +24,10 @@ extern bool include_cut_armor;
  * Lionel's Armor)
  */
 extern bool transmog_affects_posture;
+
+/**
+ * Add the "Tranmsogrify armor" option to the Site of Grace menu. This can be disabled by mod
+ * authors to add their entrypoint for transmog.
+ */
+extern bool patch_grace_talk_script;
 }; // namespace TransmogConfig
