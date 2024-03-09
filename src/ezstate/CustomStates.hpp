@@ -6,18 +6,21 @@
 #pragma pack(push, 1)
 
 /**
- * TalkESD state that does nothing and immediately exits
+ * TalkESD state that applies a speffect to the player and immediately exits
  */
-class PassState : public EzState::State
+class ApplySpEffectState : public EzState::State
 {
   private:
+    EzState::IntValue speffect_id_arg;
+    EzState::CommandArg arg_list[1] = {speffect_id_arg};
+    EzState::Call entry_commands[1] = {{EzState::Commands::give_speffect_to_player, arg_list}};
     EzState::Transition pass_transition;
     EzState::Transition *transitions[1] = {&pass_transition};
 
   public:
-    PassState(int32_t id, EzState::State *main_menu_state)
-        : EzState::State({.id = id, .transitions = transitions}),
-          pass_transition(main_menu_state, "\x41\xa1")
+    ApplySpEffectState(int32_t id, int32_t speffect_id, EzState::State *main_menu_state)
+        : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
+          speffect_id_arg(speffect_id), pass_transition(main_menu_state, "\x41\xa1")
     {
     }
 };

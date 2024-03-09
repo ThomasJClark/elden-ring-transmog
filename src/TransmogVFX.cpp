@@ -15,19 +15,6 @@
 using namespace TransmogVFX;
 using namespace std;
 
-static constexpr int64_t transmog_speffect_id_begin = 169000000;
-static constexpr int64_t transmog_speffect_id_end = 170000000;
-static constexpr int64_t transmog_head_vfx_id = 6900100;
-static constexpr int64_t transmog_body_vfx_id = 6900101;
-static constexpr int64_t transmog_set_id = 69000000;
-static constexpr int64_t transmog_set_alt_id = 69010000;
-static constexpr int64_t transmog_reinforce_param_id = 0;
-static constexpr int64_t head_protector_offset = 0;
-static constexpr int64_t body_protector_offset = 100;
-static constexpr int64_t arms_protector_offset = 200;
-static constexpr int64_t legs_protector_offset = 300;
-static constexpr int32_t undo_transmog_sfx_id = 8020;
-
 static int64_t transmog_head_speffect_id;
 static int64_t transmog_body_speffect_id;
 
@@ -280,6 +267,17 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
     in_game_stay_step_load_finish(step);
 }
 
+static int32_t apply_speffect_detour(CS::ChrIns *chr, uint32_t speffect_id, bool unk)
+{
+    if (chr == PlayerUtils::get_main_player() && speffect_id == undo_transmog_speffect_id)
+    {
+        TransmogShop::remove_transmog_goods();
+        refresh_transmog();
+    }
+
+    return apply_speffect(chr, speffect_id, unk);
+}
+
 void TransmogVFX::initialize()
 {
 
@@ -339,10 +337,9 @@ void TransmogVFX::initialize()
                "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect});
     });
 
-    apply_speffect = ModUtils::scan<ApplySpEffectFn>({
-        .address = disable_enable_grace_warp_address + 11,
-        .relative_offsets = {{1, 5}},
-    });
+    ModUtils::hook(
+        {.address = disable_enable_grace_warp_address + 11, .relative_offsets = {{1, 5}}},
+        apply_speffect_detour, apply_speffect);
 
     clear_speffect = ModUtils::scan<ClearSpEffectFn>({
         .address = disable_enable_grace_warp_address + 35,

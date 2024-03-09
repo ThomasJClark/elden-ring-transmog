@@ -20,7 +20,7 @@ extern OpenShopState transmog_head_state;
 extern OpenShopState transmog_body_state;
 extern OpenShopState transmog_arms_state;
 extern OpenShopState transmog_legs_state;
-extern PassState disable_transmog_state;
+extern ApplySpEffectState disable_transmog_state;
 
 // TalkESD state for the main "Transmogrify armor" menu
 TransmogMenuState transmog_menu_state(69000, &transmog_menu_next_state);
@@ -52,7 +52,8 @@ OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_i
                                   &transmog_menu_state);
 
 // TalkESD state that disables transmogrification
-PassState disable_transmog_state(69006, &transmog_menu_state);
+ApplySpEffectState disable_transmog_state(69006, TransmogVFX::undo_transmog_speffect_id,
+                                          &transmog_menu_state);
 }; // namespace
 
 // AddTalkListData(69, "Transmogrify armor", -1)
@@ -170,12 +171,6 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 
             cout << "[transmog] Patched state group x" << (0x7fffffff - state_group->id) << endl;
         }
-    }
-
-    if (state == &disable_transmog_state)
-    {
-        TransmogShop::remove_transmog_goods();
-        TransmogVFX::refresh_transmog();
     }
 
     ezstate_enter_state(state, machine, unk);
