@@ -1,17 +1,25 @@
-
 #define WIN32_LEAN_AND_MEAN
 #include <cstdio>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 #include <windows.h>
 
-#include "Transmog.hpp"
+#include "ModUtils.hpp"
+#include "ParamUtils.hpp"
+#include "TransmogConfig.hpp"
+#include "TransmogMessages.hpp"
+#include "TransmogShop.hpp"
+#include "TransmogTalkScript.hpp"
+#include "TransmogVFX.hpp"
 
 using namespace std;
 
-bool WINAPI DllMain(HINSTANCE hinstDLL, uint32_t fdwReason, void *lpvReserved)
+thread mod_thread;
+
+bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reserved)
 {
-    if (fdwReason == DLL_PROCESS_ATTACH)
+    if (fdw_reason == DLL_PROCESS_ATTACH)
     {
 #if _DEBUG
         AllocConsole();
@@ -20,25 +28,53 @@ bool WINAPI DllMain(HINSTANCE hinstDLL, uint32_t fdwReason, void *lpvReserved)
         freopen_s(&stream, "CONOUT$", "w", stderr);
         freopen_s(&stream, "CONIN$", "r", stdin);
 #endif
+
+        wchar_t dll_filename[MAX_PATH] = {0};
+        if (GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH))
+        {
+            TransmogConfig::load_config(dll_filename);
+        }
+
         try
         {
-            Transmog::initialize();
+            ModUtils::initialize();
+
+            mod_thread = thread([]() {
+                ParamUtils::initialize();
+
+                cout << "[transmog] Hooking transmog messages..." << endl;
+                TransmogMessages::initialize();
+
+                cout << "[transmog] Adding transmog VFX..." << endl;
+                TransmogVFX::initialize();
+
+                cout << "[transmog] Adding transmog shops..." << endl;
+                TransmogShop::initialize();
+
+                cout << "[transmog] Hooking talk scripts..." << endl;
+                TransmogTalkScript::initialize();
+
+                ModUtils::enable_hooks();
+
+                cout << "[transmog] Initialized transmog" << endl;
+            });
         }
         catch (runtime_error const &e)
         {
-            cerr << "Error initializing mod: " << e.what() << endl;
+            cerr << "[transmog] Error initializing mod: " << e.what() << endl;
             return false;
         }
     }
-    else if (fdwReason == DLL_PROCESS_DETACH && lpvReserved != nullptr)
+    else if (fdw_reason == DLL_PROCESS_DETACH && lpv_reserved != nullptr)
     {
         try
         {
-            Transmog::deinitialize();
+            mod_thread.join();
+            ModUtils::deinitialize();
         }
         catch (runtime_error const &e)
         {
-            cerr << "Error deinitializing mod: " << e.what() << endl;
+            cerr << "[transmog] Error deinitializing mod: " << e.what() << endl;
             return false;
         }
     }

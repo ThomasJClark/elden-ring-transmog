@@ -5,6 +5,7 @@
 
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
+#include "TransmogConfig.hpp"
 #include "TransmogMessages.hpp"
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
@@ -230,6 +231,13 @@ void TransmogShop::initialize()
         // used for NPCs)
         auto protector_name = TransmogMessages::get_protector_name(protector_id);
         if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
+        {
+            continue;
+        }
+
+        // Skip cut items, if configured to do so
+        if (!TransmogConfig::include_cut_armor &&
+            protector_name.starts_with(TransmogMessages::cut_item_prefix))
         {
             continue;
         }

@@ -26,13 +26,22 @@ FetchContent_Declare(pattern16
   CONFIGURE_COMMAND     ""
   BUILD_COMMAND         "")
 
-FetchContent_MakeAvailable(minhook ertga pattern16)
+FetchContent_Declare(mini
+  GIT_REPOSITORY        https://github.com/metayeti/mINI
+  GIT_TAG               0.9.15
+  CONFIGURE_COMMAND     ""
+  BUILD_COMMAND         "")
+
+FetchContent_MakeAvailable(minhook ertga pattern16 mini)
 
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
 
 add_library(pattern16 INTERFACE)
 target_include_directories(pattern16 INTERFACE ${pattern16_SOURCE_DIR}/include)
+
+add_library(mini INTERFACE)
+target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
 
 add_library(steamapi STATIC IMPORTED GLOBAL)
 set_property(TARGET steamapi APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
@@ -45,8 +54,8 @@ add_library(EldenRingTransmogMod SHARED
   src/ModUtils.cpp
   src/ParamUtils.hpp
   src/ParamUtils.cpp
-  src/Transmog.hpp
-  src/Transmog.cpp
+  src/TransmogConfig.hpp
+  src/TransmogConfig.cpp
   src/TransmogMessages.hpp
   src/TransmogMessages.cpp
   src/TransmogShop.hpp
@@ -69,4 +78,5 @@ target_link_libraries(EldenRingTransmogMod
   minhook
   ertga
   pattern16
+  mini
   ${CMAKE_SOURCE_DIR}/steam_api64.lib)
