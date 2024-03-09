@@ -59,6 +59,13 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                     TransmogTalkScript::initialize();
                 }
 
+                if (TransmogConfig::initialize_delay)
+                {
+                    cout << "[transmog] Waiting " << TransmogConfig::initialize_delay
+                         << "ms to enable..." << endl;
+                    this_thread::sleep_for(chrono::milliseconds(TransmogConfig::initialize_delay));
+                }
+
                 ModUtils::enable_hooks();
 
                 cout << "[transmog] Initialized transmog" << endl;
