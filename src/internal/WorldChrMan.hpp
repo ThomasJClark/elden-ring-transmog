@@ -75,9 +75,11 @@ struct EquipGameData
 
 struct PlayerGameData
 {
-    std::byte unk1[0x2B0];
+    std::byte unk1[0x9c];
+    wchar_t *name;
+    std::byte unk2[0x20c];
     EquipGameData equip_game_data;
-    std::byte unk2[0x360];
+    std::byte unk3[0x360];
 };
 
 struct ChrIns
@@ -94,9 +96,17 @@ struct PlayerIns : ChrIns
     std::byte unk4[0x1b8];
 };
 
+struct NetPlayer
+{
+    PlayerIns *player;
+    std::byte unk[0x8];
+};
+
 struct WorldChrManImp
 {
-    std::byte unk[0x1e508];
+    std::byte unk1[0x10EF8];
+    NetPlayer *net_players;
+    std::byte unk2[0xd608];
     PlayerIns *main_player;
 };
 } // namespace CS

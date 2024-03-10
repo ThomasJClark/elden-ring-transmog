@@ -44,6 +44,17 @@ CS::PlayerIns *PlayerUtils::get_main_player()
     return nullptr;
 }
 
+CS::NetPlayer *PlayerUtils::get_net_players()
+{
+    auto world_chr_man = *world_chr_man_addr;
+    if (world_chr_man != nullptr)
+    {
+        return world_chr_man->net_players;
+    }
+
+    return nullptr;
+}
+
 bool PlayerUtils::has_item_in_inventory(CS::PlayerIns *player, int32_t item_id)
 {
     if (player == nullptr)
