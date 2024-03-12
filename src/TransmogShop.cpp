@@ -271,9 +271,9 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
         }
     }
 
-    // TODO
-    // Update the VFX to apply the new transmog selections
-    // TransmogVFX::refresh_transmog(PlayerUtils::get_main_player());
+    // Ensure the undo transmog effect isn't applied, so the new item is applied
+    PlayerUtils::clear_speffect(PlayerUtils::get_main_player(),
+                                TransmogVFX::undo_transmog_speffect_id);
 
     return result;
 }

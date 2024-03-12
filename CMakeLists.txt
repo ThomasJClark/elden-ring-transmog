@@ -60,6 +60,8 @@ add_library(EldenRingTransmogMod SHARED
   src/TransmogConfig.cpp
   src/TransmogMessages.hpp
   src/TransmogMessages.cpp
+  src/TransmogPlayerState.hpp
+  src/TransmogPlayerState.cpp
   src/TransmogShop.hpp
   src/TransmogShop.cpp
   src/TransmogTalkScript.hpp

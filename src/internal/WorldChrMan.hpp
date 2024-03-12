@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tga/paramdefs.h>
 
 #pragma pack(push, 1)
 
@@ -9,6 +10,7 @@ namespace CS
 {
 struct EquipMagicData;
 struct EquipItemData;
+struct ChrIns;
 
 struct PlayerInventoryEntry
 {
@@ -82,11 +84,28 @@ struct PlayerGameData
     std::byte unk3[0x360];
 };
 
+struct SpEffectEntry
+{
+    SpEffectParam *param;
+    int32_t id;
+    std::byte unk1[0x24];
+    SpEffectEntry *next;
+    std::byte unk2[0x8c];
+};
+
+struct SpEffectList
+{
+    void **vftable;
+    SpEffectEntry *head;
+};
+
 struct ChrIns
 {
     std::byte unk1[0x6C];
     std::byte team_type;
-    std::byte unk2[0x503];
+    std::byte unk2[0x10b];
+    SpEffectList *speffects;
+    std::byte unk3[0x3f0];
 };
 
 struct PlayerIns : ChrIns

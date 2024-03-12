@@ -7,8 +7,6 @@
 
 namespace CS
 {
-static constexpr std::byte ceremony_type_none = (std::byte)0;
-
 struct GameMan
 {
     std::byte unk1[0xbc0];
