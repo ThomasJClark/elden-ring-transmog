@@ -1,5 +1,5 @@
 #include <chrono>
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <tga/param_containers.h>
 #include <thread>
 
@@ -18,7 +18,7 @@ void ParamUtils::initialize()
         .relative_offsets = {{3, 7}},
     });
 
-    cout << "[transmog] Waiting for params..." << endl;
+    spdlog::info("Waiting for params...");
     while (true)
     {
         auto param_list = *param_list_address;

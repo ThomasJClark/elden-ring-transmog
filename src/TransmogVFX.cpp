@@ -1,7 +1,7 @@
 #include <array>
 #include <cstdint>
-#include <iostream>
 #include <random>
+#include <spdlog/spdlog.h>
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
@@ -267,13 +267,13 @@ static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *so
         {
             if (state.is_head_transmog_enabled())
             {
-                cout << "[transmog] Applying head transmog to Mimic Tear" << endl;
+                spdlog::info("Applying head transmog to Mimic Tear");
                 PlayerUtils::apply_speffect(target, state.head_speffect_id, false);
             }
 
             if (state.is_body_transmog_enabled())
             {
-                cout << "[transmog] Applying body transmog to Mimic Tear" << endl;
+                spdlog::info("Applying body transmog to Mimic Tear");
                 PlayerUtils::apply_speffect(target, state.body_speffect_id, false);
             }
         }
@@ -401,7 +401,7 @@ void TransmogVFX::initialize()
         }
         else
         {
-            cout << "[transmog] Couldn't find GetPostureControl(), skipping posture fix" << endl;
+            spdlog::warn("Couldn't find GetPostureControl(), skipping posture fix");
         }
     }
 
@@ -473,8 +473,8 @@ void TransmogVFX::initialize()
                 transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
 
             state.set_vfx_speffect_ids(speffect_id_dist(rng));
-            cout << "[transmog] Randomized SpEffect IDs = " << state.head_speffect_id << "/"
-                 << state.body_speffect_id << endl;
+            spdlog::info("Randomized SpEffect IDs = {} {}", state.head_speffect_id,
+                         state.body_speffect_id);
         }
         else
         {

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
+#include <filesystem>
 
 namespace TransmogConfig
 {
 /**
- * Load user preferences from a ertransmogrify.ini file located in the same folder as the DLL
+ * Load user preferences from an .ini file
  */
-void load_config(const std::wstring_view &dll_path);
+void load_config(const std::filesystem::path &ini_path);
 
 /**
  * Don't require owning an armor piece to unlock it for transmogrification

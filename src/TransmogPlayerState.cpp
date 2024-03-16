@@ -1,4 +1,4 @@
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <vector>
 
 #include "ParamUtils.hpp"
@@ -80,7 +80,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
                 // and remove any transmog goods.
                 clear_transmog_protectors();
                 TransmogShop::remove_transmog_goods();
-                cout << "[transmog] Removed main player transmog goods" << endl;
+                spdlog::info("Removed main player transmog goods");
             }
         }
         else
@@ -97,8 +97,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
                 {
                     if (set_transmog_protector(protector_id, protector))
                     {
-                        cout << "[transmog] Set main player transmog protector " << protector_id
-                             << endl;
+                        spdlog::info("Set main player transmog protector {}", protector_id);
                         any_changed = true;
                     }
                 }
@@ -116,21 +115,21 @@ void TransmogPlayerState::refresh_transmog_main_player()
             body_id = chr_asm.body_protector_id;
             body = &equip_param_protector[chr_asm.body_protector_id];
             TransmogShop::add_transmog_good(chr_asm.body_protector_id);
-            cout << "[transmog] Defaulting main player body to protector " << body_id << endl;
+            spdlog::info("Defaulting main player body to protector {}", body_id);
         }
         if (arms == nullptr)
         {
             arms_id = chr_asm.arms_protector_id;
             arms = &equip_param_protector[chr_asm.arms_protector_id];
             TransmogShop::add_transmog_good(chr_asm.arms_protector_id);
-            cout << "[transmog] Defaulting main player arms to protector " << arms_id << endl;
+            spdlog::info("Defaulting main player arms to protector {}", arms_id);
         }
         if (legs == nullptr)
         {
             legs_id = chr_asm.legs_protector_id;
             legs = &equip_param_protector[chr_asm.legs_protector_id];
             TransmogShop::add_transmog_good(chr_asm.legs_protector_id);
-            cout << "[transmog] Defaulting main player legs to protector " << legs_id << endl;
+            spdlog::info("Defaulting main player legs to protector {}", legs_id);
         }
     }
 

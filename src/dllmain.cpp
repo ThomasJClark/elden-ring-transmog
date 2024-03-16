@@ -1,6 +1,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <cstdio>
-#include <iostream>
+#include <filesystem>
+#include <memory>
+#include <spdlog/sinks/daily_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <thread>
 #include <windows.h>
@@ -18,23 +22,36 @@ using namespace std;
 
 thread mod_thread;
 
+void setup_logger(const filesystem::path &logs_path)
+{
+    auto logger = make_shared<spdlog::logger>("transmog");
+    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
+    logger->sinks().push_back(
+        make_shared<spdlog::sinks::daily_file_sink_mt>(logs_path.string(), 0, 0, false, 5));
+
+#if _DEBUG
+    AllocConsole();
+    FILE *stream;
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+    freopen_s(&stream, "CONIN$", "r", stdin);
+    logger->sinks().push_back(make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#endif
+
+    spdlog::set_default_logger(logger);
+}
+
 bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reserved)
 {
     if (fdw_reason == DLL_PROCESS_ATTACH)
     {
-#if _DEBUG
-        AllocConsole();
-        FILE *stream;
-        freopen_s(&stream, "CONOUT$", "w", stdout);
-        freopen_s(&stream, "CONOUT$", "w", stderr);
-        freopen_s(&stream, "CONIN$", "r", stdin);
-#endif
-
         wchar_t dll_filename[MAX_PATH] = {0};
-        if (GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH))
-        {
-            TransmogConfig::load_config(dll_filename);
-        }
+        GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH);
+        auto folder = filesystem::path(dll_filename).parent_path();
+
+        setup_logger(folder / "logs" / "ertransmogrify.log");
+
+        TransmogConfig::load_config(folder / "ertransmogrify.ini");
 
         mod_thread = thread([]() {
             try
@@ -44,35 +61,34 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 ParamUtils::initialize();
                 PlayerUtils::initialize();
 
-                cout << "[transmog] Hooking transmog messages..." << endl;
+                spdlog::info("Hooking transmog messages...");
                 TransmogMessages::initialize();
 
-                cout << "[transmog] Adding transmog VFX..." << endl;
+                spdlog::info("Adding transmog VFX...");
                 TransmogVFX::initialize();
 
-                cout << "[transmog] Adding transmog shops..." << endl;
+                spdlog::info("Adding transmog shops...");
                 TransmogShop::initialize();
 
                 if (TransmogConfig::patch_grace_talk_script)
                 {
-                    cout << "[transmog] Hooking talk scripts..." << endl;
+                    spdlog::info("Hooking talk scripts...");
                     TransmogTalkScript::initialize();
                 }
 
                 if (TransmogConfig::initialize_delay)
                 {
-                    cout << "[transmog] Waiting " << TransmogConfig::initialize_delay
-                         << "ms to enable..." << endl;
+                    spdlog::info("Waiting {}ms to enable...", TransmogConfig::initialize_delay);
                     this_thread::sleep_for(chrono::milliseconds(TransmogConfig::initialize_delay));
                 }
 
                 ModUtils::enable_hooks();
 
-                cout << "[transmog] Initialized transmog" << endl;
+                spdlog::info("Initialized transmog");
             }
             catch (runtime_error const &e)
             {
-                cerr << "[transmog] Error initializing mod: " << e.what() << endl;
+                spdlog::error("Error initializing mod: {}", e.what());
                 ModUtils::deinitialize();
             }
         });
@@ -86,9 +102,11 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
         }
         catch (runtime_error const &e)
         {
-            cerr << "[transmog] Error deinitializing mod: " << e.what() << endl;
+            spdlog::error("Error deinitializing mod: {}", e.what());
+            spdlog::shutdown();
             return false;
         }
+        spdlog::shutdown();
     }
     return true;
 }

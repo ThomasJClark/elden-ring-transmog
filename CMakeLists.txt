@@ -7,6 +7,7 @@ project(EldenRingTransmogMod
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 include(FetchContent)
 
@@ -27,12 +28,18 @@ FetchContent_Declare(pattern16
   BUILD_COMMAND         "")
 
 FetchContent_Declare(mini
-  GIT_REPOSITORY        https://github.com/metayeti/mINI
+  GIT_REPOSITORY        https://github.com/metayeti/mINI.git
   GIT_TAG               0.9.15
   CONFIGURE_COMMAND     ""
   BUILD_COMMAND         "")
 
-FetchContent_MakeAvailable(minhook ertga pattern16 mini)
+set(SPDLOG_DISABLE_DEFAULT_LOGGER ON)
+set(SPDLOG_USE_STD_FORMAT ON)
+FetchContent_Declare(spdlog
+  GIT_REPOSITORY        https://github.com/gabime/spdlog.git
+  GIT_TAG               v1.13.0)
+
+FetchContent_MakeAvailable(minhook ertga pattern16 mini spdlog)
 
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
@@ -87,4 +94,5 @@ target_link_libraries(EldenRingTransmogMod
   ertga
   pattern16
   mini
+  spdlog
   ${CMAKE_SOURCE_DIR}/steam_api64.lib)
