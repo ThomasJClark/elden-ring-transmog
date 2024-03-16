@@ -16,6 +16,10 @@ using namespace std;
 
 static constexpr uint16_t invisible_icon_id = 3142;
 
+static constexpr int32_t sort_direction_ascending = 0x80000000;
+static constexpr int32_t sort_direction_decscending = 0x00000000;
+static constexpr int32_t sort_by_item_type = 20801;
+
 static const unordered_set<uint64_t> exluded_protector_ids = {
     // Skip Grass Hair Ornament, which is a cut helmet that's missing an icon
     920000,
@@ -50,7 +54,24 @@ struct FindEquipParamGoodsResult
     int32_t unknown;
     EquipParamGoods *row;
 };
+
+namespace CS
+{
+struct CSMenuSystemSaveLoad
+{
+    byte unk[0x1440];
+    int32_t sorts[20];
+};
+
+struct GameDataMan
+{
+    byte unk[0x60];
+    CSMenuSystemSaveLoad *menu_system_save_load;
+};
+} // namespace CS
 #pragma pack(pop)
+
+static CS::GameDataMan **game_data_man_addr;
 
 static ShopLineupParam transmog_head_shop_menu = {0};
 static ShopLineupParam transmog_body_shop_menu = {0};
@@ -173,6 +194,50 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
     get_equip_param_goods(result, id);
 }
 
+static void (*open_regular_shop)(void *, uint64_t, uint64_t);
+
+static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_id)
+{
+    bool is_transmog_shop = false;
+
+    switch (begin_id)
+    {
+    case transmog_head_shop_menu_id:
+        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_head);
+        is_transmog_shop = true;
+        break;
+    case transmog_body_shop_menu_id:
+        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_body);
+        is_transmog_shop = true;
+        break;
+    case transmog_arms_shop_menu_id:
+        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_arms);
+        is_transmog_shop = true;
+        break;
+    case transmog_legs_shop_menu_id:
+        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_legs);
+        is_transmog_shop = true;
+        break;
+    default:
+        TransmogMessages::set_active_transmog_shop_protector_category(-1);
+    }
+
+    open_regular_shop(unk, begin_id, end_id);
+
+    // Override the default sort type for the transmog shop to sort by item type
+    if (is_transmog_shop)
+    {
+        auto game_data_man = *game_data_man_addr;
+        if (game_data_man != nullptr)
+        {
+            for (auto &sort : game_data_man->menu_system_save_load->sorts)
+            {
+                sort = sort_direction_ascending | sort_by_item_type;
+            }
+        }
+    }
+}
+
 static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) = nullptr;
 
 static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t quantity)
@@ -214,6 +279,16 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
 
 void TransmogShop::initialize()
 {
+    game_data_man_addr = ModUtils::scan<CS::GameDataMan *>({
+        .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
+               "48 85 C0"             // test rax,rax
+               "74 05"                // je 0xa
+               "48 8B 40 58"          // move rax, [rax + 0x58]
+               "C3"                   // ret
+               "C3",                  // ret
+        .relative_offsets = {{3, 7}},
+    });
+
     add_remove_item = ModUtils::scan<AddRemoveItemFn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
                "41 83 c8 ff"       // or r8d, -1
@@ -278,6 +353,14 @@ void TransmogShop::initialize()
         }
 
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
+
+        auto invisible_protector = is_invisible_protector_id(protector_id);
+
+        uint16_t protector_icon_id =
+            invisible_protector ? invisible_icon_id : protector_row.iconIdM;
+        uint8_t protector_sort_group_id =
+            invisible_protector ? (uint8_t)10 : protector_row.sortGroupId;
+
         transmog_goods[goods_id] = {
             .refId_default = -1,
             .sfxVariationId = -1,
@@ -287,8 +370,7 @@ void TransmogShop::initialize()
             .appearanceReplaceItemId = -1,
             .yesNoDialogMessageId = -1,
             .potGroupId = -1,
-            .iconId =
-                is_invisible_protector_id(protector_id) ? invisible_icon_id : protector_row.iconIdM,
+            .iconId = protector_icon_id,
             .compTrophySedId = -1,
             .trophySeqId = -1,
             .maxNum = 1,
@@ -300,7 +382,7 @@ void TransmogShop::initialize()
             .effectSfxId = -1,
             .showLogCondType = 1,
             .showDialogCondType = 2,
-            .sortGroupId = 255,
+            .sortGroupId = (uint8_t)(120 + protector_sort_group_id / 10),
             .isUseNoAttackRegion = 1,
             .aiUseJudgeId = -1,
             .reinforceGoodsId = -1,
@@ -371,6 +453,20 @@ void TransmogShop::initialize()
             .relative_offsets = {{1, 5}},
         },
         add_inventory_from_shop_detour, add_inventory_from_shop);
+
+    // Hook OpenRegularShop() to perform some memory hacks when opening up the a transmog shop
+    ModUtils::hook(
+        {
+            .aob = "4c 8b 49 18"           // mov    r9, [rcx + 0x18]
+                   "48 8b d9"              // mov    rbx,rcx
+                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
+                   "e8 ?? ?? ?? ??"        // call   OpenRegularShopInner
+                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
+                   "0f 10 00"              // movups xmm0, [rax]
+                   "c7 43 10 05 00 00 00", // mov    [rbx + 0x10], 5
+            .offset = -6,
+        },
+        open_regular_shop_detour, open_regular_shop);
 }
 
 void TransmogShop::remove_transmog_goods(int8_t protector_category)

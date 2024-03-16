@@ -42,5 +42,7 @@ const std::u16string cut_item_prefix = u"[ERROR]";
  */
 void initialize();
 
+void set_active_transmog_shop_protector_category(int8_t protector_category);
+
 const std::u16string_view get_protector_name(int32_t id);
 }; // namespace TransmogMessages

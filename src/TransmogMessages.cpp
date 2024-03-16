@@ -173,29 +173,10 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
     return get_message(msg_repository, unknown, bnd_id, msg_id);
 }
 
-static void (*open_regular_shop)(void *, uint64_t, uint64_t);
-
-static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_id)
+// Set a flag to adjust some UI strings for the transmog shop, but not other shops
+void TransmogMessages::set_active_transmog_shop_protector_category(int8_t protector_category)
 {
-    switch (begin_id)
-    {
-    case TransmogShop::transmog_head_shop_menu_id:
-        active_transmog_shop_protector_category = TransmogShop::protector_category_head;
-        break;
-    case TransmogShop::transmog_body_shop_menu_id:
-        active_transmog_shop_protector_category = TransmogShop::protector_category_body;
-        break;
-    case TransmogShop::transmog_arms_shop_menu_id:
-        active_transmog_shop_protector_category = TransmogShop::protector_category_arms;
-        break;
-    case TransmogShop::transmog_legs_shop_menu_id:
-        active_transmog_shop_protector_category = TransmogShop::protector_category_legs;
-        break;
-    default:
-        active_transmog_shop_protector_category = -1;
-    }
-
-    open_regular_shop(unk, begin_id, end_id);
+    active_transmog_shop_protector_category = protector_category;
 }
 
 void TransmogMessages::initialize()
@@ -219,21 +200,6 @@ void TransmogMessages::initialize()
             .relative_offsets = {{1, 5}},
         },
         get_message_detour, get_message);
-
-    // Hook OpenRegularShop() to adjust some UI strings for the transmog shop, but not other
-    // shops
-    ModUtils::hook(
-        {
-            .aob = "4c 8b 49 18"           // mov    r9, [rcx + 0x18]
-                   "48 8b d9"              // mov    rbx,rcx
-                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
-                   "e8 ?? ?? ?? ??"        // call   OpenRegularShopInner
-                   "48 8d 4c 24 20"        // lea    rcx, [rsp + 0x20]
-                   "0f 10 00"              // movups xmm0, [rax]
-                   "c7 43 10 05 00 00 00", // mov    [rbx + 0x10], 5
-            .offset = -6,
-        },
-        open_regular_shop_detour, open_regular_shop);
 
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
