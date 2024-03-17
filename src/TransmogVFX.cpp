@@ -226,41 +226,41 @@ static GetPostureControlFn *get_posture_control = nullptr;
  * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
  * goofy if this isn't tied to the selected chest transmog.
  */
-static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm, int8_t unk1,
+static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, int8_t unk1,
                                           int32_t posture_control_group, int32_t unk2)
 {
+    auto &chr_asm = **chr_asm_ptr;
+
     for (auto &state : player_states)
     {
-        if (state.player != nullptr && state.body != nullptr)
+        if (state.player != nullptr && state.is_linked_chr_asm(chr_asm) &&
+            state.is_body_transmog_enabled())
         {
-            auto player = &state.player->player_game_data->equip_game_data.chr_asm;
-            if (memcmp(player, *chr_asm, sizeof(CS::ChrAsm)) == 0)
-            {
-                auto posture_control_id =
-                    100 * posture_control_group + state.body->postureControlId;
-                auto posture_control_param =
-                    ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
-                FindPostureControlParamProResult posture_control_result = {
-                    .id = posture_control_id,
-                    .row = &posture_control_param[posture_control_id],
-                };
+            auto posture_control_id = 100 * posture_control_group + state.body->postureControlId;
+            auto posture_control_param =
+                ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
+            FindPostureControlParamProResult posture_control_result = {
+                .id = posture_control_id,
+                .row = &posture_control_param[posture_control_id],
+            };
 
-                return get_posture_control_inner(&posture_control_result, unk1, unk2);
-            }
+            return get_posture_control_inner(&posture_control_result, unk1, unk2);
         }
     }
 
-    return get_posture_control(chr_asm, unk1, posture_control_group, unk2);
+    return get_posture_control(chr_asm_ptr, unk1, posture_control_group, unk2);
 }
 
-static void (*copy_player_character_data)(CS::ChrIns *, CS::ChrIns *) = nullptr;
+static void (*copy_player_character_data)(CS::PlayerIns *, CS::PlayerIns *) = nullptr;
 
 /**
  * When a player character is copied onto an NPC (Mimic Tear), apply the relevant transmog VFX to
  * the NPC
  */
-static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *source)
+static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerIns *source)
 {
+    copy_player_character_data(target, source);
+
     for (auto &state : player_states)
     {
         if (state.player == source)
@@ -276,10 +276,10 @@ static void copy_player_character_data_detour(CS::ChrIns *target, CS::ChrIns *so
                 spdlog::info("Applying body transmog to Mimic Tear");
                 PlayerUtils::apply_speffect(target, state.body_speffect_id, false);
             }
+
+            state.link_chr_asm(target->player_game_data->equip_game_data.chr_asm);
         }
     }
-
-    copy_player_character_data(target, source);
 }
 
 static void (*in_game_stay_step_load_finish)(InGameStep *) = nullptr;
@@ -300,10 +300,16 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
             auto &state = player_states[i];
             auto prev_player = state.player;
             state.player = net_players == nullptr ? nullptr : net_players[i].player;
+
             // A cool effect is shown when transmog is enabled & disabled, but this shouldn't be
             // shown when first loading a player into the world with a transmog already applied.
             bool show_sfx = prev_player != nullptr;
             state.refresh_transmog(show_sfx);
+
+            if (state.player != nullptr && state.player->player_game_data != nullptr)
+            {
+                state.link_chr_asm(state.player->player_game_data->equip_game_data.chr_asm);
+            }
         }
     }
 

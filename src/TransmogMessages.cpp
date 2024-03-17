@@ -63,6 +63,12 @@ static const char16_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_
 const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
                                    uint32_t bnd_id, int32_t msg_id)
 {
+    auto result = get_message(msg_repository, unknown, bnd_id, msg_id);
+    if (result != nullptr)
+    {
+        return result;
+    }
+
     switch (bnd_id)
     {
     case msgbnd_event_text_for_talk:
@@ -170,7 +176,7 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         break;
     }
 
-    return get_message(msg_repository, unknown, bnd_id, msg_id);
+    return nullptr;
 }
 
 // Set a flag to adjust some UI strings for the transmog shop, but not other shops

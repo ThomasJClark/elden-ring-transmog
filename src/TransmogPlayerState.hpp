@@ -46,6 +46,22 @@ class TransmogPlayerState
     {
     }
 
+    inline void link_chr_asm(CS::ChrAsm &chr_asm)
+    {
+        // Store the transmog SpEffect ID in this unused field in ChrAsm. This allows methods
+        // that operate on ChrAsm directly and don't have access to the player object use this
+        // state, including stuff with mimics that have a different instance of PlayerIns.
+        if (body_speffect_id != -1)
+        {
+            chr_asm.unused = body_speffect_id;
+        }
+    }
+
+    inline bool is_linked_chr_asm(const CS::ChrAsm &chr_asm)
+    {
+        return body_speffect_id != -1 && chr_asm.unused == body_speffect_id;
+    }
+
     void refresh_transmog(bool show_sfx = true);
 
     /**

@@ -28,6 +28,7 @@ void setup_logger(const filesystem::path &logs_path)
     logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
     logger->sinks().push_back(
         make_shared<spdlog::sinks::daily_file_sink_mt>(logs_path.string(), 0, 0, false, 5));
+    logger->flush_on(spdlog::level::info);
 
 #if _DEBUG
     AllocConsole();
@@ -36,6 +37,7 @@ void setup_logger(const filesystem::path &logs_path)
     freopen_s(&stream, "CONOUT$", "w", stderr);
     freopen_s(&stream, "CONIN$", "r", stdin);
     logger->sinks().push_back(make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    logger->set_level(spdlog::level::trace);
 #endif
 
     spdlog::set_default_logger(logger);

@@ -62,13 +62,14 @@ struct ChrAsm
     int32_t legs_protector_id;
     int32_t unk4;
     int32_t accessory_ids[4];
+    int32_t unused;
 };
 
 struct EquipGameData
 {
     std::byte unk1[0x70];
     ChrAsm chr_asm;
-    std::byte unk2[0x18];
+    std::byte unk2[0x14];
     EquipInventoryData equip_inventory_data;
     EquipMagicData *equip_magic_data;
     EquipItemData *equip_item_data;
