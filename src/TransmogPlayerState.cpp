@@ -80,7 +80,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
     {
         if (player != previous_player)
         {
-            spdlog::info("Different main player - clearing previous transmog");
+            spdlog::info("Loaded main player - clearing previous transmog");
             clear_transmog_protectors();
         }
 
@@ -88,12 +88,11 @@ void TransmogPlayerState::refresh_transmog_main_player()
         {
             if (is_transmog_enabled())
             {
+                spdlog::info("Main player - undoing transmog");
                 // If the player was given the undo transmog SpEffect, don't set any protector slots
                 // and remove any transmog goods.
-                spdlog::info("Undo - clearing {} {}", (void *)player, (void *)previous_player);
                 clear_transmog_protectors();
                 TransmogShop::remove_transmog_goods();
-                spdlog::info("Removed main player transmog goods");
             }
         }
         else
@@ -127,26 +126,26 @@ void TransmogPlayerState::refresh_transmog_main_player()
     if (is_body_transmog_enabled())
     {
         auto &chr_asm = player->player_game_data->equip_game_data.chr_asm;
-        if (body == nullptr)
+        if (chest_protector == nullptr)
         {
-            body_id = chr_asm.body_protector_id;
-            body = &equip_param_protector[chr_asm.body_protector_id];
-            TransmogShop::add_transmog_good(chr_asm.body_protector_id);
-            spdlog::info("Defaulting main player body to protector {}", body_id);
+            chest_protector_id = chr_asm.chest_protector_id;
+            chest_protector = &equip_param_protector[chr_asm.chest_protector_id];
+            TransmogShop::add_transmog_good(chr_asm.chest_protector_id);
+            spdlog::info("Defaulting main player chest to protector {}", chest_protector_id);
         }
-        if (arms == nullptr)
+        if (arms_protector == nullptr)
         {
-            arms_id = chr_asm.arms_protector_id;
-            arms = &equip_param_protector[chr_asm.arms_protector_id];
+            arms_protector_id = chr_asm.arms_protector_id;
+            arms_protector = &equip_param_protector[chr_asm.arms_protector_id];
             TransmogShop::add_transmog_good(chr_asm.arms_protector_id);
-            spdlog::info("Defaulting main player arms to protector {}", arms_id);
+            spdlog::info("Defaulting main player arms to protector {}", arms_protector_id);
         }
-        if (legs == nullptr)
+        if (legs_protector == nullptr)
         {
-            legs_id = chr_asm.legs_protector_id;
-            legs = &equip_param_protector[chr_asm.legs_protector_id];
+            legs_protector_id = chr_asm.legs_protector_id;
+            legs_protector = &equip_param_protector[chr_asm.legs_protector_id];
             TransmogShop::add_transmog_good(chr_asm.legs_protector_id);
-            spdlog::info("Defaulting main player legs to protector {}", legs_id);
+            spdlog::info("Defaulting main player legs to protector {}", legs_protector_id);
         }
     }
 
@@ -157,21 +156,25 @@ void TransmogPlayerState::refresh_transmog_main_player()
 
     // Apply SpEffects for the selected transmog protectors, to indicate the selections to other
     // networked players
-    if (head_id != -1)
+    if (head_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(player, get_transmog_speffect_id_for_protector(head_id), false);
+        PlayerUtils::apply_speffect(
+            player, get_transmog_speffect_id_for_protector(head_protector_id), false);
     }
-    if (body_id != -1)
+    if (chest_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(player, get_transmog_speffect_id_for_protector(body_id), false);
+        PlayerUtils::apply_speffect(
+            player, get_transmog_speffect_id_for_protector(chest_protector_id), false);
     }
-    if (arms_id != -1)
+    if (arms_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(player, get_transmog_speffect_id_for_protector(arms_id), false);
+        PlayerUtils::apply_speffect(
+            player, get_transmog_speffect_id_for_protector(arms_protector_id), false);
     }
-    if (legs_id != -1)
+    if (legs_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(player, get_transmog_speffect_id_for_protector(legs_id), false);
+        PlayerUtils::apply_speffect(
+            player, get_transmog_speffect_id_for_protector(legs_protector_id), false);
     }
 
     // Remove any existing SpEffects for protectors that aren't selected
@@ -181,8 +184,8 @@ void TransmogPlayerState::refresh_transmog_main_player()
         auto protector_id = get_protector_id_for_transmog_speffect(entry->id);
         if (protector_id != -1)
         {
-            if (protector_id != head_id && protector_id != body_id && protector_id != arms_id &&
-                protector_id != legs_id)
+            if (protector_id != head_protector_id && protector_id != chest_protector_id &&
+                protector_id != arms_protector_id && protector_id != legs_protector_id)
             {
                 cleared_speffects.push_back(entry->id);
             }
@@ -217,8 +220,6 @@ void TransmogPlayerState::refresh_transmog_net_player()
 {
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
 
-    clear_transmog_protectors();
-
     bool undo_transmog = false;
     auto transmog_speffect_ids = vector<int32_t>();
 
@@ -248,6 +249,8 @@ void TransmogPlayerState::refresh_transmog_net_player()
 
     if (undo_transmog)
     {
+        spdlog::info("Net player - undoing transmog");
+
         clear_transmog_protectors();
 
         PlayerUtils::clear_speffect(player, head_speffect_id);
@@ -260,13 +263,19 @@ void TransmogPlayerState::refresh_transmog_net_player()
     }
     else
     {
+        if (player != previous_player)
+        {
+            spdlog::info("Net player update - clearing previous transmog");
+            clear_transmog_protectors();
+        }
+
         for (auto speffect_id : transmog_speffect_ids)
         {
             auto protector_id = get_protector_id_for_transmog_speffect(speffect_id);
             if (protector_id != -1)
             {
-                if (protector_id != head_id && protector_id != body_id && protector_id != arms_id &&
-                    protector_id != legs_id)
+                if (protector_id != head_protector_id && protector_id != chest_protector_id &&
+                    protector_id != arms_protector_id && protector_id != legs_protector_id)
                 {
                     PlayerUtils::clear_speffect(player, speffect_id);
                 }

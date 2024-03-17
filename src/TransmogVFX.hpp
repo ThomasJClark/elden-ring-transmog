@@ -32,7 +32,7 @@ static constexpr int64_t transmog_dummy_speffect_end_id = 169900000;
 static constexpr int64_t undo_transmog_speffect_id = 169999999;
 
 static constexpr int64_t head_protector_offset = 0;
-static constexpr int64_t body_protector_offset = 100;
+static constexpr int64_t chest_protector_offset = 100;
 static constexpr int64_t arms_protector_offset = 200;
 static constexpr int64_t legs_protector_offset = 300;
 

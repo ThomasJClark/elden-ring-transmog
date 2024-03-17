@@ -57,7 +57,7 @@ struct ChrAsm
     int32_t unk2;
     int32_t unk3;
     int32_t head_protector_id;
-    int32_t body_protector_id;
+    int32_t chest_protector_id;
     int32_t arms_protector_id;
     int32_t legs_protector_id;
     int32_t unk4;

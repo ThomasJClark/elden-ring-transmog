@@ -80,8 +80,8 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
                 return transmog_messages.transmog_armor.c_str();
             case EventTextForTalk::transmog_head:
                 return transmog_messages.transmog_head.c_str();
-            case EventTextForTalk::transmog_body:
-                return transmog_messages.transmog_body.c_str();
+            case EventTextForTalk::transmog_chest:
+                return transmog_messages.transmog_chest.c_str();
             case EventTextForTalk::transmog_arms:
                 return transmog_messages.transmog_arms.c_str();
             case EventTextForTalk::transmog_legs:
@@ -97,8 +97,8 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         {
         case MenuText::transmog_head:
             return transmog_messages.transmog_head_title.c_str();
-        case MenuText::transmog_body:
-            return transmog_messages.transmog_body_title.c_str();
+        case MenuText::transmog_chest:
+            return transmog_messages.transmog_chest_title.c_str();
         case MenuText::transmog_arms:
             return transmog_messages.transmog_arms_title.c_str();
         case MenuText::transmog_legs:
@@ -110,7 +110,7 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
-            // Show bare head/body/arms/legs as "Invisible"
+            // Show bare head/chest/arms/legs as "Invisible"
             if (TransmogShop::is_invisible_protector_id(protector_id))
             {
                 return transmog_messages.invisible.c_str();
@@ -165,8 +165,8 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
             {
             case TransmogShop::protector_category_head:
                 return transmog_messages.transmog_head_to.c_str();
-            case TransmogShop::protector_category_body:
-                return transmog_messages.transmog_body_to.c_str();
+            case TransmogShop::protector_category_chest:
+                return transmog_messages.transmog_chest_to.c_str();
             case TransmogShop::protector_category_arms:
                 return transmog_messages.transmog_arms_to.c_str();
             case TransmogShop::protector_category_legs:
@@ -238,7 +238,7 @@ void TransmogMessages::initialize()
 
             prepend_icon(transmog_messages.transmog_armor, u"SB_ERR_Grace_AlterGarments.png");
             prepend_icon(transmog_messages.transmog_head, u"SB_ERR_A_Mind");
-            prepend_icon(transmog_messages.transmog_body, u"SB_ERR_A_Vigor");
+            prepend_icon(transmog_messages.transmog_chest, u"SB_ERR_A_Vigor");
             prepend_icon(transmog_messages.transmog_arms, u"SB_ERR_A_Strength");
             prepend_icon(transmog_messages.transmog_legs, u"SB_ERR_A_Endurance");
             prepend_icon(transmog_messages.undo_transmog, u"SB_ERR_Grace_AlterGarments.png");

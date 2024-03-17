@@ -93,18 +93,18 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             id == state.set_alt_id + head_protector_offset)
         {
             result->id = id;
-            result->row = state.head;
+            result->row = state.head_protector;
             result->base_id = id;
             result->reinforce_param_protector_result.id = 0;
             result->reinforce_param_protector_result.row = &dummy_reinforce_param;
             return;
         }
 
-        if (id == state.set_id + body_protector_offset ||
-            id == state.set_alt_id + body_protector_offset)
+        if (id == state.set_id + chest_protector_offset ||
+            id == state.set_alt_id + chest_protector_offset)
         {
             result->id = id;
-            result->row = state.body;
+            result->row = state.chest_protector;
             result->base_id = id;
             result->reinforce_param_protector_result.id = 0;
             result->reinforce_param_protector_result.row = &dummy_reinforce_param;
@@ -115,7 +115,7 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             id == state.set_alt_id + arms_protector_offset)
         {
             result->id = id;
-            result->row = state.arms;
+            result->row = state.arms_protector;
             result->base_id = id;
             result->reinforce_param_protector_result.id = 0;
             result->reinforce_param_protector_result.row = &dummy_reinforce_param;
@@ -126,7 +126,7 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             id == state.set_alt_id + legs_protector_offset)
         {
             result->id = id;
-            result->row = state.legs;
+            result->row = state.legs_protector;
             result->base_id = id;
             result->reinforce_param_protector_result.id = 0;
             result->reinforce_param_protector_result.row = &dummy_reinforce_param;
@@ -222,7 +222,7 @@ static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
 static GetPostureControlFn *get_posture_control = nullptr;
 
 /**
- * Override the player's resting posture to be based on the body transmog instead of the actual
+ * Override the player's resting posture to be based on the chest transmog instead of the actual
  * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
  * goofy if this isn't tied to the selected chest transmog.
  */
@@ -231,21 +231,44 @@ static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, int8_t unk1,
 {
     auto &chr_asm = **chr_asm_ptr;
 
-    for (auto &state : player_states)
-    {
-        if (state.player != nullptr && state.is_linked_chr_asm(chr_asm) &&
-            state.is_body_transmog_enabled())
+    auto get_player_state = [chr_asm]() {
+        // This unused field is used to link Mimic Tears' ChrAsm to a TransmogPlayerState
+        if (chr_asm.unused >= 0 && chr_asm.unused < player_states.size())
         {
-            auto posture_control_id = 100 * posture_control_group + state.body->postureControlId;
-            auto posture_control_param =
-                ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
-            FindPostureControlParamProResult posture_control_result = {
-                .id = posture_control_id,
-                .row = &posture_control_param[posture_control_id],
-            };
-
-            return get_posture_control_inner(&posture_control_result, unk1, unk2);
+            return player_states.begin() + chr_asm.unused;
         }
+
+        // Otherwise, check if this ChrAsm is exactly equal to one of the players. This function
+        // is passed a copy of ChrAsm, not a pointer to the one in the player's PlayerIns.
+        for (auto state = player_states.begin(); state != player_states.end(); state++)
+        {
+            if (state->player != nullptr &&
+                memcmp(&state->player->player_game_data->equip_game_data.chr_asm, &chr_asm,
+                       sizeof(CS::ChrAsm)) == 0)
+            {
+                return state;
+            }
+        }
+
+        return player_states.end();
+    };
+
+    // If this ChrAsm either belongs to a player with transmog enabled, or a Mimic Tear copied from
+    // such a player, apply the posture control from the transmogrified chest.
+    auto state = get_player_state();
+    if (state != player_states.end() && state->player != nullptr &&
+        state->is_body_transmog_enabled())
+    {
+        auto posture_control_id =
+            100 * posture_control_group + state->chest_protector->postureControlId;
+        auto posture_control_param =
+            ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
+        FindPostureControlParamProResult posture_control_result = {
+            .id = posture_control_id,
+            .row = &posture_control_param[posture_control_id],
+        };
+
+        return get_posture_control_inner(&posture_control_result, unk1, unk2);
     }
 
     return get_posture_control(chr_asm_ptr, unk1, posture_control_group, unk2);
@@ -261,8 +284,9 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
 {
     copy_player_character_data(target, source);
 
-    for (auto &state : player_states)
+    for (int i = 0; i < player_states.size(); i++)
     {
+        auto &state = player_states[i];
         if (state.player == source)
         {
             if (state.is_head_transmog_enabled())
@@ -277,7 +301,10 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
                 PlayerUtils::apply_speffect(target, state.body_speffect_id, false);
             }
 
-            state.link_chr_asm(target->player_game_data->equip_game_data.chr_asm);
+            // Store a value in this unused field in order to link this Mimic Tear's ChrAsm to the
+            // player. The posture adjustment function, which doesn't have access to the PlayerIns
+            // object, checks this to associate the Mimic Tear with a TransmogPlayerState.
+            target->player_game_data->equip_game_data.chr_asm.unused = i;
         }
     }
 }
@@ -300,16 +327,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
             auto &state = player_states[i];
             auto prev_player = state.player;
             state.player = net_players == nullptr ? nullptr : net_players[i].player;
-
-            // A cool effect is shown when transmog is enabled & disabled, but this shouldn't be
-            // shown when first loading a player into the world with a transmog already applied.
-            bool show_sfx = prev_player != nullptr;
             state.refresh_transmog();
-
-            if (state.player != nullptr && state.player->player_game_data != nullptr)
-            {
-                state.link_chr_asm(state.player->player_game_data->equip_game_data.chr_asm);
-            }
         }
     }
 
@@ -479,8 +497,7 @@ void TransmogVFX::initialize()
                 transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
 
             state.set_vfx_speffect_ids(speffect_id_dist(rng));
-            spdlog::info("Randomized SpEffect IDs = {} {}", state.head_speffect_id,
-                         state.body_speffect_id);
+            spdlog::info("SpEffect IDs = {} {}", state.head_speffect_id, state.body_speffect_id);
         }
         else
         {

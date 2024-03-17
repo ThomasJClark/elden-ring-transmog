@@ -17,7 +17,7 @@ namespace
 {
 extern TransmogMenuNextState transmog_menu_next_state;
 extern OpenShopState transmog_head_state;
-extern OpenShopState transmog_body_state;
+extern OpenShopState transmog_chest_state;
 extern OpenShopState transmog_arms_state;
 extern OpenShopState transmog_legs_state;
 extern ApplySpEffectState disable_transmog_state;
@@ -26,7 +26,7 @@ extern ApplySpEffectState disable_transmog_state;
 TransmogMenuState transmog_menu_state(69000, &transmog_menu_next_state);
 
 // TalkESD state that advances to the next state based on the menu selection
-TransmogMenuNextState transmog_menu_next_state(69001, &transmog_head_state, &transmog_body_state,
+TransmogMenuNextState transmog_menu_next_state(69001, &transmog_head_state, &transmog_chest_state,
                                                &transmog_arms_state, &transmog_legs_state,
                                                &disable_transmog_state);
 
@@ -36,10 +36,10 @@ OpenShopState transmog_head_state(69002, TransmogShop::transmog_head_shop_menu_i
                                       TransmogShop::transmog_shop_max_size - 1,
                                   &transmog_menu_state);
 
-OpenShopState transmog_body_state(69003, TransmogShop::transmog_body_shop_menu_id,
-                                  TransmogShop::transmog_body_shop_menu_id +
-                                      TransmogShop::transmog_shop_max_size - 1,
-                                  &transmog_menu_state);
+OpenShopState transmog_chest_state(69003, TransmogShop::transmog_chest_shop_menu_id,
+                                   TransmogShop::transmog_chest_shop_menu_id +
+                                       TransmogShop::transmog_shop_max_size - 1,
+                                   &transmog_menu_state);
 
 OpenShopState transmog_arms_state(69004, TransmogShop::transmog_arms_shop_menu_id,
                                   TransmogShop::transmog_arms_shop_menu_id +

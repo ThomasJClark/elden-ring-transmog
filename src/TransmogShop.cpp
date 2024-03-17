@@ -74,7 +74,7 @@ struct GameDataMan
 static CS::GameDataMan **game_data_man_addr;
 
 static ShopLineupParam transmog_head_shop_menu = {0};
-static ShopLineupParam transmog_body_shop_menu = {0};
+static ShopLineupParam transmog_chest_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
 static ShopLineupParam transmog_legs_shop_menu = {0};
 
@@ -94,10 +94,10 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
         result->id = transmog_head_shop_menu_id;
         result->row = &transmog_head_shop_menu;
         break;
-    case transmog_body_shop_menu_id:
+    case transmog_chest_shop_menu_id:
         result->shop_type = (byte)0;
-        result->id = transmog_body_shop_menu_id;
-        result->row = &transmog_body_shop_menu;
+        result->id = transmog_chest_shop_menu_id;
+        result->row = &transmog_chest_shop_menu;
         break;
     case transmog_arms_shop_menu_id:
         result->shop_type = (byte)0;
@@ -206,8 +206,8 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
         TransmogMessages::set_active_transmog_shop_protector_category(protector_category_head);
         is_transmog_shop = true;
         break;
-    case transmog_body_shop_menu_id:
-        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_body);
+    case transmog_chest_shop_menu_id:
+        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_chest);
         is_transmog_shop = true;
         break;
     case transmog_arms_shop_menu_id:
@@ -305,8 +305,8 @@ void TransmogShop::initialize()
     transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_head;
     transmog_head_shop_menu.menuIconId = 5;
 
-    transmog_body_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_body;
-    transmog_body_shop_menu.menuIconId = 5;
+    transmog_chest_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_chest;
+    transmog_chest_shop_menu.menuIconId = 5;
 
     transmog_arms_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_arms;
     transmog_arms_shop_menu.menuIconId = 5;
@@ -396,8 +396,8 @@ void TransmogShop::initialize()
         case protector_category_head:
             shop_lineup_param_id = transmog_head_shop_menu_id + protector_id / 100;
             break;
-        case protector_category_body:
-            shop_lineup_param_id = transmog_body_shop_menu_id + protector_id / 100;
+        case protector_category_chest:
+            shop_lineup_param_id = transmog_chest_shop_menu_id + protector_id / 100;
             break;
         case protector_category_arms:
             shop_lineup_param_id = transmog_arms_shop_menu_id + protector_id / 100;

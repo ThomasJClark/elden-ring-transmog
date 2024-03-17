@@ -68,7 +68,7 @@ class OpenShopState : public EzState::State
 };
 
 /**
- * TalkESD state with "Transmogrify Head", "Transmogrify Body", etc. options
+ * TalkESD state with "Transmogrify head", "Transmogrify chest", etc. options
  */
 class TransmogMenuState : public EzState::State
 {
@@ -81,11 +81,11 @@ class TransmogMenuState : public EzState::State
     EzState::CommandArg transmog_head_arg_list[3] = {transmog_head_talk_list_index,
                                                      transmog_head_menu_text_id, unk};
 
-    EzState::IntValue transmog_body_talk_list_index = 2;
-    EzState::IntValue transmog_body_menu_text_id =
-        TransmogMessages::EventTextForTalk::transmog_body;
-    EzState::CommandArg transmog_body_arg_list[3] = {transmog_body_talk_list_index,
-                                                     transmog_body_menu_text_id, unk};
+    EzState::IntValue transmog_chest_talk_list_index = 2;
+    EzState::IntValue transmog_chest_menu_text_id =
+        TransmogMessages::EventTextForTalk::transmog_chest;
+    EzState::CommandArg transmog_chest_arg_list[3] = {transmog_chest_talk_list_index,
+                                                      transmog_chest_menu_text_id, unk};
 
     EzState::IntValue transmog_arms_talk_list_index = 3;
     EzState::IntValue transmog_arms_menu_text_id =
@@ -119,8 +119,8 @@ class TransmogMenuState : public EzState::State
         {EzState::Commands::clear_talk_list_data},
         // AddTalkListData(1, "Transmogrify head", -1)
         {EzState::Commands::add_talk_list_data, transmog_head_arg_list},
-        // AddTalkListData(2, "Transmogrify body", -1)
-        {EzState::Commands::add_talk_list_data, transmog_body_arg_list},
+        // AddTalkListData(2, "Transmogrify chest", -1)
+        {EzState::Commands::add_talk_list_data, transmog_chest_arg_list},
         // AddTalkListData(3, "Transmogrify arms", -1)
         {EzState::Commands::add_talk_list_data, transmog_arms_arg_list},
         // AddTalkListData(4, "Transmogrify legs", -1)
@@ -170,19 +170,19 @@ class TransmogMenuNextState : public EzState::State
 {
   private:
     EzState::Transition select_transmog_head_transition;
-    EzState::Transition select_transmog_body_transition;
+    EzState::Transition select_transmog_chest_transition;
     EzState::Transition select_transmog_arms_transition;
     EzState::Transition select_transmog_legs_transition;
     EzState::Transition select_disable_transmog_transition;
     EzState::Transition return_transition;
     EzState::Transition *transitions[6] = {
-        &select_transmog_head_transition,    &select_transmog_body_transition,
+        &select_transmog_head_transition,    &select_transmog_chest_transition,
         &select_transmog_arms_transition,    &select_transmog_legs_transition,
         &select_disable_transmog_transition, &return_transition};
 
   public:
     TransmogMenuNextState(int32_t id, EzState::State *transmog_head_state,
-                          EzState::State *transmog_body_state, EzState::State *transmog_arms_state,
+                          EzState::State *transmog_chest_state, EzState::State *transmog_arms_state,
                           EzState::State *transmog_legs_state,
                           EzState::State *disable_transmog_state)
 
@@ -190,7 +190,7 @@ class TransmogMenuNextState : public EzState::State
           // GetTalkListEntryResult() == 1
           select_transmog_head_transition(transmog_head_state, "\x57\x84\xa7\x41\x95\xa1"),
           // GetTalkListEntryResult() == 2
-          select_transmog_body_transition(transmog_body_state, "\xaf\x42\x95\xa1"),
+          select_transmog_chest_transition(transmog_chest_state, "\xaf\x42\x95\xa1"),
           // GetTalkListEntryResult() == 3
           select_transmog_arms_transition(transmog_arms_state, "\xaf\x43\x95\xa1"),
           // GetTalkListEntryResult() == 4

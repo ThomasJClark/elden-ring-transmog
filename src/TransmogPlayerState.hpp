@@ -26,42 +26,27 @@ class TransmogPlayerState
     int64_t body_vfx_id;
     SpEffectVfxParam body_vfx;
 
-    int64_t head_id;
-    EquipParamProtector *head;
+    int64_t head_protector_id;
+    EquipParamProtector *head_protector;
 
-    int64_t body_id;
-    EquipParamProtector *body;
+    int64_t chest_protector_id;
+    EquipParamProtector *chest_protector;
 
-    int64_t arms_id;
-    EquipParamProtector *arms;
+    int64_t arms_protector_id;
+    EquipParamProtector *arms_protector;
 
-    int64_t legs_id;
-    EquipParamProtector *legs;
+    int64_t legs_protector_id;
+    EquipParamProtector *legs_protector;
 
     int64_t set_id;
     int64_t set_alt_id;
 
     TransmogPlayerState()
         : player(nullptr), head_speffect_id(-1), body_speffect_id(-1), head_vfx_id(-1),
-          body_vfx_id(-1), head_id(-1), head(nullptr), body_id(-1), body(nullptr), arms_id(-1),
-          arms(nullptr), legs_id(-1), legs(nullptr), set_id(-1), set_alt_id(-1)
+          body_vfx_id(-1), head_protector_id(-1), head_protector(nullptr), chest_protector_id(-1),
+          chest_protector(nullptr), arms_protector_id(-1), arms_protector(nullptr),
+          legs_protector_id(-1), legs_protector(nullptr), set_id(-1), set_alt_id(-1)
     {
-    }
-
-    inline void link_chr_asm(CS::ChrAsm &chr_asm)
-    {
-        // Store the transmog SpEffect ID in this unused field in ChrAsm. This allows methods
-        // that operate on ChrAsm directly and don't have access to the player object use this
-        // state, including stuff with mimics that have a different instance of PlayerIns.
-        if (body_speffect_id != -1)
-        {
-            chr_asm.unused = body_speffect_id;
-        }
-    }
-
-    inline bool is_linked_chr_asm(const CS::ChrAsm &chr_asm)
-    {
-        return body_speffect_id != -1 && chr_asm.unused == body_speffect_id;
     }
 
     void refresh_transmog();
@@ -100,14 +85,14 @@ class TransmogPlayerState
 
     inline void clear_transmog_protectors()
     {
-        head_id = -1;
-        head = nullptr;
-        body_id = -1;
-        body = nullptr;
-        arms_id = -1;
-        arms = nullptr;
-        legs_id = -1;
-        legs = nullptr;
+        head_protector_id = -1;
+        head_protector = nullptr;
+        chest_protector_id = -1;
+        chest_protector = nullptr;
+        arms_protector_id = -1;
+        arms_protector = nullptr;
+        legs_protector_id = -1;
+        legs_protector = nullptr;
     }
 
     inline bool set_transmog_protector(int64_t protector_id, EquipParamProtector &protector)
@@ -115,28 +100,28 @@ class TransmogPlayerState
         switch (protector.protectorCategory)
         {
         case TransmogShop::protector_category_head:
-            if (head_id == protector_id)
+            if (head_protector_id == protector_id)
                 return false;
-            head_id = protector_id;
-            head = &protector;
+            head_protector_id = protector_id;
+            head_protector = &protector;
             return true;
-        case TransmogShop::protector_category_body:
-            if (body_id == protector_id)
+        case TransmogShop::protector_category_chest:
+            if (chest_protector_id == protector_id)
                 return false;
-            body_id = protector_id;
-            body = &protector;
+            chest_protector_id = protector_id;
+            chest_protector = &protector;
             return true;
         case TransmogShop::protector_category_arms:
-            if (arms_id == protector_id)
+            if (arms_protector_id == protector_id)
                 return false;
-            arms_id = protector_id;
-            arms = &protector;
+            arms_protector_id = protector_id;
+            arms_protector = &protector;
             return true;
         case TransmogShop::protector_category_legs:
-            if (legs_id == protector_id)
+            if (legs_protector_id == protector_id)
                 return false;
-            legs_id = protector_id;
-            legs = &protector;
+            legs_protector_id = protector_id;
+            legs_protector = &protector;
             return true;
         default:
             return false;
@@ -145,12 +130,12 @@ class TransmogPlayerState
 
     inline bool is_head_transmog_enabled()
     {
-        return head != nullptr;
+        return head_protector != nullptr;
     }
 
     inline bool is_body_transmog_enabled()
     {
-        return body != nullptr || arms != nullptr | legs != nullptr;
+        return chest_protector != nullptr || arms_protector != nullptr | legs_protector != nullptr;
     }
 
     inline bool is_transmog_enabled()

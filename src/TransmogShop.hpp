@@ -8,17 +8,17 @@ static constexpr uint32_t item_type_protector_begin = 0x10000000;
 static constexpr uint32_t item_type_goods_begin = 0x40000000;
 static constexpr uint32_t item_type_goods_end = 0x50000000;
 static constexpr uint8_t protector_category_head = 0;
-static constexpr uint8_t protector_category_body = 1;
+static constexpr uint8_t protector_category_chest = 1;
 static constexpr uint8_t protector_category_arms = 2;
 static constexpr uint8_t protector_category_legs = 3;
 static constexpr int64_t bare_head_protector_id = 10000;
-static constexpr int64_t bare_body_protector_id = 10100;
+static constexpr int64_t bare_chest_protector_id = 10100;
 static constexpr int64_t bare_arms_protector_id = 10200;
 static constexpr int64_t bare_legs_protector_id = 10300;
 static constexpr int64_t transmog_goods_start_id = 6900000;
 static constexpr int64_t transmog_goods_end_id = 7000000;
 static constexpr int64_t transmog_head_shop_menu_id = 4000000;
-static constexpr int64_t transmog_body_shop_menu_id = 4100000;
+static constexpr int64_t transmog_chest_shop_menu_id = 4100000;
 static constexpr int64_t transmog_arms_shop_menu_id = 4200000;
 static constexpr int64_t transmog_legs_shop_menu_id = 4300000;
 static constexpr int64_t transmog_shop_max_size = 100000;
@@ -40,7 +40,7 @@ void add_transmog_good(uint64_t protector_id);
 
 inline bool is_invisible_protector_id(int64_t protector_id)
 {
-    return protector_id == bare_head_protector_id || protector_id == bare_body_protector_id ||
+    return protector_id == bare_head_protector_id || protector_id == bare_chest_protector_id ||
            protector_id == bare_arms_protector_id || protector_id == bare_legs_protector_id;
 }
 
