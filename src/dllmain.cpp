@@ -53,6 +53,10 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
 
         setup_logger(folder / "logs" / "ertransmogrify.log");
 
+#ifdef PROJECT_VERSION
+        spdlog::info("Transmog version {}", PROJECT_VERSION);
+#endif
+
         TransmogConfig::load_config(folder / "ertransmogrify.ini");
 
         mod_thread = thread([]() {

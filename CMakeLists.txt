@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(EldenRingTransmogMod
-  VERSION   0.0.0
+  VERSION   "2.1.1"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -84,6 +84,9 @@ add_library(EldenRingTransmogMod SHARED
   src/messages.hpp)
 
 set_target_properties(EldenRingTransmogMod PROPERTIES OUTPUT_NAME "ertransmogrify")
+
+add_definitions(-DPROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
+message("CMAKE_PROJECT_VERSION = ${CMAKE_PROJECT_VERSION}")
 
 add_custom_command(TARGET EldenRingTransmogMod POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/ertransmogrify.ini
