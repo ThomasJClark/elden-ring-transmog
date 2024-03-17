@@ -304,7 +304,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
             // A cool effect is shown when transmog is enabled & disabled, but this shouldn't be
             // shown when first loading a player into the world with a transmog already applied.
             bool show_sfx = prev_player != nullptr;
-            state.refresh_transmog(show_sfx);
+            state.refresh_transmog();
 
             if (state.player != nullptr && state.player->player_game_data != nullptr)
             {

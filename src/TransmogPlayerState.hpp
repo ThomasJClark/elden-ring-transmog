@@ -11,6 +11,8 @@ class TransmogPlayerState
 {
   public:
     CS::PlayerIns *player;
+    CS::PlayerIns *previous_player;
+    bool previous_refreshed;
 
     int64_t head_speffect_id;
     SpEffectParam head_speffect;
@@ -62,7 +64,7 @@ class TransmogPlayerState
         return body_speffect_id != -1 && chr_asm.unused == body_speffect_id;
     }
 
-    void refresh_transmog(bool show_sfx = true);
+    void refresh_transmog();
 
     /**
      * Toggle the set between the default and alternate IDs, to force the game to display the new

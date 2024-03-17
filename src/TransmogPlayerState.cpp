@@ -32,11 +32,11 @@ static inline int64_t get_protector_id_for_transmog_speffect(int64_t speffect_id
     return -1;
 }
 
-void TransmogPlayerState::refresh_transmog(bool show_sfx)
+void TransmogPlayerState::refresh_transmog()
 {
     if (player == nullptr)
     {
-        clear_transmog_protectors();
+        previous_refreshed = false;
         return;
     }
 
@@ -51,11 +51,16 @@ void TransmogPlayerState::refresh_transmog(bool show_sfx)
         refresh_transmog_net_player();
     }
 
-    // When transmog is enabled or disabled, show a cool effect on the player
-    if (show_sfx && (is_transmog_enabled() != previous_is_transmog_enabled))
+    // When transmog is enabled or disabled, show a cool effect on the player. Skip this
+    // when refreshing for the first time, so there isn't an effect when loading into the game
+    // with transmog already enabled.
+    if (previous_refreshed && is_transmog_enabled() != previous_is_transmog_enabled)
     {
         PlayerUtils::spawn_one_shot_sfx_on_chr(player, 900, transmog_sfx_id, nullptr);
     };
+
+    previous_player = player;
+    previous_refreshed = true;
 }
 
 /**
@@ -70,14 +75,22 @@ void TransmogPlayerState::refresh_transmog_main_player()
     // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
     // inventory isn't completely copied over, and it's not possible for this to have changed since
     // the last time it was checked.
-    if (PlayerUtils::get_ceremony_type() == PlayerUtils::ceremony_type_none)
+    auto ceremony_type = PlayerUtils::get_ceremony_type();
+    if (ceremony_type == PlayerUtils::ceremony_type_none)
     {
+        if (player != previous_player)
+        {
+            spdlog::info("Different main player - clearing previous transmog");
+            clear_transmog_protectors();
+        }
+
         if (should_clear_transmog())
         {
             if (is_transmog_enabled())
             {
                 // If the player was given the undo transmog SpEffect, don't set any protector slots
                 // and remove any transmog goods.
+                spdlog::info("Undo - clearing {} {}", (void *)player, (void *)previous_player);
                 clear_transmog_protectors();
                 TransmogShop::remove_transmog_goods();
                 spdlog::info("Removed main player transmog goods");
@@ -103,6 +116,10 @@ void TransmogPlayerState::refresh_transmog_main_player()
                 }
             }
         }
+    }
+    else
+    {
+        spdlog::debug("Ceremony type {} is active, skipping transmog update", (int)ceremony_type);
     }
 
     // Body/arms/legs have to be combined in one spffect. If transmog is enabled on some but not
