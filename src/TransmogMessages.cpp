@@ -63,12 +63,6 @@ static const char16_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_
 const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
                                    uint32_t bnd_id, int32_t msg_id)
 {
-    auto result = get_message(msg_repository, unknown, bnd_id, msg_id);
-    if (result != nullptr)
-    {
-        return result;
-    }
-
     switch (bnd_id)
     {
     case msgbnd_event_text_for_talk:
@@ -176,12 +170,13 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         break;
     }
 
-    return nullptr;
+    return get_message(msg_repository, unknown, bnd_id, msg_id);
 }
 
 // Set a flag to adjust some UI strings for the transmog shop, but not other shops
 void TransmogMessages::set_active_transmog_shop_protector_category(int8_t protector_category)
 {
+    spdlog::info("set_active_transmog_shop_protector_category {}", (int)protector_category);
     active_transmog_shop_protector_category = protector_category;
 }
 
