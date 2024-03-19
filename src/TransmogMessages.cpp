@@ -176,7 +176,6 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
 // Set a flag to adjust some UI strings for the transmog shop, but not other shops
 void TransmogMessages::set_active_transmog_shop_protector_category(int8_t protector_category)
 {
-    spdlog::info("set_active_transmog_shop_protector_category {}", (int)protector_category);
     active_transmog_shop_protector_category = protector_category;
 }
 

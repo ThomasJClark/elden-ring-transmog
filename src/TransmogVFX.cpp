@@ -326,7 +326,9 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
         {
             auto &state = player_states[i];
             auto prev_player = state.player;
-            state.player = net_players == nullptr ? nullptr : net_players[i].player;
+            state.player = (net_players == nullptr || net_players[0].player == nullptr)
+                               ? nullptr
+                               : net_players[i].player;
             state.refresh_transmog();
         }
     }

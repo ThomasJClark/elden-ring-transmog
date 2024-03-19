@@ -34,7 +34,7 @@ static inline int64_t get_protector_id_for_transmog_speffect(int64_t speffect_id
 
 void TransmogPlayerState::refresh_transmog()
 {
-    if (player == nullptr)
+    if (player == nullptr || player->player_game_data == nullptr || player->speffects == nullptr)
     {
         previous_refreshed = false;
         return;
@@ -177,22 +177,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
             player, get_transmog_speffect_id_for_protector(legs_protector_id), false);
     }
 
-    // Remove any existing SpEffects for protectors that aren't selected
-    auto cleared_speffects = vector<int32_t>();
-    for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
-    {
-        auto protector_id = get_protector_id_for_transmog_speffect(entry->id);
-        if (protector_id != -1)
-        {
-            if (protector_id != head_protector_id && protector_id != chest_protector_id &&
-                protector_id != arms_protector_id && protector_id != legs_protector_id)
-            {
-                cleared_speffects.push_back(entry->id);
-            }
-        }
-    }
-    for (auto speffect_id : cleared_speffects)
-        PlayerUtils::clear_speffect(player, speffect_id);
+    clear_stale_speffects();
 
     // Ensure the player has the transmog VFX if they have anything selected
     if (is_head_transmog_enabled())
@@ -269,19 +254,6 @@ void TransmogPlayerState::refresh_transmog_net_player()
             clear_transmog_protectors();
         }
 
-        for (auto speffect_id : transmog_speffect_ids)
-        {
-            auto protector_id = get_protector_id_for_transmog_speffect(speffect_id);
-            if (protector_id != -1)
-            {
-                if (protector_id != head_protector_id && protector_id != chest_protector_id &&
-                    protector_id != arms_protector_id && protector_id != legs_protector_id)
-                {
-                    PlayerUtils::clear_speffect(player, speffect_id);
-                }
-            }
-        }
-
         bool any_changed = false;
         for (auto speffect_id : transmog_speffect_ids)
         {
@@ -289,6 +261,7 @@ void TransmogPlayerState::refresh_transmog_net_player()
             if (protector_id != -1 &&
                 set_transmog_protector(protector_id, equip_param_protector[protector_id]))
             {
+                spdlog::info("Set net player transmog protector {}", protector_id);
                 any_changed = true;
             }
         }
@@ -297,6 +270,8 @@ void TransmogPlayerState::refresh_transmog_net_player()
         {
             toggle_protectors();
         }
+
+        clear_stale_speffects();
     }
 
     PlayerUtils::clear_speffect(player, TransmogVFX::undo_transmog_speffect_id);
@@ -323,4 +298,26 @@ bool TransmogPlayerState::should_clear_transmog()
         }
     }
     return should_clear;
+}
+
+/**
+ * Remove SpEffects from previous transmog selections
+ */
+void TransmogPlayerState::clear_stale_speffects()
+{
+    auto cleared_speffects = vector<int32_t>();
+    for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
+    {
+        auto protector_id = get_protector_id_for_transmog_speffect(entry->id);
+        if (protector_id != -1)
+        {
+            if (protector_id != head_protector_id && protector_id != chest_protector_id &&
+                protector_id != arms_protector_id && protector_id != legs_protector_id)
+            {
+                cleared_speffects.push_back(entry->id);
+            }
+        }
+    }
+    for (auto speffect_id : cleared_speffects)
+        PlayerUtils::clear_speffect(player, speffect_id);
 }

@@ -147,4 +147,5 @@ class TransmogPlayerState
     void refresh_transmog_main_player();
     void refresh_transmog_net_player();
     bool should_clear_transmog();
+    void clear_stale_speffects();
 };
