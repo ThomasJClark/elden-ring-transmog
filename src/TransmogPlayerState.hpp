@@ -51,6 +51,8 @@ class TransmogPlayerState
 
     void refresh_transmog();
 
+    void remove_transmog();
+
     /**
      * Toggle the set between the default and alternate IDs, to force the game to display the new
      * protectors after patching a VFX param
@@ -147,5 +149,4 @@ class TransmogPlayerState
     void refresh_transmog_main_player();
     void refresh_transmog_net_player();
     bool should_clear_transmog();
-    void clear_stale_speffects();
 };

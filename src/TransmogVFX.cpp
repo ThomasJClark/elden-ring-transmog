@@ -169,9 +169,10 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
         }
     }
 
-    // These SpEffect IDs are used to store transmog selections, so we just need to ensure they
-    // exist. The param otherwise does nothing.
-    if ((id >= transmog_vfx_speffect_start_id && id < transmog_dummy_speffect_end_id) ||
+    // We just need to ensure these params always exist in order to communicate transmog state
+    // between networked players
+    if ((id >= transmog_vfx_speffect_start_id && id < transmog_vfx_speffect_end_id) ||
+        (id >= transmog_vfx_speffect_start_id && id < transmog_dummy_speffect_end_id) ||
         id == undo_transmog_speffect_id)
     {
         result->id = id;
@@ -321,15 +322,29 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 {
     if (update_count++ % update_interval == 0)
     {
+        auto main_player = PlayerUtils::get_main_player();
         auto net_players = PlayerUtils::get_net_players();
-        for (int i = 0; i < PlayerUtils::net_player_max; i++)
+
+        auto &main_player_state = player_states[0];
+        main_player_state.player = main_player;
+        main_player_state.refresh_transmog();
+
+        if (main_player != nullptr && net_players != nullptr)
         {
-            auto &state = player_states[i];
-            auto prev_player = state.player;
-            state.player = (net_players == nullptr || net_players[0].player == nullptr)
-                               ? nullptr
-                               : net_players[i].player;
-            state.refresh_transmog();
+            for (int i = 1; i < PlayerUtils::net_player_max; i++)
+            {
+                auto &state = player_states[i];
+                auto player = net_players == nullptr ? nullptr : net_players[i].player;
+                auto prev_player = state.player;
+                state.player = player;
+                state.refresh_transmog();
+
+                if (prev_player == nullptr && state.player != nullptr)
+                {
+                    spdlog::info("Net player joined - forcing refresh of main player transmog");
+                    player_states[0].remove_transmog();
+                }
+            }
         }
     }
 
