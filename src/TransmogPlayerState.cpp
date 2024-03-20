@@ -73,7 +73,7 @@ void TransmogPlayerState::refresh_transmog()
 
     // Ensure the player has the head/body transmog VFX if they have anything selected in those
     // slots
-    if (is_head_transmog_enabled())
+    if (is_head_transmog_enabled() && head_speffect_id > 0)
     {
         PlayerUtils::apply_speffect(player, head_speffect_id, false);
     }
@@ -82,7 +82,7 @@ void TransmogPlayerState::refresh_transmog()
         PlayerUtils::clear_speffect(player, head_speffect_id);
     }
 
-    if (is_body_transmog_enabled())
+    if (is_body_transmog_enabled() && body_speffect_id > 0)
     {
         PlayerUtils::apply_speffect(player, body_speffect_id, false);
     }
