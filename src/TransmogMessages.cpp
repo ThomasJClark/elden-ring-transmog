@@ -216,28 +216,6 @@ void TransmogMessages::initialize()
         spdlog::info("Detected game language = {}", language);
         transmog_messages = messages_iterator->second;
     }
-
-    if (TransmogConfig::patch_grace_talk_script)
-    {
-        // For Elden Ring Reforged, add icons to match other menu text
-        u16string_view calibrations_ver = get_message(msg_repository, 0, msgbnd_menu_text, 401322);
-        if (calibrations_ver.find(u"ELDEN RING Reforged") != string::npos)
-        {
-            spdlog::info("Detected ELDEN RING Reforged - enabling menu icons");
-
-            auto prepend_icon = [](u16string &str, u16string const &icon) {
-                str =
-                    u"<img src='img://" + icon + u"' height='32' width='32' vspace='-16'/> " + str;
-            };
-
-            prepend_icon(transmog_messages.transmog_armor, u"SB_ERR_Grace_AlterGarments.png");
-            prepend_icon(transmog_messages.transmog_head, u"SB_ERR_A_Mind");
-            prepend_icon(transmog_messages.transmog_chest, u"SB_ERR_A_Vigor");
-            prepend_icon(transmog_messages.transmog_arms, u"SB_ERR_A_Strength");
-            prepend_icon(transmog_messages.transmog_legs, u"SB_ERR_A_Endurance");
-            prepend_icon(transmog_messages.undo_transmog, u"SB_ERR_Grace_AlterGarments.png");
-        }
-    }
 }
 
 const u16string_view TransmogMessages::get_protector_name(int32_t id)
