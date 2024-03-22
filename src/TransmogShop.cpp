@@ -319,11 +319,14 @@ void TransmogShop::initialize()
     // menu.
     ModUtils::hook(
         {
-            .aob = "45 8b 4e 14"     // mov r9d,dword ptr [r14 + 0x14]
-                   "45 8b 46 10"     // mov r8d,dword ptr [r14 + 0x10]
-                   "33 d2"           // xor edx,edx
-                   "48 8d 4d 18"     // lea rcx=>local_1d0,[rbp + 0x18]
-                   "e8 ?? ?? ?? ??", // call GetShopMenu
+            // Note - the mov instructions are 44 or 45 depending on if this is the Japanese or
+            // international .exe, and the stack offset is either -10 or -08. This pattern works
+            // for both versions.
+            .aob = "?? 8b 4e 14"     // mov r9d, [rsi + 14]
+                   "?? 8b 46 10"     // mov r8d, [rsi + 10]
+                   "33 d2"           // xor edx, edx
+                   "48 8d 4d ??"     // lea rcx, [rbp + ??]
+                   "e8 ?? ?? ?? ??", // call FindShopMenu
             .offset = 14,
             .relative_offsets = {{1, 5}},
         },
