@@ -1,13 +1,22 @@
 #pragma once
-
 #include <cstdint>
 #include <iterator>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <string>
 #include <tga/param_containers.h>
 
 namespace ParamUtils
 {
+namespace internal
+{
+inline std::string wstring_to_string(const std::wstring &wstr)
+{
+    std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>, wchar_t> convert;
+    return convert.to_bytes(wstr);
+}
+} // namespace internal
+
 void initialize();
 
 struct ParamListEntry
@@ -28,6 +37,7 @@ template <typename T> class ParamTableSequence
 {
   private:
     ParamTable *param_table;
+    const std::wstring param_name;
 
     static inline T *get_row_data(ParamTable *table, ParamRowInfo *row)
     {
@@ -80,12 +90,14 @@ template <typename T> class ParamTableSequence
         using iterator_category = std::output_iterator_tag;
     };
 
-    ParamTableSequence(ParamTable *param_table) : param_table(param_table)
+    ParamTableSequence(ParamTable *param_table, const std::wstring param_name)
+        : param_table(param_table), param_name(param_name)
     {
     }
 
     T &operator[](uint64_t id)
     {
+        // Binary search for the param row, assuming all rows are sorted
         ptrdiff_t begin_index = 0;
         ptrdiff_t end_index = param_table->num_rows - 1;
         while (begin_index <= end_index)
@@ -100,9 +112,27 @@ template <typename T> class ParamTableSequence
                 return *get_row_data(param_table, row);
         }
 
-        std::stringstream ss;
-        ss << "Row " << id << " not found";
-        throw std::runtime_error(ss.str());
+        // Check for out-of-order param rows if we didn't find it with a binary search
+        for (auto i = 0; i < param_table->num_rows; i++)
+        {
+            auto index1 = begin_index - i;
+            auto index2 = begin_index + i;
+            if (index1 >= 0 && index1 < param_table->num_rows)
+            {
+                auto row = &param_table->rows[index1];
+                if (row->row_id == id)
+                    return *get_row_data(param_table, row);
+            }
+            if (index2 >= 0 && index2 < param_table->num_rows)
+            {
+                auto row = &param_table->rows[index2];
+                if (row->row_id == id)
+                    return *get_row_data(param_table, row);
+            }
+        }
+
+        spdlog::error("Param row {}[{}] not found", internal::wstring_to_string(param_name), id);
+        throw std::runtime_error("Row not found");
     }
 
     Iterator begin()
@@ -137,12 +167,13 @@ template <typename T> ParamTableSequence<T> get_param(std::wstring name)
                 std::wstring_view param_name = dlw_c_str(&param_res_cap->param_name);
                 if (param_name == name)
                 {
-                    return ParamTableSequence<T>(param_res_cap->param_header->param_table);
+                    return ParamTableSequence<T>(param_res_cap->param_header->param_table, name);
                 }
             }
         }
     }
 
+    spdlog::error("Param {} not found", internal::wstring_to_string(name));
     throw std::runtime_error("Param not found");
 }
 }; // namespace ParamUtils
