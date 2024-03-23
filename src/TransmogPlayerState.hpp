@@ -137,7 +137,7 @@ class TransmogPlayerState
 
     inline bool is_body_transmog_enabled()
     {
-        return chest_protector != nullptr || arms_protector != nullptr | legs_protector != nullptr;
+        return chest_protector != nullptr || arms_protector != nullptr || legs_protector != nullptr;
     }
 
     inline bool is_transmog_enabled()
