@@ -139,8 +139,15 @@ static inline bool is_protector_unlocked(int32_t goods_id)
         return true;
     }
 
-    // Otherwise, only show armor pieces that the player has in their inventory
     auto protector_id = get_protector_id_for_transmog_good(goods_id);
+
+    // Invisible is always unlocked
+    if (is_invisible_protector_id(protector_id))
+    {
+        return true;
+    }
+
+    // Otherwise, only show armor pieces that the player has in their inventory
     if (PlayerUtils::has_item_in_inventory(main_player, item_type_protector_begin + protector_id))
     {
         return true;
