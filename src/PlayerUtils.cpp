@@ -56,7 +56,7 @@ void PlayerUtils::initialize()
                "74 0d"           // jz end_label
                "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
                "48 8b cf"        // mov rcx, rdi
-               "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect});
+               "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect
     });
 
     apply_speffect = ModUtils::scan<ApplySpEffectFn>({

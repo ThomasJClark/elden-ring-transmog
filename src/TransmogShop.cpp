@@ -232,7 +232,7 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
     open_regular_shop(unk, begin_id, end_id);
 
     // Override the default sort type for the transmog shop to sort by item type
-    if (is_transmog_shop)
+    if (is_transmog_shop && game_data_man_addr != nullptr)
     {
         auto game_data_man = *game_data_man_addr;
         if (game_data_man != nullptr)
@@ -289,13 +289,21 @@ void TransmogShop::initialize()
 {
     game_data_man_addr = ModUtils::scan<CS::GameDataMan *>({
         .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
-               "48 85 C0"             // test rax,rax
-               "74 05"                // je 0xa
+               "48 85 C0"             // test rax, rax
+               "74 05"                // je 10
                "48 8B 40 58"          // move rax, [rax + 0x58]
                "C3"                   // ret
                "C3",                  // ret
         .relative_offsets = {{3, 7}},
     });
+
+    // The Camera Offset mod memory hacks these instructions, and I'm not sure of a better AOB for
+    // GameDataMan. Because this is only used to set the shop sort order, it's fine if we don't
+    // find it.
+    if (game_data_man_addr == nullptr)
+    {
+        spdlog::warn("Couldn't find GameDataMan, skipping initial sort fix");
+    }
 
     add_remove_item = ModUtils::scan<AddRemoveItemFn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
