@@ -351,26 +351,6 @@ void TransmogShop::initialize()
     for (auto [protector_id, protector_row] :
          ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
-        if (exluded_protector_ids.contains(protector_id))
-        {
-            continue;
-        }
-
-        // Skip invalid items, and cut items that don't have a name (these are usually duplicates
-        // used for NPCs)
-        auto protector_name = TransmogMessages::get_protector_name(protector_id);
-        if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
-        {
-            continue;
-        }
-
-        // Skip cut items, if configured to do so
-        if (!TransmogConfig::include_cut_armor &&
-            protector_name.starts_with(TransmogMessages::cut_item_prefix))
-        {
-            continue;
-        }
-
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
         auto invisible_protector = is_invisible_protector_id(protector_id);
@@ -407,6 +387,26 @@ void TransmogShop::initialize()
             .reinforceGoodsId = -1,
             .reinforceMaterialId = -1,
         };
+
+        if (exluded_protector_ids.contains(protector_id))
+        {
+            continue;
+        }
+
+        // Skip invalid items, and cut items that don't have a name (these are usually duplicates
+        // used for NPCs)
+        auto protector_name = TransmogMessages::get_protector_name(protector_id);
+        if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
+        {
+            continue;
+        }
+
+        // Skip cut items, if configured to do so
+        if (!TransmogConfig::include_cut_armor &&
+            protector_name.starts_with(TransmogMessages::cut_item_prefix))
+        {
+            continue;
+        }
 
         int32_t shop_lineup_param_id = -1;
         switch (protector_row.protectorCategory)

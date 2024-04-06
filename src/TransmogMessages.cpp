@@ -110,8 +110,7 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
                 return transmog_messages.invisible.c_str();
             }
 
-            u16string_view protector_name =
-                get_message(msg_repository, unknown, msgbnd_protector_name, protector_id);
+            auto protector_name = get_protector_name(protector_id);
 
             // Remove the "[ERROR]" prefix from cut items in the transmog shop
             if (protector_name.starts_with(cut_item_prefix))
