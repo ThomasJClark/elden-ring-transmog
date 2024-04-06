@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(EldenRingTransmogMod
-  VERSION   "2.2.7"
+  VERSION   "2.2.8"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -89,6 +89,7 @@ add_definitions(-DPROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 
 add_custom_command(TARGET EldenRingTransmogMod POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/ertransmogrify.ini
+  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/LICENSE
   COMMAND_EXPAND_LISTS)
 
 target_link_libraries(EldenRingTransmogMod
