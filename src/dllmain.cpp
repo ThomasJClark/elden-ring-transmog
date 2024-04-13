@@ -74,7 +74,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 TransmogVFX::initialize();
 
                 spdlog::info("Adding transmog shops...");
-                TransmogShop::initialize();
+                ertransmogrify::shop::initialize();
 
                 if (ertransmogrify::config::patch_grace_talk_script)
                 {

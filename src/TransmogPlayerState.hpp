@@ -101,25 +101,25 @@ class TransmogPlayerState
     {
         switch (protector.protectorCategory)
         {
-        case TransmogShop::protector_category_head:
+        case ertransmogrify::shop::protector_category_head:
             if (head_protector_id == protector_id)
                 return false;
             head_protector_id = protector_id;
             head_protector = &protector;
             return true;
-        case TransmogShop::protector_category_chest:
+        case ertransmogrify::shop::protector_category_chest:
             if (chest_protector_id == protector_id)
                 return false;
             chest_protector_id = protector_id;
             chest_protector = &protector;
             return true;
-        case TransmogShop::protector_category_arms:
+        case ertransmogrify::shop::protector_category_arms:
             if (arms_protector_id == protector_id)
                 return false;
             arms_protector_id = protector_id;
             arms_protector = &protector;
             return true;
-        case TransmogShop::protector_category_legs:
+        case ertransmogrify::shop::protector_category_legs:
             if (legs_protector_id == protector_id)
                 return false;
             legs_protector_id = protector_id;

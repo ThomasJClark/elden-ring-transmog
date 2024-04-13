@@ -2,7 +2,9 @@
 
 #include <cstdint>
 
-namespace TransmogShop
+namespace ertransmogrify
+{
+namespace shop
 {
 static constexpr uint32_t item_type_protector_begin = 0x10000000;
 static constexpr uint32_t item_type_goods_begin = 0x40000000;
@@ -66,4 +68,5 @@ inline int64_t get_protector_id_for_transmog_good(int64_t goods_id)
     return -1;
 }
 
-} 
+}
+}

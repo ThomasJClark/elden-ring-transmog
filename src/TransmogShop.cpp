@@ -13,7 +13,6 @@
 
 using namespace std;
 using namespace ertransmogrify;
-using namespace TransmogShop;
 
 static constexpr uint16_t invisible_icon_id = 3142;
 
@@ -90,24 +89,24 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
 {
     switch (begin_id)
     {
-    case transmog_head_shop_menu_id:
+    case shop::transmog_head_shop_menu_id:
         result->shop_type = (byte)0;
-        result->id = transmog_head_shop_menu_id;
+        result->id = shop::transmog_head_shop_menu_id;
         result->row = &transmog_head_shop_menu;
         break;
-    case transmog_chest_shop_menu_id:
+    case shop::transmog_chest_shop_menu_id:
         result->shop_type = (byte)0;
-        result->id = transmog_chest_shop_menu_id;
+        result->id = shop::transmog_chest_shop_menu_id;
         result->row = &transmog_chest_shop_menu;
         break;
-    case transmog_arms_shop_menu_id:
+    case shop::transmog_arms_shop_menu_id:
         result->shop_type = (byte)0;
-        result->id = transmog_arms_shop_menu_id;
+        result->id = shop::transmog_arms_shop_menu_id;
         result->row = &transmog_arms_shop_menu;
         break;
-    case transmog_legs_shop_menu_id:
+    case shop::transmog_legs_shop_menu_id:
         result->shop_type = (byte)0;
-        result->id = transmog_legs_shop_menu_id;
+        result->id = shop::transmog_legs_shop_menu_id;
         result->row = &transmog_legs_shop_menu;
         break;
     default:
@@ -135,21 +134,22 @@ static inline bool is_protector_unlocked(int32_t goods_id)
     // If the player already chose a transmog, show it even if it's not unlocked. This can happen
     // if they discard the armor piece or change their include_unobtained_armor setting and restart
     // the game.
-    if (PlayerUtils::has_item_in_inventory(main_player, item_type_goods_begin + goods_id))
+    if (PlayerUtils::has_item_in_inventory(main_player, shop::item_type_goods_begin + goods_id))
     {
         return true;
     }
 
-    auto protector_id = get_protector_id_for_transmog_good(goods_id);
+    auto protector_id = shop::get_protector_id_for_transmog_good(goods_id);
 
     // Invisible is always unlocked
-    if (is_invisible_protector_id(protector_id))
+    if (shop::is_invisible_protector_id(protector_id))
     {
         return true;
     }
 
     // Otherwise, only show armor pieces that the player has in their inventory
-    if (PlayerUtils::has_item_in_inventory(main_player, item_type_protector_begin + protector_id))
+    if (PlayerUtils::has_item_in_inventory(main_player,
+                                           shop::item_type_protector_begin + protector_id))
     {
         return true;
     }
@@ -160,8 +160,8 @@ static inline bool is_protector_unlocked(int32_t goods_id)
 static void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type,
                                          int32_t id)
 {
-    if (shop_type == byte(0) && id >= transmog_head_shop_menu_id &&
-        id < transmog_legs_shop_menu_id + transmog_shop_max_size)
+    if (shop_type == byte(0) && id >= shop::transmog_head_shop_menu_id &&
+        id < shop::transmog_legs_shop_menu_id + shop::transmog_shop_max_size)
     {
         auto entry = transmog_shop_lineups.find(id);
         if (entry != transmog_shop_lineups.end())
@@ -187,7 +187,7 @@ static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int32_t 
 
 void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
 {
-    if (id >= transmog_goods_start_id && id < transmog_goods_end_id)
+    if (id >= shop::transmog_goods_start_id && id < shop::transmog_goods_end_id)
     {
         auto transmog_good = transmog_goods.find(id);
         if (transmog_good != transmog_goods.end())
@@ -210,20 +210,20 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
 
     switch (begin_id)
     {
-    case transmog_head_shop_menu_id:
-        msg::set_active_transmog_shop_protector_category(protector_category_head);
+    case shop::transmog_head_shop_menu_id:
+        msg::set_active_transmog_shop_protector_category(shop::protector_category_head);
         is_transmog_shop = true;
         break;
-    case transmog_chest_shop_menu_id:
-        msg::set_active_transmog_shop_protector_category(protector_category_chest);
+    case shop::transmog_chest_shop_menu_id:
+        msg::set_active_transmog_shop_protector_category(shop::protector_category_chest);
         is_transmog_shop = true;
         break;
-    case transmog_arms_shop_menu_id:
-        msg::set_active_transmog_shop_protector_category(protector_category_arms);
+    case shop::transmog_arms_shop_menu_id:
+        msg::set_active_transmog_shop_protector_category(shop::protector_category_arms);
         is_transmog_shop = true;
         break;
-    case transmog_legs_shop_menu_id:
-        msg::set_active_transmog_shop_protector_category(protector_category_legs);
+    case shop::transmog_legs_shop_menu_id:
+        msg::set_active_transmog_shop_protector_category(shop::protector_category_legs);
         is_transmog_shop = true;
         break;
     default:
@@ -253,13 +253,13 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
     auto result = add_inventory_from_shop(item_id_address, quantity);
 
     auto item_id = *item_id_address;
-    if (item_id < item_type_goods_begin || item_id >= item_type_goods_end)
+    if (item_id < shop::item_type_goods_begin || item_id >= shop::item_type_goods_end)
     {
         return result;
     }
 
     auto transmog_protector_id =
-        get_protector_id_for_transmog_good(item_id - item_type_goods_begin);
+        shop::get_protector_id_for_transmog_good(item_id - shop::item_type_goods_begin);
     if (transmog_protector_id == -1)
     {
         return result;
@@ -274,8 +274,8 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
         if (protector_id != transmog_protector_id &&
             protector.protectorCategory == transmog_protector.protectorCategory)
         {
-            auto goods_id = get_transmog_goods_id_for_protector(protector_id);
-            add_remove_item(item_type_goods_begin, goods_id, -1);
+            auto goods_id = shop::get_transmog_goods_id_for_protector(protector_id);
+            add_remove_item(shop::item_type_goods_begin, goods_id, -1);
         }
     }
 
@@ -286,7 +286,7 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
     return result;
 }
 
-void TransmogShop::initialize()
+void shop::initialize()
 {
     game_data_man_addr = ModUtils::scan<CS::GameDataMan *>({
         .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
@@ -310,7 +310,7 @@ void TransmogShop::initialize()
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
                "41 83 c8 ff"       // or r8d, -1
                "8b d3"             // mov edx, ebx
-               "b9 00 00 00 40"    // mov ecx, item_type_goods_begin
+               "b9 00 00 00 40"    // mov ecx, shop::item_type_goods_begin
                "e8 ?? ?? ?? ??",   // call AddRemoveItem
         .offset = 17,
         .relative_offsets = {{1, 5}},
@@ -354,7 +354,7 @@ void TransmogShop::initialize()
     {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
-        auto invisible_protector = is_invisible_protector_id(protector_id);
+        auto invisible_protector = shop::is_invisible_protector_id(protector_id);
 
         uint16_t protector_icon_id =
             invisible_protector ? invisible_icon_id : protector_row.iconIdM;
@@ -412,16 +412,16 @@ void TransmogShop::initialize()
         switch (protector_row.protectorCategory)
         {
         case protector_category_head:
-            shop_lineup_param_id = transmog_head_shop_menu_id + protector_id / 100;
+            shop_lineup_param_id = shop::transmog_head_shop_menu_id + protector_id / 100;
             break;
         case protector_category_chest:
-            shop_lineup_param_id = transmog_chest_shop_menu_id + protector_id / 100;
+            shop_lineup_param_id = shop::transmog_chest_shop_menu_id + protector_id / 100;
             break;
         case protector_category_arms:
-            shop_lineup_param_id = transmog_arms_shop_menu_id + protector_id / 100;
+            shop_lineup_param_id = shop::transmog_arms_shop_menu_id + protector_id / 100;
             break;
         case protector_category_legs:
-            shop_lineup_param_id = transmog_legs_shop_menu_id + protector_id / 100;
+            shop_lineup_param_id = shop::transmog_legs_shop_menu_id + protector_id / 100;
             break;
         }
 
@@ -488,7 +488,7 @@ void TransmogShop::initialize()
         open_regular_shop_detour, open_regular_shop);
 }
 
-void TransmogShop::remove_transmog_goods(int8_t protector_category)
+void shop::remove_transmog_goods(int8_t protector_category)
 {
     for (auto [protector_id, protector] :
          ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
@@ -496,14 +496,14 @@ void TransmogShop::remove_transmog_goods(int8_t protector_category)
         if (protector_category == -1 || protector.protectorCategory == protector_category)
         {
             auto goods_id = get_transmog_goods_id_for_protector(protector_id);
-            add_remove_item(item_type_goods_begin, goods_id, -1);
+            add_remove_item(shop::item_type_goods_begin, goods_id, -1);
         }
     }
 }
 
-void TransmogShop::add_transmog_good(uint64_t protector_id)
+void shop::add_transmog_good(uint64_t protector_id)
 {
     auto goods_id =
-        (int32_t)(item_type_goods_begin + get_transmog_goods_id_for_protector(protector_id));
+        (int32_t)(shop::item_type_goods_begin + get_transmog_goods_id_for_protector(protector_id));
     add_inventory_from_shop(&goods_id, 1);
 }

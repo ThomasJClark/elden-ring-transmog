@@ -101,11 +101,11 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
         break;
 
     case msgbnd_goods_name: {
-        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        auto protector_id = shop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
             // Show bare head/chest/arms/legs as "Invisible"
-            if (TransmogShop::is_invisible_protector_id(protector_id))
+            if (shop::is_invisible_protector_id(protector_id))
             {
                 return transmog_messages.invisible.c_str();
             }
@@ -124,7 +124,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     }
 
     case msgbnd_goods_caption: {
-        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        auto protector_id = shop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
             return get_message(msg_repository, unknown, msgbnd_protector_caption, protector_id);
@@ -133,7 +133,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     }
 
     case msgbnd_goods_info: {
-        auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
+        auto protector_id = shop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
             return L"";
@@ -156,13 +156,13 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
         {
             switch (active_transmog_shop_protector_category)
             {
-            case TransmogShop::protector_category_head:
+            case shop::protector_category_head:
                 return transmog_messages.transmog_head_to.c_str();
-            case TransmogShop::protector_category_chest:
+            case shop::protector_category_chest:
                 return transmog_messages.transmog_chest_to.c_str();
-            case TransmogShop::protector_category_arms:
+            case shop::protector_category_arms:
                 return transmog_messages.transmog_arms_to.c_str();
-            case TransmogShop::protector_category_legs:
+            case shop::protector_category_legs:
                 return transmog_messages.transmog_legs_to.c_str();
             }
         }

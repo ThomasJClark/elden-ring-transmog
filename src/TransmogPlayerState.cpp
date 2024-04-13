@@ -8,6 +8,7 @@
 #include "internal/GameMan.hpp"
 
 using namespace std;
+using namespace ertransmogrify;
 
 static constexpr int32_t transmog_sfx_id = 8020;
 
@@ -159,7 +160,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
                 // If the player was given the undo transmog SpEffect, don't set any protector slots
                 // and remove any transmog goods.
                 clear_transmog_protectors();
-                TransmogShop::remove_transmog_goods();
+                shop::remove_transmog_goods();
             }
         }
         else
@@ -168,9 +169,8 @@ void TransmogPlayerState::refresh_transmog_main_player()
             // inventory
             for (auto [protector_id, protector] : equip_param_protector)
             {
-                int32_t transmog_item_id =
-                    TransmogShop::item_type_goods_begin +
-                    TransmogShop::get_transmog_goods_id_for_protector(protector_id);
+                int32_t transmog_item_id = shop::item_type_goods_begin +
+                                           shop::get_transmog_goods_id_for_protector(protector_id);
 
                 if (PlayerUtils::has_item_in_inventory(player, transmog_item_id))
                 {
@@ -197,21 +197,21 @@ void TransmogPlayerState::refresh_transmog_main_player()
         {
             chest_protector_id = chr_asm.chest_protector_id;
             chest_protector = &equip_param_protector[chr_asm.chest_protector_id];
-            TransmogShop::add_transmog_good(chr_asm.chest_protector_id);
+            shop::add_transmog_good(chr_asm.chest_protector_id);
             spdlog::info("Defaulting main player chest to protector {}", chest_protector_id);
         }
         if (arms_protector == nullptr)
         {
             arms_protector_id = chr_asm.arms_protector_id;
             arms_protector = &equip_param_protector[chr_asm.arms_protector_id];
-            TransmogShop::add_transmog_good(chr_asm.arms_protector_id);
+            shop::add_transmog_good(chr_asm.arms_protector_id);
             spdlog::info("Defaulting main player arms to protector {}", arms_protector_id);
         }
         if (legs_protector == nullptr)
         {
             legs_protector_id = chr_asm.legs_protector_id;
             legs_protector = &equip_param_protector[chr_asm.legs_protector_id];
-            TransmogShop::add_transmog_good(chr_asm.legs_protector_id);
+            shop::add_transmog_good(chr_asm.legs_protector_id);
             spdlog::info("Defaulting main player legs to protector {}", legs_protector_id);
         }
     }
