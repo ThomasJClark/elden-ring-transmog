@@ -22,4 +22,4 @@ extern ApplySpEffectFn *apply_speffect;
 extern ClearSpEffectFn *clear_speffect;
 extern SpawnOneShotVFXOnChrFn *spawn_one_shot_sfx_on_chr;
 std::byte get_ceremony_type();
-}; // namespace PlayerUtils
+};

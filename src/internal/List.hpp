@@ -39,6 +39,6 @@ template <typename T> struct List
         return elements + count;
     }
 };
-}; // namespace CS
+}; 
 
 #pragma pack(pop)

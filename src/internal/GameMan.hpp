@@ -13,6 +13,6 @@ struct GameMan
     std::byte ceremony_type;
     std::byte unk2[0x28f];
 };
-} // namespace CS
+} 
 
 #pragma pack(pop)

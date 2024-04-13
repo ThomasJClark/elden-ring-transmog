@@ -41,4 +41,4 @@ static constexpr int64_t legs_protector_offset = 300;
  */
 void initialize();
 
-} // namespace TransmogVFX
+} 

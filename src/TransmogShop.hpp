@@ -66,4 +66,4 @@ inline int64_t get_protector_id_for_transmog_good(int64_t goods_id)
     return -1;
 }
 
-} // namespace TransmogShop
+} 

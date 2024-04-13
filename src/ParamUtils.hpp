@@ -15,7 +15,7 @@ inline std::string wstring_to_string(const std::wstring &wstr)
     std::wstring_convert<std::codecvt<wchar_t, char, std::mbstate_t>, wchar_t> convert;
     return convert.to_bytes(wstr);
 }
-} // namespace internal
+}
 
 void initialize();
 
@@ -176,4 +176,4 @@ template <typename T> ParamTableSequence<T> get_param(std::wstring name)
     spdlog::error("Param {} not found", internal::wstring_to_string(name));
     throw std::runtime_error("Param not found");
 }
-}; // namespace ParamUtils
+};

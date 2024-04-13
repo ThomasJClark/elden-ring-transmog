@@ -14,7 +14,7 @@ static constexpr int32_t transmog_legs = 69000013;
 static constexpr int32_t undo_transmog = 69000020;
 static constexpr int32_t cancel = 15000372;
 static constexpr int32_t sort_chest = 15000395;
-} // namespace EventTextForTalk
+} 
 
 namespace MenuText
 {
@@ -22,7 +22,7 @@ static constexpr int32_t transmog_head = 690000;
 static constexpr int32_t transmog_chest = 690001;
 static constexpr int32_t transmog_arms = 690002;
 static constexpr int32_t transmog_legs = 690003;
-} // namespace MenuText
+} 
 
 namespace LineHelp
 {
@@ -45,4 +45,4 @@ void initialize();
 void set_active_transmog_shop_protector_category(int8_t protector_category);
 
 const std::u16string_view get_protector_name(int32_t id);
-}; // namespace TransmogMessages
+}; 

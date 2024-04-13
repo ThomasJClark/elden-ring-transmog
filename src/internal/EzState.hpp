@@ -79,7 +79,7 @@ constexpr Command open_regular_shop = {.bank = 1, .id = 0x16};
 constexpr Command open_repository = {.bank = 1, .id = 0x1e};
 constexpr Command give_speffect_to_player = {.bank = 1, .id = 0x3e};
 constexpr Command return_value = {.bank = 7, .id = -1};
-}; // namespace Commands
+}; 
 
 struct CommandArg
 {
@@ -109,6 +109,6 @@ struct State
     CS::List<Call> exit_commands;
     CS::List<Call> while_commands;
 };
-}; // namespace EzState
+}; 
 
 #pragma pack(pop)

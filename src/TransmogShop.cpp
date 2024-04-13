@@ -68,7 +68,7 @@ struct GameDataMan
     byte unk[0x60];
     CSMenuSystemSaveLoad *menu_system_save_load;
 };
-} // namespace CS
+} 
 #pragma pack(pop)
 
 static CS::GameDataMan **game_data_man_addr;

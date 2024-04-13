@@ -41,4 +41,4 @@ inline FunctionType *hook(const ScanArgs &args, FunctionType &detour, FunctionTy
     return function;
 }
 
-}; // namespace ModUtils
+};

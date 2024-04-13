@@ -129,6 +129,6 @@ struct WorldChrManImp
     std::byte unk2[0xd608];
     PlayerIns *main_player;
 };
-} // namespace CS
+} 
 
 #pragma pack(pop)

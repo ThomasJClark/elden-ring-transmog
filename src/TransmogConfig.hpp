@@ -36,4 +36,4 @@ extern bool patch_grace_talk_script;
  * compatibility issue where Seamless overrides some hooks if it initializes after this mod.
  */
 extern uint32_t initialize_delay;
-}; // namespace TransmogConfig
+}; 

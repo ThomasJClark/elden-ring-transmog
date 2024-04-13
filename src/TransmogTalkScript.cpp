@@ -54,7 +54,7 @@ OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_i
 // TalkESD state that disables transmogrification
 ApplySpEffectState disable_transmog_state(69006, TransmogVFX::undo_transmog_speffect_id,
                                           &transmog_menu_state);
-}; // namespace
+}; 
 
 // AddTalkListData(69, "Transmogrify armor", -1)
 static EzState::IntValue transmog_talk_list_index = 69;
