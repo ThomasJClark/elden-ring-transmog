@@ -11,6 +11,7 @@
 #include "internal/EzState.hpp"
 
 using namespace std;
+using namespace ertransmogrify;
 using namespace TransmogTalkScript;
 
 namespace
@@ -54,11 +55,11 @@ OpenShopState transmog_legs_state(69005, TransmogShop::transmog_legs_shop_menu_i
 // TalkESD state that disables transmogrification
 ApplySpEffectState disable_transmog_state(69006, TransmogVFX::undo_transmog_speffect_id,
                                           &transmog_menu_state);
-}; 
+};
 
 // AddTalkListData(69, "Transmogrify armor", -1)
 static EzState::IntValue transmog_talk_list_index = 69;
-static EzState::IntValue transmog_menu_text_id = TransmogMessages::EventTextForTalk::transmog_armor;
+static EzState::IntValue transmog_menu_text_id = msg::event_text_for_talk_transmog_armor;
 static EzState::IntValue unk = -1;
 static EzState::CommandArg transmog_arg_list[] = {transmog_talk_list_index, transmog_menu_text_id,
                                                   unk};
@@ -116,14 +117,12 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
         {
             for (auto &call : state.entry_commands)
             {
-                if (is_add_talk_list_data_call(call,
-                                               TransmogMessages::EventTextForTalk::sort_chest))
+                if (is_add_talk_list_data_call(call, msg::event_text_for_talk_sort_chest))
                 {
                     add_menu_state = &state;
                     call_iter = &call + 1;
                 }
-                else if (is_add_talk_list_data_call(
-                             call, TransmogMessages::EventTextForTalk::transmog_armor))
+                else if (is_add_talk_list_data_call(call, msg::event_text_for_talk_transmog_armor))
                 {
                     spdlog::debug("Not patching state group x{}, already patched",
                                   0x7fffffff - state_group->id);

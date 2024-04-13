@@ -68,7 +68,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 PlayerUtils::initialize();
 
                 spdlog::info("Hooking transmog messages...");
-                TransmogMessages::initialize();
+                ertransmogrify::msg::initialize();
 
                 spdlog::info("Adding transmog VFX...");
                 TransmogVFX::initialize();

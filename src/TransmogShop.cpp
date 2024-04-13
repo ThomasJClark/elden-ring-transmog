@@ -11,8 +11,9 @@
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
 
-using namespace TransmogShop;
 using namespace std;
+using namespace ertransmogrify;
+using namespace TransmogShop;
 
 static constexpr uint16_t invisible_icon_id = 3142;
 
@@ -68,7 +69,7 @@ struct GameDataMan
     byte unk[0x60];
     CSMenuSystemSaveLoad *menu_system_save_load;
 };
-} 
+}
 #pragma pack(pop)
 
 static CS::GameDataMan **game_data_man_addr;
@@ -210,23 +211,23 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
     switch (begin_id)
     {
     case transmog_head_shop_menu_id:
-        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_head);
+        msg::set_active_transmog_shop_protector_category(protector_category_head);
         is_transmog_shop = true;
         break;
     case transmog_chest_shop_menu_id:
-        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_chest);
+        msg::set_active_transmog_shop_protector_category(protector_category_chest);
         is_transmog_shop = true;
         break;
     case transmog_arms_shop_menu_id:
-        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_arms);
+        msg::set_active_transmog_shop_protector_category(protector_category_arms);
         is_transmog_shop = true;
         break;
     case transmog_legs_shop_menu_id:
-        TransmogMessages::set_active_transmog_shop_protector_category(protector_category_legs);
+        msg::set_active_transmog_shop_protector_category(protector_category_legs);
         is_transmog_shop = true;
         break;
     default:
-        TransmogMessages::set_active_transmog_shop_protector_category(-1);
+        msg::set_active_transmog_shop_protector_category(-1);
     }
 
     open_regular_shop(unk, begin_id, end_id);
@@ -317,16 +318,16 @@ void TransmogShop::initialize()
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
-    transmog_head_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_head;
+    transmog_head_shop_menu.menuTitleMsgId = msg::menu_text_transmog_head;
     transmog_head_shop_menu.menuIconId = 5;
 
-    transmog_chest_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_chest;
+    transmog_chest_shop_menu.menuTitleMsgId = msg::menu_text_transmog_chest;
     transmog_chest_shop_menu.menuIconId = 5;
 
-    transmog_arms_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_arms;
+    transmog_arms_shop_menu.menuTitleMsgId = msg::menu_text_transmog_arms;
     transmog_arms_shop_menu.menuIconId = 5;
 
-    transmog_legs_shop_menu.menuTitleMsgId = TransmogMessages::MenuText::transmog_legs;
+    transmog_legs_shop_menu.menuTitleMsgId = msg::menu_text_transmog_legs;
     transmog_legs_shop_menu.menuIconId = 5;
 
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
@@ -395,15 +396,14 @@ void TransmogShop::initialize()
 
         // Skip invalid items, and cut items that don't have a name (these are usually duplicates
         // used for NPCs)
-        auto protector_name = TransmogMessages::get_protector_name(protector_id);
-        if (protector_name.empty() || protector_name == TransmogMessages::cut_item_prefix)
+        auto protector_name = msg::get_protector_name(protector_id);
+        if (protector_name.empty() || protector_name == msg::cut_item_prefix)
         {
             continue;
         }
 
         // Skip cut items, if configured to do so
-        if (!TransmogConfig::include_cut_armor &&
-            protector_name.starts_with(TransmogMessages::cut_item_prefix))
+        if (!TransmogConfig::include_cut_armor && protector_name.starts_with(msg::cut_item_prefix))
         {
             continue;
         }

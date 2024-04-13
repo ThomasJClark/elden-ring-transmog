@@ -9,7 +9,7 @@
 #include "TransmogShop.hpp"
 #include "messages.hpp"
 
-using namespace TransmogMessages;
+using namespace ertransmogrify;
 using namespace std;
 
 static const uint32_t msgbnd_goods_name = 10;
@@ -70,17 +70,17 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
         {
             switch (msg_id)
             {
-            case EventTextForTalk::transmog_armor:
+            case msg::event_text_for_talk_transmog_armor:
                 return transmog_messages.transmog_armor.c_str();
-            case EventTextForTalk::transmog_head:
+            case msg::event_text_for_talk_transmog_head:
                 return transmog_messages.transmog_head.c_str();
-            case EventTextForTalk::transmog_chest:
+            case msg::event_text_for_talk_transmog_chest:
                 return transmog_messages.transmog_chest.c_str();
-            case EventTextForTalk::transmog_arms:
+            case msg::event_text_for_talk_transmog_arms:
                 return transmog_messages.transmog_arms.c_str();
-            case EventTextForTalk::transmog_legs:
+            case msg::event_text_for_talk_transmog_legs:
                 return transmog_messages.transmog_legs.c_str();
-            case EventTextForTalk::undo_transmog:
+            case msg::event_text_for_talk_undo_transmog:
                 return transmog_messages.undo_transmog.c_str();
             }
         }
@@ -89,13 +89,13 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     case msgbnd_menu_text:
         switch (msg_id)
         {
-        case MenuText::transmog_head:
+        case msg::menu_text_transmog_head:
             return transmog_messages.transmog_head_title.c_str();
-        case MenuText::transmog_chest:
+        case msg::menu_text_transmog_chest:
             return transmog_messages.transmog_chest_title.c_str();
-        case MenuText::transmog_arms:
+        case msg::menu_text_transmog_arms:
             return transmog_messages.transmog_arms_title.c_str();
-        case MenuText::transmog_legs:
+        case msg::menu_text_transmog_legs:
             return transmog_messages.transmog_legs_title.c_str();
         }
         break;
@@ -110,12 +110,12 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
                 return transmog_messages.invisible.c_str();
             }
 
-            auto protector_name = get_protector_name(protector_id);
+            auto protector_name = msg::get_protector_name(protector_id);
 
             // Remove the "[ERROR]" prefix from cut items in the transmog shop
-            if (protector_name.starts_with(cut_item_prefix))
+            if (protector_name.starts_with(msg::cut_item_prefix))
             {
-                protector_name = protector_name.substr(cut_item_prefix.size());
+                protector_name = protector_name.substr(msg::cut_item_prefix.size());
             }
 
             return protector_name.data();
@@ -142,7 +142,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     }
 
     case msgbnd_line_help:
-        if (msg_id == LineHelp::select_item_for_purchase)
+        if (msg_id == msg::line_help_select_item_for_purchase)
         {
             if (active_transmog_shop_protector_category != -1)
             {
@@ -152,7 +152,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
         break;
 
     case msgbnd_dialogues:
-        if (msg_id == Dialogues::purchase_item_for_runes)
+        if (msg_id == msg::dialogues_purchase_item_for_runes)
         {
             switch (active_transmog_shop_protector_category)
             {
@@ -173,12 +173,12 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
 }
 
 // Set a flag to adjust some UI strings for the transmog shop, but not other shops
-void TransmogMessages::set_active_transmog_shop_protector_category(int8_t protector_category)
+void msg::set_active_transmog_shop_protector_category(int8_t protector_category)
 {
     active_transmog_shop_protector_category = protector_category;
 }
 
-void TransmogMessages::initialize()
+void msg::initialize()
 {
     auto msg_repository_address = ModUtils::scan<CS::MsgRepository *>({
         .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
@@ -217,7 +217,7 @@ void TransmogMessages::initialize()
     }
 }
 
-const wstring_view TransmogMessages::get_protector_name(int32_t id)
+const wstring_view msg::get_protector_name(int32_t id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
     if (result == nullptr)

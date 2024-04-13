@@ -77,36 +77,36 @@ class TransmogMenuState : public EzState::State
 
     EzState::IntValue transmog_head_talk_list_index = 1;
     EzState::IntValue transmog_head_menu_text_id =
-        TransmogMessages::EventTextForTalk::transmog_head;
+        ertransmogrify::msg::event_text_for_talk_transmog_head;
     EzState::CommandArg transmog_head_arg_list[3] = {transmog_head_talk_list_index,
                                                      transmog_head_menu_text_id, unk};
 
     EzState::IntValue transmog_chest_talk_list_index = 2;
     EzState::IntValue transmog_chest_menu_text_id =
-        TransmogMessages::EventTextForTalk::transmog_chest;
+        ertransmogrify::msg::event_text_for_talk_transmog_chest;
     EzState::CommandArg transmog_chest_arg_list[3] = {transmog_chest_talk_list_index,
                                                       transmog_chest_menu_text_id, unk};
 
     EzState::IntValue transmog_arms_talk_list_index = 3;
     EzState::IntValue transmog_arms_menu_text_id =
-        TransmogMessages::EventTextForTalk::transmog_arms;
+        ertransmogrify::msg::event_text_for_talk_transmog_arms;
     EzState::CommandArg transmog_arms_arg_list[3] = {transmog_arms_talk_list_index,
                                                      transmog_arms_menu_text_id, unk};
 
     EzState::IntValue transmog_legs_talk_list_index = 4;
     EzState::IntValue transmog_legs_menu_text_id =
-        TransmogMessages::EventTextForTalk::transmog_legs;
+        ertransmogrify::msg::event_text_for_talk_transmog_legs;
     EzState::CommandArg transmog_legs_arg_list[3] = {transmog_legs_talk_list_index,
                                                      transmog_legs_menu_text_id, unk};
 
     EzState::IntValue disable_transmog_talk_list_index = 5;
     EzState::IntValue disable_transmog_menu_text_id =
-        TransmogMessages::EventTextForTalk::undo_transmog;
+        ertransmogrify::msg::event_text_for_talk_undo_transmog;
     EzState::CommandArg disable_transmog_arg_list[3] = {disable_transmog_talk_list_index,
                                                         disable_transmog_menu_text_id, unk};
 
     EzState::IntValue cancel_talk_list_index = 99;
-    EzState::IntValue cancel_menu_text_id = TransmogMessages::EventTextForTalk::cancel;
+    EzState::IntValue cancel_menu_text_id = ertransmogrify::msg::event_text_for_talk_cancel;
     EzState::CommandArg cancel_arg_list[3] = {cancel_talk_list_index, cancel_menu_text_id, unk};
 
     EzState::IntValue generic_dialog_shop_message = 0;
