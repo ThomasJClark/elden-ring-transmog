@@ -57,11 +57,11 @@ static Messages transmog_messages;
  */
 static int8_t active_transmog_shop_protector_category = -1;
 
-static const char16_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_t unknown,
-                                      uint32_t bnd_id, int32_t msg_id);
+static const wchar_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_t unknown,
+                                     uint32_t bnd_id, int32_t msg_id);
 
-const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
-                                   uint32_t bnd_id, int32_t msg_id)
+const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
+                                  uint32_t bnd_id, int32_t msg_id)
 {
     switch (bnd_id)
     {
@@ -136,7 +136,7 @@ const char16_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t u
         auto protector_id = TransmogShop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
-            return u"";
+            return L"";
         }
         break;
     }
@@ -217,12 +217,12 @@ void TransmogMessages::initialize()
     }
 }
 
-const u16string_view TransmogMessages::get_protector_name(int32_t id)
+const wstring_view TransmogMessages::get_protector_name(int32_t id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
     if (result == nullptr)
     {
-        return u"";
+        return L"";
     }
     return result;
 }

@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <iterator>
 #include <spdlog/spdlog.h>
-#include <sstream>
 #include <string>
 #include <tga/param_containers.h>
 

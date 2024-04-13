@@ -14,7 +14,7 @@ static constexpr int32_t transmog_legs = 69000013;
 static constexpr int32_t undo_transmog = 69000020;
 static constexpr int32_t cancel = 15000372;
 static constexpr int32_t sort_chest = 15000395;
-} 
+}
 
 namespace MenuText
 {
@@ -22,7 +22,7 @@ static constexpr int32_t transmog_head = 690000;
 static constexpr int32_t transmog_chest = 690001;
 static constexpr int32_t transmog_arms = 690002;
 static constexpr int32_t transmog_legs = 690003;
-} 
+}
 
 namespace LineHelp
 {
@@ -34,7 +34,7 @@ namespace Dialogues
 static constexpr int32_t purchase_item_for_runes = 231000;
 }
 
-const std::u16string cut_item_prefix = u"[ERROR]";
+const std::wstring cut_item_prefix = L"[ERROR]";
 
 /**
  * Determine the player's selected language, then hook the internal get_message() function to
@@ -44,5 +44,5 @@ void initialize();
 
 void set_active_transmog_shop_protector_category(int8_t protector_category);
 
-const std::u16string_view get_protector_name(int32_t id);
-}; 
+const std::wstring_view get_protector_name(int32_t id);
+};
