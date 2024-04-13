@@ -71,7 +71,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 ertransmogrify::msg::initialize();
 
                 spdlog::info("Adding transmog VFX...");
-                TransmogVFX::initialize();
+                ertransmogrify::vfx::initialize();
 
                 spdlog::info("Adding transmog shops...");
                 ertransmogrify::shop::initialize();

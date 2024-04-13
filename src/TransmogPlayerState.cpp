@@ -19,15 +19,15 @@ static inline int64_t get_transmog_speffect_id_for_protector(int64_t protector_i
         return -1;
     }
 
-    return TransmogVFX::transmog_dummy_speffect_start_id + protector_id / 100;
+    return vfx::transmog_dummy_speffect_start_id + protector_id / 100;
 }
 
 static inline int64_t get_protector_id_for_transmog_speffect(int64_t speffect_id)
 {
-    if (speffect_id >= TransmogVFX::transmog_dummy_speffect_start_id &&
-        speffect_id < TransmogVFX::transmog_dummy_speffect_end_id)
+    if (speffect_id >= vfx::transmog_dummy_speffect_start_id &&
+        speffect_id < vfx::transmog_dummy_speffect_end_id)
     {
-        return 100 * (speffect_id - TransmogVFX::transmog_dummy_speffect_start_id);
+        return 100 * (speffect_id - vfx::transmog_dummy_speffect_start_id);
     }
 
     return -1;
@@ -258,20 +258,20 @@ void PlayerState::refresh_transmog_net_player()
     for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
     {
         // When this SpEffect ID is added, remove all transmog effects from this player
-        if (entry->id == TransmogVFX::undo_transmog_speffect_id)
+        if (entry->id == vfx::undo_transmog_speffect_id)
         {
             undo_transmog = true;
         }
         // Search for the dummy SpEffect IDs that indicate the player's transmog selections
-        else if (entry->id >= TransmogVFX::transmog_dummy_speffect_start_id &&
-                 entry->id < TransmogVFX::transmog_dummy_speffect_end_id)
+        else if (entry->id >= vfx::transmog_dummy_speffect_start_id &&
+                 entry->id < vfx::transmog_dummy_speffect_end_id)
         {
             undo_transmog = false;
             transmog_speffect_ids.push_back(entry->id);
         }
         // Search for the VFX SpEffect IDs chosen by that player's game
-        else if (entry->id >= TransmogVFX::transmog_vfx_speffect_start_id &&
-                 entry->id < TransmogVFX::transmog_vfx_speffect_end_id)
+        else if (entry->id >= vfx::transmog_vfx_speffect_start_id &&
+                 entry->id < vfx::transmog_vfx_speffect_end_id)
         {
             undo_transmog = false;
             set_vfx_speffect_ids(entry->id);
@@ -304,7 +304,7 @@ void PlayerState::refresh_transmog_net_player()
         }
     }
 
-    PlayerUtils::clear_speffect(player, TransmogVFX::undo_transmog_speffect_id);
+    PlayerUtils::clear_speffect(player, vfx::undo_transmog_speffect_id);
 }
 
 /**
@@ -317,12 +317,12 @@ bool PlayerState::should_clear_transmog()
     bool should_clear = false;
     for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
     {
-        if (entry->id == TransmogVFX::undo_transmog_speffect_id)
+        if (entry->id == vfx::undo_transmog_speffect_id)
         {
             should_clear = true;
         }
-        else if (entry->id >= TransmogVFX::transmog_dummy_speffect_start_id &&
-                 entry->id < TransmogVFX::transmog_dummy_speffect_end_id)
+        else if (entry->id >= vfx::transmog_dummy_speffect_start_id &&
+                 entry->id < vfx::transmog_dummy_speffect_end_id)
         {
             should_clear = false;
         }

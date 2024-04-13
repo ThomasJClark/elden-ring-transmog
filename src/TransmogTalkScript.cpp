@@ -52,7 +52,7 @@ OpenShopState transmog_legs_state(69005, shop::transmog_legs_shop_menu_id,
                                   &transmog_menu_state);
 
 // TalkESD state that disables transmogrification
-ApplySpEffectState disable_transmog_state(69006, TransmogVFX::undo_transmog_speffect_id,
+ApplySpEffectState disable_transmog_state(69006, vfx::undo_transmog_speffect_id,
                                           &transmog_menu_state);
 };
 

@@ -15,7 +15,6 @@
 
 using namespace std;
 using namespace ertransmogrify;
-using namespace TransmogVFX;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
@@ -90,8 +89,8 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             continue;
         }
 
-        if (id == state.set_id + head_protector_offset ||
-            id == state.set_alt_id + head_protector_offset)
+        if (id == state.set_id + vfx::head_protector_offset ||
+            id == state.set_alt_id + vfx::head_protector_offset)
         {
             result->id = id;
             result->row = state.head_protector;
@@ -101,8 +100,8 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             return;
         }
 
-        if (id == state.set_id + chest_protector_offset ||
-            id == state.set_alt_id + chest_protector_offset)
+        if (id == state.set_id + vfx::chest_protector_offset ||
+            id == state.set_alt_id + vfx::chest_protector_offset)
         {
             result->id = id;
             result->row = state.chest_protector;
@@ -112,8 +111,8 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             return;
         }
 
-        if (id == state.set_id + arms_protector_offset ||
-            id == state.set_alt_id + arms_protector_offset)
+        if (id == state.set_id + vfx::arms_protector_offset ||
+            id == state.set_alt_id + vfx::arms_protector_offset)
         {
             result->id = id;
             result->row = state.arms_protector;
@@ -123,8 +122,8 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
             return;
         }
 
-        if (id == state.set_id + legs_protector_offset ||
-            id == state.set_alt_id + legs_protector_offset)
+        if (id == state.set_id + vfx::legs_protector_offset ||
+            id == state.set_alt_id + vfx::legs_protector_offset)
         {
             result->id = id;
             result->row = state.legs_protector;
@@ -172,9 +171,9 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
 
     // We just need to ensure these params always exist in order to communicate transmog state
     // between networked players
-    if ((id >= transmog_vfx_speffect_start_id && id < transmog_vfx_speffect_end_id) ||
-        (id >= transmog_vfx_speffect_start_id && id < transmog_dummy_speffect_end_id) ||
-        id == undo_transmog_speffect_id)
+    if ((id >= vfx::transmog_vfx_speffect_start_id && id < vfx::transmog_vfx_speffect_end_id) ||
+        (id >= vfx::transmog_vfx_speffect_start_id && id < vfx::transmog_dummy_speffect_end_id) ||
+        id == vfx::undo_transmog_speffect_id)
     {
         result->id = id;
         result->row = &dummy_speffect_param;
@@ -352,7 +351,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
     in_game_stay_step_load_finish(step);
 }
 
-void TransmogVFX::initialize()
+void vfx::initialize()
 {
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.

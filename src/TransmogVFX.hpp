@@ -2,7 +2,9 @@
 
 #include <cstdint>
 
-namespace TransmogVFX
+namespace ertransmogrify
+{
+namespace vfx
 {
 // Fake armor set used as the transformProtector for transmogrification. The params that this ID
 // resolves to changes at runtime based on the player's transmog selection.
@@ -41,4 +43,5 @@ static constexpr int64_t legs_protector_offset = 300;
  */
 void initialize();
 
-} 
+}
+}
