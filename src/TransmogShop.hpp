@@ -46,6 +46,13 @@ inline bool is_invisible_protector_id(int64_t protector_id)
 
 inline int64_t get_transmog_goods_id_for_protector(int64_t protector_id)
 {
+    // Ignore armor IDs with upgrade level digits set, since these digits should be 0 in Elden Ring,
+    // and transmog good IDs don't take them into account
+    if (protector_id % 100 != 0)
+    {
+        return -1;
+    }
+
     return transmog_goods_start_id + protector_id / 100;
 }
 
