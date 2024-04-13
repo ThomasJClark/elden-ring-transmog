@@ -6,14 +6,13 @@
 #include "ModUtils.hpp"
 #include "ParamUtils.hpp"
 
-using namespace ParamUtils;
 using namespace std;
 
-ParamList **ParamUtils::param_list_address = nullptr;
+params::ParamList **params::param_list_address = nullptr;
 
-void ParamUtils::initialize()
+void params::initialize()
 {
-    param_list_address = ModUtils::scan<ParamList *>({
+    param_list_address = modutils::scan<ParamList *>({
         .aob = "48 8B 0D ?? ?? ?? ?? 48 85 C9 0F 84 ?? ?? ?? ?? 45 33 C0 BA 90",
         .relative_offsets = {{3, 7}},
     });

@@ -129,12 +129,12 @@ static inline bool is_protector_unlocked(int32_t goods_id)
         return true;
     }
 
-    auto main_player = PlayerUtils::get_main_player();
+    auto main_player = players::get_main_player();
 
     // If the player already chose a transmog, show it even if it's not unlocked. This can happen
     // if they discard the armor piece or change their include_unobtained_armor setting and restart
     // the game.
-    if (PlayerUtils::has_item_in_inventory(main_player, shop::item_type_goods_begin + goods_id))
+    if (players::has_item_in_inventory(main_player, shop::item_type_goods_begin + goods_id))
     {
         return true;
     }
@@ -148,8 +148,7 @@ static inline bool is_protector_unlocked(int32_t goods_id)
     }
 
     // Otherwise, only show armor pieces that the player has in their inventory
-    if (PlayerUtils::has_item_in_inventory(main_player,
-                                           shop::item_type_protector_begin + protector_id))
+    if (players::has_item_in_inventory(main_player, shop::item_type_protector_begin + protector_id))
     {
         return true;
     }
@@ -267,7 +266,7 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
 
     // Remove any other items of the same category in the player's inventory, so there's
     // only one item for each slot
-    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
     auto transmog_protector = equip_param_protector[transmog_protector_id];
     for (auto [protector_id, protector] : equip_param_protector)
     {
@@ -280,14 +279,14 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
     }
 
     // Ensure the undo transmog effect isn't applied, so the new item is applied
-    PlayerUtils::clear_speffect(PlayerUtils::get_main_player(), vfx::undo_transmog_speffect_id);
+    players::clear_speffect(players::get_main_player(), vfx::undo_transmog_speffect_id);
 
     return result;
 }
 
 void shop::initialize()
 {
-    game_data_man_addr = ModUtils::scan<CS::GameDataMan *>({
+    game_data_man_addr = modutils::scan<CS::GameDataMan *>({
         .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
                "48 85 C0"             // test rax, rax
                "74 05"                // je 10
@@ -305,7 +304,7 @@ void shop::initialize()
         spdlog::warn("Couldn't find GameDataMan, skipping initial sort fix");
     }
 
-    add_remove_item = ModUtils::scan<AddRemoveItemFn>({
+    add_remove_item = modutils::scan<AddRemoveItemFn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
                "41 83 c8 ff"       // or r8d, -1
                "8b d3"             // mov edx, ebx
@@ -332,7 +331,7 @@ void shop::initialize()
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
     // by buying an item from one of these shops for $0, since this is easier than making a custom
     // menu.
-    ModUtils::hook(
+    modutils::hook(
         {
             // Note - the mov instructions are 44 or 45 depending on if this is the Japanese or
             // international .exe, and the stack offset is either -10 or -08. This pattern works
@@ -349,7 +348,7 @@ void shop::initialize()
 
     // Add goods and shop entries for every armor piece the player can buy
     for (auto [protector_id, protector_row] :
-         ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
+         params::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
@@ -437,7 +436,7 @@ void shop::initialize()
     }
 
     // Hook get_equip_param_goods() to return the above items
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "41 8d 50 03"        // lea edx, [r8 + 3]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -448,7 +447,7 @@ void shop::initialize()
         get_equip_param_goods_detour, get_equip_param_goods);
 
     // Hook get_shop_lineup_param() to return the above shop entries
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "48 8d 15 ?? ?? ?? ??" // lea rdx, [shop_lineup_param_indexes]
                    "45 33 c0"             // xor r8d, r8d
@@ -461,7 +460,7 @@ void shop::initialize()
         get_shop_lineup_param_detour, get_shop_lineup_param);
 
     // Hook add_inventory_from_shop() to apply the transmog VFX when a shop item is chosen
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "8b 93 80 00 00 00" // mov edx, [rbx + 0x80]
                    "0f af d1"          // imul edx, ecx
@@ -473,7 +472,7 @@ void shop::initialize()
         add_inventory_from_shop_detour, add_inventory_from_shop);
 
     // Hook OpenRegularShop() to perform some memory hacks when opening up the a transmog shop
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "4c 8b 49 18"           // mov    r9, [rcx + 0x18]
                    "48 8b d9"              // mov    rbx,rcx
@@ -490,7 +489,7 @@ void shop::initialize()
 void shop::remove_transmog_goods(int8_t protector_category)
 {
     for (auto [protector_id, protector] :
-         ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector"))
+         params::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
         if (protector_category == -1 || protector.protectorCategory == protector_category)
         {

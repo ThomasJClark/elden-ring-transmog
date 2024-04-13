@@ -13,7 +13,7 @@ using namespace std;
 
 static span<byte> memory;
 
-void ModUtils::initialize()
+void modutils::initialize()
 {
     HMODULE module_handle = GetModuleHandleA("eldenring.exe");
     if (!module_handle)
@@ -44,12 +44,12 @@ void ModUtils::initialize()
     }
 }
 
-void ModUtils::deinitialize()
+void modutils::deinitialize()
 {
     MH_Uninitialize();
 }
 
-void *ModUtils::scan(const ScanArgs &args)
+void *modutils::scan(const ScanArgs &args)
 {
     byte *match;
     if (args.address != nullptr)
@@ -81,7 +81,7 @@ void *ModUtils::scan(const ScanArgs &args)
     return nullptr;
 }
 
-void ModUtils::hook(void *function, void *detour, void **trampoline)
+void modutils::hook(void *function, void *detour, void **trampoline)
 {
     auto mh_status = MH_CreateHook(function, detour, trampoline);
     if (mh_status != MH_OK)
@@ -95,7 +95,7 @@ void ModUtils::hook(void *function, void *detour, void **trampoline)
     }
 }
 
-void ModUtils::enable_hooks()
+void modutils::enable_hooks()
 {
     auto mh_status = MH_ApplyQueued();
     if (mh_status != MH_OK)

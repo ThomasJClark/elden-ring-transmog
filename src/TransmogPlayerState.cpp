@@ -43,7 +43,7 @@ void PlayerState::refresh_transmog()
 
     bool previous_is_transmog_enabled = is_transmog_enabled();
 
-    if (player == PlayerUtils::get_main_player())
+    if (player == players::get_main_player())
     {
         refresh_transmog_main_player();
     }
@@ -69,27 +69,27 @@ void PlayerState::refresh_transmog()
 
     for (auto speffect_id : cleared_speffects)
     {
-        PlayerUtils::clear_speffect(player, speffect_id);
+        players::clear_speffect(player, speffect_id);
     }
 
     // Ensure the player has the head/body transmog VFX if they have anything selected in those
     // slots
     if (is_head_transmog_enabled() && head_speffect_id > 0)
     {
-        PlayerUtils::apply_speffect(player, head_speffect_id, false);
+        players::apply_speffect(player, head_speffect_id, false);
     }
     else
     {
-        PlayerUtils::clear_speffect(player, head_speffect_id);
+        players::clear_speffect(player, head_speffect_id);
     }
 
     if (is_body_transmog_enabled() && body_speffect_id > 0)
     {
-        PlayerUtils::apply_speffect(player, body_speffect_id, false);
+        players::apply_speffect(player, body_speffect_id, false);
     }
     else
     {
-        PlayerUtils::clear_speffect(player, body_speffect_id);
+        players::clear_speffect(player, body_speffect_id);
     }
 
     // When transmog is enabled or disabled, show a cool effect on the player. Skip this
@@ -97,7 +97,7 @@ void PlayerState::refresh_transmog()
     // with transmog already enabled.
     if (previous_refreshed && is_transmog_enabled() != previous_is_transmog_enabled)
     {
-        PlayerUtils::spawn_one_shot_sfx_on_chr(player, 900, transmog_sfx_id, nullptr);
+        players::spawn_one_shot_sfx_on_chr(player, 900, transmog_sfx_id, nullptr);
     };
 
     previous_player = player;
@@ -107,27 +107,23 @@ void PlayerState::refresh_transmog()
 void PlayerState::remove_transmog()
 {
     clear_transmog_protectors();
-    PlayerUtils::clear_speffect(player, head_speffect_id);
-    PlayerUtils::clear_speffect(player, body_speffect_id);
+    players::clear_speffect(player, head_speffect_id);
+    players::clear_speffect(player, body_speffect_id);
     if (head_protector_id != -1)
     {
-        PlayerUtils::clear_speffect(player,
-                                    get_transmog_speffect_id_for_protector(head_protector_id));
+        players::clear_speffect(player, get_transmog_speffect_id_for_protector(head_protector_id));
     }
     if (chest_protector_id != -1)
     {
-        PlayerUtils::clear_speffect(player,
-                                    get_transmog_speffect_id_for_protector(chest_protector_id));
+        players::clear_speffect(player, get_transmog_speffect_id_for_protector(chest_protector_id));
     }
     if (arms_protector_id != -1)
     {
-        PlayerUtils::clear_speffect(player,
-                                    get_transmog_speffect_id_for_protector(arms_protector_id));
+        players::clear_speffect(player, get_transmog_speffect_id_for_protector(arms_protector_id));
     }
     if (legs_protector_id != -1)
     {
-        PlayerUtils::clear_speffect(player,
-                                    get_transmog_speffect_id_for_protector(legs_protector_id));
+        players::clear_speffect(player, get_transmog_speffect_id_for_protector(legs_protector_id));
     }
 }
 
@@ -136,15 +132,15 @@ void PlayerState::remove_transmog()
  */
 void PlayerState::refresh_transmog_main_player()
 {
-    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
 
     bool any_changed = false;
 
     // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
     // inventory isn't completely copied over, and it's not possible for this to have changed since
     // the last time it was checked.
-    auto ceremony_type = PlayerUtils::get_ceremony_type();
-    if (ceremony_type == PlayerUtils::ceremony_type_none)
+    auto ceremony_type = players::get_ceremony_type();
+    if (ceremony_type == players::ceremony_type_none)
     {
         if (player != previous_player)
         {
@@ -172,7 +168,7 @@ void PlayerState::refresh_transmog_main_player()
                 int32_t transmog_item_id = shop::item_type_goods_begin +
                                            shop::get_transmog_goods_id_for_protector(protector_id);
 
-                if (PlayerUtils::has_item_in_inventory(player, transmog_item_id))
+                if (players::has_item_in_inventory(player, transmog_item_id))
                 {
                     if (set_transmog_protector(protector_id, protector))
                     {
@@ -225,23 +221,23 @@ void PlayerState::refresh_transmog_main_player()
     // networked players
     if (head_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(
-            player, get_transmog_speffect_id_for_protector(head_protector_id), false);
+        players::apply_speffect(player, get_transmog_speffect_id_for_protector(head_protector_id),
+                                false);
     }
     if (chest_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(
-            player, get_transmog_speffect_id_for_protector(chest_protector_id), false);
+        players::apply_speffect(player, get_transmog_speffect_id_for_protector(chest_protector_id),
+                                false);
     }
     if (arms_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(
-            player, get_transmog_speffect_id_for_protector(arms_protector_id), false);
+        players::apply_speffect(player, get_transmog_speffect_id_for_protector(arms_protector_id),
+                                false);
     }
     if (legs_protector_id != -1)
     {
-        PlayerUtils::apply_speffect(
-            player, get_transmog_speffect_id_for_protector(legs_protector_id), false);
+        players::apply_speffect(player, get_transmog_speffect_id_for_protector(legs_protector_id),
+                                false);
     }
 }
 
@@ -250,7 +246,7 @@ void PlayerState::refresh_transmog_main_player()
  */
 void PlayerState::refresh_transmog_net_player()
 {
-    auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
+    auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
 
     bool undo_transmog = false;
     auto transmog_speffect_ids = vector<int32_t>();
@@ -304,7 +300,7 @@ void PlayerState::refresh_transmog_net_player()
         }
     }
 
-    PlayerUtils::clear_speffect(player, vfx::undo_transmog_speffect_id);
+    players::clear_speffect(player, vfx::undo_transmog_speffect_id);
 }
 
 /**

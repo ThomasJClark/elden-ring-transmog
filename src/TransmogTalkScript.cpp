@@ -176,7 +176,7 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
 
 void talkscript::initialize()
 {
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "80 7e 18 00"     // cmp byte ptr [rsi + 0x18], 0x0
                    "74 15"           // jz end_label

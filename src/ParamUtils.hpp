@@ -5,7 +5,7 @@
 #include <string>
 #include <tga/param_containers.h>
 
-namespace ParamUtils
+namespace params
 {
 namespace internal
 {

@@ -62,10 +62,10 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
         mod_thread = thread([]() {
             try
             {
-                ModUtils::initialize();
+                modutils::initialize();
 
-                ParamUtils::initialize();
-                PlayerUtils::initialize();
+                params::initialize();
+                players::initialize();
 
                 spdlog::info("Hooking transmog messages...");
                 ertransmogrify::msg::initialize();
@@ -90,14 +90,14 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                         chrono::milliseconds(ertransmogrify::config::initialize_delay));
                 }
 
-                ModUtils::enable_hooks();
+                modutils::enable_hooks();
 
                 spdlog::info("Initialized transmog");
             }
             catch (runtime_error const &e)
             {
                 spdlog::error("Error initializing mod: {}", e.what());
-                ModUtils::deinitialize();
+                modutils::deinitialize();
             }
         });
     }
@@ -106,7 +106,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
         try
         {
             mod_thread.join();
-            ModUtils::deinitialize();
+            modutils::deinitialize();
             spdlog::info("Deinitialized transmog");
         }
         catch (runtime_error const &e)

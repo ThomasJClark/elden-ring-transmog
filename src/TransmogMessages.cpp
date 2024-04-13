@@ -180,7 +180,7 @@ void msg::set_active_transmog_shop_protector_category(int8_t protector_category)
 
 void msg::initialize()
 {
-    auto msg_repository_address = ModUtils::scan<CS::MsgRepository *>({
+    auto msg_repository_address = modutils::scan<CS::MsgRepository *>({
         .aob = "48 8B 3D ?? ?? ?? ?? 44 0F B6 30 48 85 FF 75",
         .relative_offsets = {{3, 7}},
     });
@@ -192,7 +192,7 @@ void msg::initialize()
     }
 
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "8B DA 44 8B CA 33 D2 48 8B F9 44 8D 42 6F",
             .offset = 14,

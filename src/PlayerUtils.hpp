@@ -4,7 +4,7 @@
 
 #include "internal/WorldChrMan.hpp"
 
-namespace PlayerUtils
+namespace players
 {
 static constexpr size_t net_player_max = 6;
 static constexpr std::byte ceremony_type_none = (std::byte)0;

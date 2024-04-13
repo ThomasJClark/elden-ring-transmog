@@ -71,7 +71,7 @@ static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 static SpEffectParam dummy_speffect_param;
 static ReinforceParamProtector dummy_reinforce_param;
 
-static array<PlayerState, PlayerUtils::net_player_max> player_states;
+static array<PlayerState, players::net_player_max> player_states;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
@@ -263,7 +263,7 @@ static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, int8_t unk1,
         auto posture_control_id =
             100 * posture_control_group + state->chest_protector->postureControlId;
         auto posture_control_param =
-            ParamUtils::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
+            params::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
         FindPostureControlParamProResult posture_control_result = {
             .id = posture_control_id,
             .row = &posture_control_param[posture_control_id],
@@ -293,13 +293,13 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
             if (state.is_head_transmog_enabled())
             {
                 spdlog::info("Applying head transmog to Mimic Tear");
-                PlayerUtils::apply_speffect(target, state.head_speffect_id, false);
+                players::apply_speffect(target, state.head_speffect_id, false);
             }
 
             if (state.is_body_transmog_enabled())
             {
                 spdlog::info("Applying body transmog to Mimic Tear");
-                PlayerUtils::apply_speffect(target, state.body_speffect_id, false);
+                players::apply_speffect(target, state.body_speffect_id, false);
             }
 
             // Store a value in this unused field in order to link this Mimic Tear's ChrAsm to the
@@ -322,8 +322,8 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 {
     if (update_count++ % update_interval == 0)
     {
-        auto main_player = PlayerUtils::get_main_player();
-        auto net_players = PlayerUtils::get_net_players();
+        auto main_player = players::get_main_player();
+        auto net_players = players::get_net_players();
 
         auto &main_player_state = player_states[0];
         main_player_state.player = main_player;
@@ -331,7 +331,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 
         if (main_player != nullptr && net_players != nullptr)
         {
-            for (int i = 1; i < PlayerUtils::net_player_max; i++)
+            for (int i = 1; i < players::net_player_max; i++)
             {
                 auto &state = player_states[i];
                 auto player = net_players == nullptr ? nullptr : net_players[i].player;
@@ -355,7 +355,7 @@ void vfx::initialize()
 {
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
     // protectors are never equipped, but they're referenced by the transmog VFX params.
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "41 8d 50 01"        // lea edx, [r8 + 1]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -366,7 +366,7 @@ void vfx::initialize()
         get_equip_param_protector_detour, get_equip_param_protector);
 
     // Hook get_speffect_param() to return the above speffect
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "41 8d 50 0f"        // lea edx, [r8 + 15]
                    "e8 ?? ?? ?? ??"     // call SoloParamRepositoryImp::GetParamResCap
@@ -377,7 +377,7 @@ void vfx::initialize()
         get_speffect_param_detour, get_speffect_param);
 
     // Hook get_speffect_vfx_param() to return the above VFX params
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "41 8d 50 10"    // lea edx, [r8 + 16]
                    "e8 ?? ?? ?? ??" // call SoloParamRepositoryImp::GetParamResCap
@@ -389,7 +389,7 @@ void vfx::initialize()
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
-    auto disable_enable_grace_warp_address = ModUtils::scan<byte>({
+    auto disable_enable_grace_warp_address = modutils::scan<byte>({
         .aob = "45 33 c0"        // xor r8d, r8d
                "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
                "48 8b cf"        // mov rcx, rdi
@@ -403,7 +403,7 @@ void vfx::initialize()
                "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect
     });
 
-    auto in_game_stay_step_vfptr = ModUtils::scan<byte *>({
+    auto in_game_stay_step_vfptr = modutils::scan<byte *>({
         .aob = "b9 28 01 00 00"  // mov ecx, 0x128
                "e8 ?? ?? ?? ??"  // call ReserveMemory
                "48 89 44 24 70"  // mov [rsp + local_res18], rax
@@ -417,7 +417,7 @@ void vfx::initialize()
 
     if (config::transmog_affects_posture)
     {
-        auto get_posture_control_original = ModUtils::scan<void>({
+        auto get_posture_control_original = modutils::scan<void>({
             .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
                    "?? ?? ?? ?? ??"       // ...
                    "6b d6 64"             // imul edx, esi, 100
@@ -432,10 +432,10 @@ void vfx::initialize()
         // let's assume another mod is doing something more important with it.
         if (get_posture_control_original != nullptr)
         {
-            ModUtils::hook({.address = get_posture_control_original}, get_posture_control_detour,
+            modutils::hook({.address = get_posture_control_original}, get_posture_control_detour,
                            get_posture_control);
 
-            get_posture_control_inner = ModUtils::scan<GetPostureControlInnerFn>({
+            get_posture_control_inner = modutils::scan<GetPostureControlInnerFn>({
                 .address = (byte *)get_posture_control_original + 175,
                 .relative_offsets = {{1, 5}},
             });
@@ -446,7 +446,7 @@ void vfx::initialize()
         }
     }
 
-    ModUtils::hook(
+    modutils::hook(
         {
             .aob = "c7 44 24 30 00 00 00 00" // mov [rsp + 0x30], 0x0
                    "48 8d 54 24 28"          // lea rdx, [rsp + 0x28]
@@ -456,16 +456,16 @@ void vfx::initialize()
         },
         copy_player_character_data_detour, copy_player_character_data);
 
-    ModUtils::hook({.offset = in_game_stay_step_vfptr[12] - ModUtils::scan<byte>({})},
+    modutils::hook({.offset = in_game_stay_step_vfptr[12] - modutils::scan<byte>({})},
                    in_game_stay_step_load_finish_detour, in_game_stay_step_load_finish);
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
     dummy_reinforce_param =
-        ParamUtils::get_param<ReinforceParamProtector>(L"ReinforceParamProtector")[0];
+        params::get_param<ReinforceParamProtector>(L"ReinforceParamProtector")[0];
 
     // Initialize the speffects from speffect 2 (basically a no-op effect), overiding the VFX and
     // a few other properties
-    dummy_speffect_param = ParamUtils::get_param<SpEffectParam>(L"SpEffectParam")[2];
+    dummy_speffect_param = params::get_param<SpEffectParam>(L"SpEffectParam")[2];
     dummy_speffect_param.effectEndurance = -1;
     dummy_speffect_param.effectTargetSelf = true;
     dummy_speffect_param.effectTargetFriend = true;
@@ -476,7 +476,7 @@ void vfx::initialize()
     dummy_speffect_param.effectTargetSelfTarget = true;
     dummy_speffect_param.vfxId = -1;
 
-    for (int i = 0; i < PlayerUtils::net_player_max; i++)
+    for (int i = 0; i < players::net_player_max; i++)
     {
         auto &state = player_states[i];
 

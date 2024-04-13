@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace ModUtils
+namespace modutils
 {
 
 void initialize();
