@@ -72,7 +72,7 @@ static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 static SpEffectParam dummy_speffect_param;
 static ReinforceParamProtector dummy_reinforce_param;
 
-static array<TransmogPlayerState, PlayerUtils::net_player_max> player_states;
+static array<PlayerState, PlayerUtils::net_player_max> player_states;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
@@ -234,7 +234,7 @@ static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, int8_t unk1,
     auto &chr_asm = **chr_asm_ptr;
 
     auto get_player_state = [chr_asm]() {
-        // This unused field is used to link Mimic Tears' ChrAsm to a TransmogPlayerState
+        // This unused field is used to link Mimic Tears' ChrAsm to a PlayerState
         if (chr_asm.unused >= 0 && chr_asm.unused < player_states.size())
         {
             return player_states.begin() + chr_asm.unused;
@@ -305,7 +305,7 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
 
             // Store a value in this unused field in order to link this Mimic Tear's ChrAsm to the
             // player. The posture adjustment function, which doesn't have access to the PlayerIns
-            // object, checks this to associate the Mimic Tear with a TransmogPlayerState.
+            // object, checks this to associate the Mimic Tear with a PlayerState.
             target->player_game_data->equip_game_data.chr_asm.unused = i;
         }
     }

@@ -6,8 +6,10 @@
 #include "TransmogShop.hpp"
 #include "internal/WorldChrMan.hpp"
 
+namespace ertransmogrify
+{
 // Current transmog state for the main player or a networked player
-class TransmogPlayerState
+class PlayerState
 {
   public:
     CS::PlayerIns *player;
@@ -41,7 +43,7 @@ class TransmogPlayerState
     int64_t set_id;
     int64_t set_alt_id;
 
-    TransmogPlayerState()
+    PlayerState()
         : player(nullptr), head_speffect_id(-1), body_speffect_id(-1), head_vfx_id(-1),
           body_vfx_id(-1), head_protector_id(-1), head_protector(nullptr), chest_protector_id(-1),
           chest_protector(nullptr), arms_protector_id(-1), arms_protector(nullptr),
@@ -101,25 +103,25 @@ class TransmogPlayerState
     {
         switch (protector.protectorCategory)
         {
-        case ertransmogrify::shop::protector_category_head:
+        case shop::protector_category_head:
             if (head_protector_id == protector_id)
                 return false;
             head_protector_id = protector_id;
             head_protector = &protector;
             return true;
-        case ertransmogrify::shop::protector_category_chest:
+        case shop::protector_category_chest:
             if (chest_protector_id == protector_id)
                 return false;
             chest_protector_id = protector_id;
             chest_protector = &protector;
             return true;
-        case ertransmogrify::shop::protector_category_arms:
+        case shop::protector_category_arms:
             if (arms_protector_id == protector_id)
                 return false;
             arms_protector_id = protector_id;
             arms_protector = &protector;
             return true;
-        case ertransmogrify::shop::protector_category_legs:
+        case shop::protector_category_legs:
             if (legs_protector_id == protector_id)
                 return false;
             legs_protector_id = protector_id;
@@ -150,3 +152,4 @@ class TransmogPlayerState
     void refresh_transmog_net_player();
     bool should_clear_transmog();
 };
+}

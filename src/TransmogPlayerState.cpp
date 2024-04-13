@@ -33,7 +33,7 @@ static inline int64_t get_protector_id_for_transmog_speffect(int64_t speffect_id
     return -1;
 }
 
-void TransmogPlayerState::refresh_transmog()
+void PlayerState::refresh_transmog()
 {
     if (player == nullptr || player->player_game_data == nullptr || player->speffects == nullptr)
     {
@@ -104,7 +104,7 @@ void TransmogPlayerState::refresh_transmog()
     previous_refreshed = true;
 }
 
-void TransmogPlayerState::remove_transmog()
+void PlayerState::remove_transmog()
 {
     clear_transmog_protectors();
     PlayerUtils::clear_speffect(player, head_speffect_id);
@@ -134,7 +134,7 @@ void TransmogPlayerState::remove_transmog()
 /**
  * Refresh transmog for the main player based on goods in their inventory
  */
-void TransmogPlayerState::refresh_transmog_main_player()
+void PlayerState::refresh_transmog_main_player()
 {
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
 
@@ -248,7 +248,7 @@ void TransmogPlayerState::refresh_transmog_main_player()
 /**
  * Refresh transmog for a networked player based on SpEffects applied by the other player's game
  */
-void TransmogPlayerState::refresh_transmog_net_player()
+void PlayerState::refresh_transmog_net_player()
 {
     auto equip_param_protector = ParamUtils::get_param<EquipParamProtector>(L"EquipParamProtector");
 
@@ -312,7 +312,7 @@ void TransmogPlayerState::refresh_transmog_net_player()
  * This is useful for net players, since we don't have a callback for when they interact with the
  * transmog shop.
  */
-bool TransmogPlayerState::should_clear_transmog()
+bool PlayerState::should_clear_transmog()
 {
     bool should_clear = false;
     for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
