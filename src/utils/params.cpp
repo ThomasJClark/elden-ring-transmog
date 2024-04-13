@@ -3,8 +3,8 @@
 #include <tga/param_containers.h>
 #include <thread>
 
-#include "ModUtils.hpp"
-#include "ParamUtils.hpp"
+#include "modutils.hpp"
+#include "params.hpp"
 
 using namespace std;
 

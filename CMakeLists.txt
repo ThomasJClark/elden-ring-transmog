@@ -57,31 +57,31 @@ set_target_properties(steamapi PROPERTIES
         IMPORTED_LOCATION_DEBUG steam_api64.lib)
 
 add_library(EldenRingTransmogMod SHARED
-  src/ModUtils.hpp
-  src/ModUtils.cpp
-  src/ParamUtils.hpp
-  src/ParamUtils.cpp
-  src/PlayerUtils.hpp
-  src/PlayerUtils.cpp
-  src/TransmogConfig.hpp
-  src/TransmogConfig.cpp
-  src/TransmogMessages.hpp
-  src/TransmogMessages.cpp
-  src/TransmogPlayerState.hpp
-  src/TransmogPlayerState.cpp
-  src/TransmogShop.hpp
-  src/TransmogShop.cpp
-  src/TransmogTalkScript.hpp
-  src/TransmogTalkScript.cpp
-  src/TransmogVFX.hpp
-  src/TransmogVFX.cpp
   src/dllmain.cpp
-  src/ezstate/CustomStates.hpp
+  src/ertransmogrify_config.cpp
+  src/ertransmogrify_config.hpp
+  src/ertransmogrify_messages_by_lang.cpp
+  src/ertransmogrify_messages.cpp
+  src/ertransmogrify_messages.hpp
+  src/ertransmogrify_player_state.cpp
+  src/ertransmogrify_player_state.hpp
+  src/ertransmogrify_shop.cpp
+  src/ertransmogrify_shop.hpp
+  src/ertransmogrify_talkscript_states.hpp
+  src/ertransmogrify_talkscript.cpp
+  src/ertransmogrify_talkscript.hpp
+  src/ertransmogrify_vfx.cpp
+  src/ertransmogrify_vfx.hpp
   src/internal/EzState.hpp
   src/internal/GameMan.hpp
   src/internal/List.hpp
   src/internal/WorldChrMan.hpp
-  src/messages.hpp)
+  src/utils/modutils.cpp
+  src/utils/modutils.hpp
+  src/utils/params.cpp
+  src/utils/params.hpp
+  src/utils/players.cpp
+  src/utils/players.hpp)
 
 set_target_properties(EldenRingTransmogMod PROPERTIES OUTPUT_NAME "ertransmogrify")
 

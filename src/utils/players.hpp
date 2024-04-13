@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "internal/WorldChrMan.hpp"
+#include "../internal/WorldChrMan.hpp"
 
 namespace players
 {

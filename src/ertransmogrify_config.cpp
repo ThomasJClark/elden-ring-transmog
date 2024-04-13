@@ -1,7 +1,7 @@
 #include <mini/ini.h>
 #include <spdlog/spdlog.h>
 
-#include "TransmogConfig.hpp"
+#include "ertransmogrify_config.hpp"
 
 using namespace std;
 using namespace ertransmogrify;

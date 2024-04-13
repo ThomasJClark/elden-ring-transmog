@@ -1,11 +1,34 @@
 #pragma once
 #include <cstdint>
+#include <map>
 #include <string>
 
 namespace ertransmogrify
 {
 namespace msg
 {
+struct Messages
+{
+    std::wstring transmog_armor;
+    std::wstring transmog_head;
+    std::wstring transmog_chest;
+    std::wstring transmog_arms;
+    std::wstring transmog_legs;
+    std::wstring undo_transmog;
+    std::wstring transmog_head_title;
+    std::wstring transmog_chest_title;
+    std::wstring transmog_arms_title;
+    std::wstring transmog_legs_title;
+    std::wstring invisible;
+    std::wstring select_transmog_target;
+    std::wstring transmog_head_to;
+    std::wstring transmog_chest_to;
+    std::wstring transmog_arms_to;
+    std::wstring transmog_legs_to;
+};
+
+extern const std::map<std::string, Messages> messages_by_lang;
+
 static constexpr int32_t event_text_for_talk_transmog_armor = 69000000;
 static constexpr int32_t event_text_for_talk_transmog_head = 69000010;
 static constexpr int32_t event_text_for_talk_transmog_chest = 69000011;

@@ -9,14 +9,14 @@
 #include <thread>
 #include <windows.h>
 
-#include "ModUtils.hpp"
-#include "ParamUtils.hpp"
-#include "PlayerUtils.hpp"
-#include "TransmogConfig.hpp"
-#include "TransmogMessages.hpp"
-#include "TransmogShop.hpp"
-#include "TransmogTalkScript.hpp"
-#include "TransmogVFX.hpp"
+#include "ertransmogrify_config.hpp"
+#include "ertransmogrify_messages.hpp"
+#include "ertransmogrify_shop.hpp"
+#include "ertransmogrify_talkscript.hpp"
+#include "ertransmogrify_vfx.hpp"
+#include "utils/modutils.hpp"
+#include "utils/params.hpp"
+#include "utils/players.hpp"
 
 using namespace std;
 

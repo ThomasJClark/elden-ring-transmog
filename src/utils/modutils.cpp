@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <windows.h>
 
-#include "ModUtils.hpp"
+#include "modutils.hpp"
 
 using namespace std;
 

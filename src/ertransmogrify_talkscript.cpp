@@ -1,14 +1,14 @@
 #include <cstdint>
 #include <spdlog/spdlog.h>
 
-#include "ModUtils.hpp"
-#include "ParamUtils.hpp"
-#include "TransmogMessages.hpp"
-#include "TransmogShop.hpp"
-#include "TransmogTalkScript.hpp"
-#include "TransmogVFX.hpp"
-#include "ezstate/CustomStates.hpp"
+#include "ertransmogrify_messages.hpp"
+#include "ertransmogrify_shop.hpp"
+#include "ertransmogrify_talkscript.hpp"
+#include "ertransmogrify_talkscript_states.hpp"
+#include "ertransmogrify_vfx.hpp"
 #include "internal/EzState.hpp"
+#include "utils/modutils.hpp"
+#include "utils/params.hpp"
 
 using namespace std;
 using namespace ertransmogrify;

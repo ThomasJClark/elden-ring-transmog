@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <tga/paramdefs.h>
 
-#include "TransmogShop.hpp"
+#include "ertransmogrify_shop.hpp"
 #include "internal/WorldChrMan.hpp"
 
 namespace ertransmogrify

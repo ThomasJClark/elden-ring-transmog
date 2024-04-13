@@ -5,13 +5,13 @@
 #include <tga/param_containers.h>
 #include <tga/paramdefs.h>
 
-#include "ModUtils.hpp"
-#include "ParamUtils.hpp"
-#include "PlayerUtils.hpp"
-#include "TransmogConfig.hpp"
-#include "TransmogPlayerState.hpp"
-#include "TransmogShop.hpp"
-#include "TransmogVFX.hpp"
+#include "ertransmogrify_config.hpp"
+#include "ertransmogrify_player_state.hpp"
+#include "ertransmogrify_shop.hpp"
+#include "ertransmogrify_vfx.hpp"
+#include "utils/modutils.hpp"
+#include "utils/params.hpp"
+#include "utils/players.hpp"
 
 using namespace std;
 using namespace ertransmogrify;

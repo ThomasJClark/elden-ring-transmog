@@ -1,11 +1,11 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 
-#include "ParamUtils.hpp"
-#include "PlayerUtils.hpp"
-#include "TransmogPlayerState.hpp"
-#include "TransmogVFX.hpp"
+#include "ertransmogrify_player_state.hpp"
+#include "ertransmogrify_vfx.hpp"
 #include "internal/GameMan.hpp"
+#include "utils/params.hpp"
+#include "utils/players.hpp"
 
 using namespace std;
 using namespace ertransmogrify;

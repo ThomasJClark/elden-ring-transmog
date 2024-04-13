@@ -3,11 +3,10 @@
 #include <string>
 #include <thread>
 
-#include "ModUtils.hpp"
-#include "TransmogConfig.hpp"
-#include "TransmogMessages.hpp"
-#include "TransmogShop.hpp"
-#include "messages.hpp"
+#include "ertransmogrify_config.hpp"
+#include "ertransmogrify_messages.hpp"
+#include "ertransmogrify_shop.hpp"
+#include "utils/modutils.hpp"
 
 using namespace std;
 using namespace ertransmogrify;
@@ -49,7 +48,7 @@ static CS::MsgRepository *msg_repository = nullptr;
 /**
  * Assigned the list of localized messages based on the player's language preference
  */
-static Messages transmog_messages;
+static msg::Messages transmog_messages;
 
 /**
  * Set while the transmog menu is open to adjust some of the UI strings, or to -1 while a different
@@ -203,12 +202,12 @@ void msg::initialize()
     // Pick the messages to use based on the player's selected language for the game in Steam
     auto language = get_steam_language();
 
-    auto messages_iterator = transmog_messages_by_lang.find(language);
-    if (messages_iterator == transmog_messages_by_lang.end())
+    auto messages_iterator = messages_by_lang.find(language);
+    if (messages_iterator == messages_by_lang.end())
     {
         spdlog::warn("Detected game language = {} (not supported, defaulting to English)",
                      language);
-        transmog_messages = transmog_messages_by_lang.at("english");
+        transmog_messages = messages_by_lang.at("english");
     }
     else
     {

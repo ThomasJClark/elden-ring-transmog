@@ -1,8 +1,8 @@
 #pragma once
 
-#include "PlayerUtils.hpp"
-#include "ModUtils.hpp"
-#include "internal/GameMan.hpp"
+#include "players.hpp"
+#include "../internal/GameMan.hpp"
+#include "modutils.hpp"
 
 using namespace std;
 

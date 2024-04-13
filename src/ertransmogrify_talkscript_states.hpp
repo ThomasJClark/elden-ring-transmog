@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../TransmogMessages.hpp"
-#include "../internal/EzState.hpp"
+#include "ertransmogrify_messages.hpp"
+#include "internal/EzState.hpp"
 
 #pragma pack(push, 1)
 
