@@ -4,14 +4,15 @@
 #include "TransmogConfig.hpp"
 
 using namespace std;
+using namespace ertransmogrify;
 
-bool TransmogConfig::include_unobtained_armor = true;
-bool TransmogConfig::include_cut_armor = true;
-bool TransmogConfig::transmog_affects_posture = true;
-bool TransmogConfig::patch_grace_talk_script = true;
-uint32_t TransmogConfig::initialize_delay = 0;
+bool config::include_unobtained_armor = true;
+bool config::include_cut_armor = true;
+bool config::transmog_affects_posture = true;
+bool config::patch_grace_talk_script = true;
+uint32_t config::initialize_delay = 0;
 
-void TransmogConfig::load_config(const filesystem::path &ini_path)
+void config::load(const filesystem::path &ini_path)
 {
     spdlog::info("Loading config from {}", ini_path.string());
 

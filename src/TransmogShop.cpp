@@ -125,7 +125,7 @@ static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, byte sho
 static inline bool is_protector_unlocked(int32_t goods_id)
 {
     // If this config option is true, any armor can be chosen without obtaining it first
-    if (TransmogConfig::include_unobtained_armor)
+    if (config::include_unobtained_armor)
     {
         return true;
     }
@@ -403,7 +403,7 @@ void TransmogShop::initialize()
         }
 
         // Skip cut items, if configured to do so
-        if (!TransmogConfig::include_cut_armor && protector_name.starts_with(msg::cut_item_prefix))
+        if (!config::include_cut_armor && protector_name.starts_with(msg::cut_item_prefix))
         {
             continue;
         }

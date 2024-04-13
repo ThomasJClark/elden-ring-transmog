@@ -2,12 +2,14 @@
 
 #include <filesystem>
 
-namespace TransmogConfig
+namespace ertransmogrify
+{
+namespace config
 {
 /**
  * Load user preferences from an .ini file
  */
-void load_config(const std::filesystem::path &ini_path);
+void load(const std::filesystem::path &ini_path);
 
 /**
  * Don't require owning an armor piece to unlock it for transmogrification
@@ -36,4 +38,5 @@ extern bool patch_grace_talk_script;
  * compatibility issue where Seamless overrides some hooks if it initializes after this mod.
  */
 extern uint32_t initialize_delay;
-}; 
+};
+};

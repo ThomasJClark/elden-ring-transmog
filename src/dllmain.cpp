@@ -57,7 +57,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
         spdlog::info("Transmog version {}", PROJECT_VERSION);
 #endif
 
-        TransmogConfig::load_config(folder / "ertransmogrify.ini");
+        ertransmogrify::config::load(folder / "ertransmogrify.ini");
 
         mod_thread = thread([]() {
             try
@@ -76,16 +76,18 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 spdlog::info("Adding transmog shops...");
                 TransmogShop::initialize();
 
-                if (TransmogConfig::patch_grace_talk_script)
+                if (ertransmogrify::config::patch_grace_talk_script)
                 {
                     spdlog::info("Hooking talk scripts...");
                     TransmogTalkScript::initialize();
                 }
 
-                if (TransmogConfig::initialize_delay)
+                if (ertransmogrify::config::initialize_delay)
                 {
-                    spdlog::info("Waiting {}ms to enable...", TransmogConfig::initialize_delay);
-                    this_thread::sleep_for(chrono::milliseconds(TransmogConfig::initialize_delay));
+                    spdlog::info("Waiting {}ms to enable...",
+                                 ertransmogrify::config::initialize_delay);
+                    this_thread::sleep_for(
+                        chrono::milliseconds(ertransmogrify::config::initialize_delay));
                 }
 
                 ModUtils::enable_hooks();

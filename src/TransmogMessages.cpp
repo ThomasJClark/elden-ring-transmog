@@ -9,8 +9,8 @@
 #include "TransmogShop.hpp"
 #include "messages.hpp"
 
-using namespace ertransmogrify;
 using namespace std;
+using namespace ertransmogrify;
 
 static const uint32_t msgbnd_goods_name = 10;
 static const uint32_t msgbnd_protector_name = 12;
@@ -66,7 +66,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     switch (bnd_id)
     {
     case msgbnd_event_text_for_talk:
-        if (TransmogConfig::patch_grace_talk_script)
+        if (config::patch_grace_talk_script)
         {
             switch (msg_id)
             {

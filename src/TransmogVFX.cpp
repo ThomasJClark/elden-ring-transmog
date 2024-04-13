@@ -13,8 +13,9 @@
 #include "TransmogShop.hpp"
 #include "TransmogVFX.hpp"
 
-using namespace TransmogVFX;
 using namespace std;
+using namespace ertransmogrify;
+using namespace TransmogVFX;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
@@ -415,7 +416,7 @@ void TransmogVFX::initialize()
         .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
     });
 
-    if (TransmogConfig::transmog_affects_posture)
+    if (config::transmog_affects_posture)
     {
         auto get_posture_control_original = ModUtils::scan<void>({
             .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
