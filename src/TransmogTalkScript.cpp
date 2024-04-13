@@ -12,7 +12,6 @@
 
 using namespace std;
 using namespace ertransmogrify;
-using namespace TransmogTalkScript;
 
 namespace
 {
@@ -175,7 +174,7 @@ static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineIm
     ezstate_enter_state(state, machine, unk);
 }
 
-void TransmogTalkScript::initialize()
+void talkscript::initialize()
 {
     ModUtils::hook(
         {

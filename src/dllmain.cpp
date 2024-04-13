@@ -79,7 +79,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 if (ertransmogrify::config::patch_grace_talk_script)
                 {
                     spdlog::info("Hooking talk scripts...");
-                    TransmogTalkScript::initialize();
+                    ertransmogrify::talkscript::initialize();
                 }
 
                 if (ertransmogrify::config::initialize_delay)
