@@ -3,7 +3,6 @@
 #include <string>
 #include <thread>
 
-#include "ertransmogrify_config.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
 #include "utils/modutils.hpp"
@@ -65,23 +64,20 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
     switch (bnd_id)
     {
     case msgbnd_event_text_for_talk:
-        if (config::patch_grace_talk_script)
+        switch (msg_id)
         {
-            switch (msg_id)
-            {
-            case msg::event_text_for_talk_transmog_armor:
-                return transmog_messages.transmog_armor.c_str();
-            case msg::event_text_for_talk_transmog_head:
-                return transmog_messages.transmog_head.c_str();
-            case msg::event_text_for_talk_transmog_chest:
-                return transmog_messages.transmog_chest.c_str();
-            case msg::event_text_for_talk_transmog_arms:
-                return transmog_messages.transmog_arms.c_str();
-            case msg::event_text_for_talk_transmog_legs:
-                return transmog_messages.transmog_legs.c_str();
-            case msg::event_text_for_talk_undo_transmog:
-                return transmog_messages.undo_transmog.c_str();
-            }
+        case msg::event_text_for_talk_transmog_armor:
+            return transmog_messages.transmog_armor.c_str();
+        case msg::event_text_for_talk_transmog_head:
+            return transmog_messages.transmog_head.c_str();
+        case msg::event_text_for_talk_transmog_chest:
+            return transmog_messages.transmog_chest.c_str();
+        case msg::event_text_for_talk_transmog_arms:
+            return transmog_messages.transmog_arms.c_str();
+        case msg::event_text_for_talk_transmog_legs:
+            return transmog_messages.transmog_legs.c_str();
+        case msg::event_text_for_talk_undo_transmog:
+            return transmog_messages.undo_transmog.c_str();
         }
         break;
 
