@@ -91,84 +91,86 @@ static bool is_sort_chest_transition(const EzState::Transition *transition)
            target_state->entry_commands[0].command == EzState::Commands::open_repository;
 }
 
-static EzState::StateGroup *state_group = nullptr;
-
-static void (*ezstate_enter_state)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
-
 /**
  * Patch the site of grace menu to contain a "Transmogrify armor" option
  */
+static void patch_state_group(EzState::StateGroup *state_group)
+{
+    EzState::State *add_menu_state = nullptr;
+    EzState::Call *call_iter = nullptr;
+
+    EzState::State *menu_transition_state = nullptr;
+    EzState::Transition **transition_iter = nullptr;
+
+    // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
+    // chest.
+    for (auto &state : state_group->states)
+    {
+        for (auto &call : state.entry_commands)
+        {
+            if (is_add_talk_list_data_call(call, msg::event_text_for_talk_sort_chest))
+            {
+                add_menu_state = &state;
+                call_iter = &call + 1;
+            }
+            else if (is_add_talk_list_data_call(call, msg::event_text_for_talk_transmog_armor))
+            {
+                spdlog::debug("Not patching state group x{}, already patched",
+                              0x7fffffff - state_group->id);
+                return;
+            }
+        }
+
+        for (auto &transition : state.transitions)
+        {
+            if (is_sort_chest_transition(transition))
+            {
+                menu_transition_state = &state;
+                transition_iter = &transition + 1;
+            }
+        }
+    }
+    if (add_menu_state == nullptr || menu_transition_state == nullptr)
+    {
+        return;
+    }
+
+    // Add "Transmogrify armor" menu option
+    auto &commands = add_menu_state->entry_commands;
+
+    int command_index = call_iter - commands.begin();
+    copy(commands.begin(), call_iter, patched_commands);
+    copy(call_iter, commands.end(), patched_commands + command_index + 1);
+    patched_commands[command_index] = main_menu_transmog_command;
+
+    commands.elements = patched_commands;
+    commands.count++;
+
+    // Add a transition to the "Transmogrify armor" menu
+    auto &transitions = menu_transition_state->transitions;
+
+    int transition_index = transition_iter - transitions.begin();
+    copy(transitions.begin(), transition_iter, patched_transitions);
+    copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
+    patched_transitions[transition_index] = &main_menu_transmog_transition;
+
+    transitions.elements = patched_transitions;
+    transitions.count++;
+
+    // When closing the transmog menu, return to the main site of grace menu
+    transmog_menu_next_state.set_return_state(state_group->initial_state);
+
+    spdlog::info("Patched state group x{}", 0x7fffffff - state_group->id);
+}
+
+static void (*ezstate_enter_state)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
+
 static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineImpl *machine,
                                        void *unk)
 {
-    auto state_group = machine->state_group;
-    if (state == state_group->initial_state)
+    if (state == machine->state_group->initial_state)
     {
-        EzState::State *add_menu_state = nullptr;
-        EzState::Call *call_iter = nullptr;
-
-        EzState::State *menu_transition_state = nullptr;
-        EzState::Transition **transition_iter = nullptr;
-
-        // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
-        // chest.
-        for (auto &state : state_group->states)
-        {
-            for (auto &call : state.entry_commands)
-            {
-                if (is_add_talk_list_data_call(call, msg::event_text_for_talk_sort_chest))
-                {
-                    add_menu_state = &state;
-                    call_iter = &call + 1;
-                }
-                else if (is_add_talk_list_data_call(call, msg::event_text_for_talk_transmog_armor))
-                {
-                    spdlog::debug("Not patching state group x{}, already patched",
-                                  0x7fffffff - state_group->id);
-                    return;
-                }
-            }
-
-            for (auto &transition : state.transitions)
-            {
-                if (is_sort_chest_transition(transition))
-                {
-                    menu_transition_state = &state;
-                    transition_iter = &transition + 1;
-                }
-            }
-        }
-
-        // If this is the site of grace menu, patch it
-        if (add_menu_state != nullptr && menu_transition_state != nullptr)
-        {
-            // Add "Transmogrify armor" menu option
-            auto &commands = add_menu_state->entry_commands;
-
-            int command_index = call_iter - commands.begin();
-            copy(commands.begin(), call_iter, patched_commands);
-            copy(call_iter, commands.end(), patched_commands + command_index + 1);
-            patched_commands[command_index] = main_menu_transmog_command;
-
-            commands.elements = patched_commands;
-            commands.count++;
-
-            // Add a transition to the "Transmogrify armor" menu
-            auto &transitions = menu_transition_state->transitions;
-
-            int transition_index = transition_iter - transitions.begin();
-            copy(transitions.begin(), transition_iter, patched_transitions);
-            copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
-            patched_transitions[transition_index] = &main_menu_transmog_transition;
-
-            transitions.elements = patched_transitions;
-            transitions.count++;
-
-            // When closing the transmog menu, return to the main site of grace menu
-            transmog_menu_next_state.set_return_state(state_group->initial_state);
-
-            spdlog::info("Patched state group x{}", 0x7fffffff - state_group->id);
-        }
+        patch_state_group(machine->state_group);
     }
 
     ezstate_enter_state(state, machine, unk);
