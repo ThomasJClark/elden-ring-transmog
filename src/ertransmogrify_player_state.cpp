@@ -192,23 +192,23 @@ void PlayerState::refresh_transmog_main_player()
         if (chest_protector == nullptr)
         {
             chest_protector_id = chr_asm.chest_protector_id;
-            chest_protector = &equip_param_protector[chr_asm.chest_protector_id];
-            shop::add_transmog_good(chr_asm.chest_protector_id);
             spdlog::info("Defaulting main player chest to protector {}", chest_protector_id);
+            chest_protector = &equip_param_protector[chest_protector_id];
+            shop::add_transmog_good(chr_asm.chest_protector_id);
         }
         if (arms_protector == nullptr)
         {
             arms_protector_id = chr_asm.arms_protector_id;
-            arms_protector = &equip_param_protector[chr_asm.arms_protector_id];
-            shop::add_transmog_good(chr_asm.arms_protector_id);
             spdlog::info("Defaulting main player arms to protector {}", arms_protector_id);
+            arms_protector = &equip_param_protector[arms_protector_id];
+            shop::add_transmog_good(chr_asm.arms_protector_id);
         }
         if (legs_protector == nullptr)
         {
             legs_protector_id = chr_asm.legs_protector_id;
-            legs_protector = &equip_param_protector[chr_asm.legs_protector_id];
-            shop::add_transmog_good(chr_asm.legs_protector_id);
             spdlog::info("Defaulting main player legs to protector {}", legs_protector_id);
+            legs_protector = &equip_param_protector[legs_protector_id];
+            shop::add_transmog_good(chr_asm.legs_protector_id);
         }
     }
 

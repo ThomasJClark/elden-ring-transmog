@@ -6,7 +6,7 @@
 #include "ertransmogrify_config.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
-#include "ertransmogrify_vFX.hpp"
+#include "ertransmogrify_vfx.hpp"
 #include "utils/modutils.hpp"
 #include "utils/params.hpp"
 #include "utils/players.hpp"
@@ -313,6 +313,10 @@ void shop::initialize()
         .offset = 17,
         .relative_offsets = {{1, 5}},
     });
+    if (add_remove_item == nullptr)
+    {
+        throw runtime_error("Couldn't find AddRemoveItem");
+    }
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
     // and and icon for the shop, but otherwise aren't used for determining shop inventory.
@@ -462,12 +466,11 @@ void shop::initialize()
     // Hook add_inventory_from_shop() to apply the transmog VFX when a shop item is chosen
     modutils::hook(
         {
-            .aob = "8b 93 80 00 00 00" // mov edx, [rbx + 0x80]
-                   "0f af d1"          // imul edx, ecx
-                   "48 8b c8"          // mov rcx, rax
-                   "e8 ?? ?? ?? ??",   // call AddInventoryFromShop
-            .offset = 12,
-            .relative_offsets = {{1, 5}},
+            .aob = "e8 ?? ?? ?? ??" // call ????????
+                   "84 c0"          // test al, al
+                   "74 d8"          // je start_label
+                   "b0 01",         // mov al, 1
+            .offset = -173,
         },
         add_inventory_from_shop_detour, add_inventory_from_shop);
 

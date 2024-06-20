@@ -403,16 +403,22 @@ void vfx::initialize()
                "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect
     });
 
-    auto in_game_stay_step_vfptr = modutils::scan<byte *>({
-        .aob = "b9 28 01 00 00"  // mov ecx, 0x128
-               "e8 ?? ?? ?? ??"  // call ReserveMemory
-               "48 89 44 24 70"  // mov [rsp + local_res18], rax
-               "48 85 c0"        // test rax, rax
-               "74 0b"           // jz label
-               "48 8b c8"        // mov rcx, rax
-               "e8 ?? ?? ?? ??", // call ???
-        .offset = 23,
-        .relative_offsets = {{1, 5}, {29 + 3, 29 + 7}},
+    auto in_game_stay_step_vfptr = modutils::scan<void *>({
+        .aob = "33 ed"                 // xor ebp, ebp
+               "48 89 ab b8 00 00 00"  // mov qword ptr [rbx + 0xb8], rbp
+               "48 89 ab c0 00 00 00"  // mov qword ptr [rbx + 0xc0], rbp
+               "48 89 ab c8 00 00 00"  // mov qword ptr [rbx + 0xc8], rbp
+               "48 89 ab d0 00 00 00"  // mov qword ptr [rbx + 0xd0], rbp
+               "48 89 ab d8 00 00 00"  // mov qword ptr [rbx + 0xd8], rbp
+               "48 89 ab e0 00 00 00"  // mov qword ptr [rbx + 0xe0], rbp
+               "48 89 ab e8 00 00 00"  // mov qword ptr [rbx + 0xe8], rbp
+               "48 89 ab f0 00 00 00"  // mov qword ptr [rbx + 0xf0], rbp
+               "48 89 ab f8 00 00 00"  // mov qword ptr [rbx + 0xf8], rbp
+               "48 89 ab 00 01 00 00"  // mov qword ptr [rbx + 0x100], rbp
+               "48 89 ab 08 01 00 00"  // mov qword ptr [rbx + 0x108], rbp
+               "40 88 ab 10 01 00 00", // mov byte ptr [rbx + 0x110], bpl
+        .offset = -10,
+        .relative_offsets = {{3, 7}},
     });
 
     if (config::transmog_affects_posture)
@@ -456,8 +462,8 @@ void vfx::initialize()
         },
         copy_player_character_data_detour, copy_player_character_data);
 
-    modutils::hook({.offset = in_game_stay_step_vfptr[12] - modutils::scan<byte>({})},
-                   in_game_stay_step_load_finish_detour, in_game_stay_step_load_finish);
+    modutils::hook({.address = in_game_stay_step_vfptr[4]}, in_game_stay_step_load_finish_detour,
+                   in_game_stay_step_load_finish);
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
     dummy_reinforce_param =

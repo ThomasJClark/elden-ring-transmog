@@ -25,12 +25,20 @@ void players::initialize()
                "48 39 88 08 e5 01 00", // cmp [rax + 0x1e508], rcx
         .relative_offsets = {{3, 7}},
     });
+    if (!world_chr_man_addr)
+    {
+        throw runtime_error("Failed to find WorldChrMan base");
+    }
 
     game_man_addr = modutils::scan<CS::GameMan *>({
         .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
                "80 B8 ?? ?? ?? ?? 0D 0F 94 C0 C3",
         .relative_offsets = {{3, 7}},
     });
+    if (!game_man_addr)
+    {
+        throw runtime_error("Failed to find GameDataMan base");
+    }
 
     get_inventory_id = modutils::scan<GetInventoryIdFn>({
         .aob = "48 8d 8f 58 01 00 00" // lea rcx, [rdi + 0x158] ;
@@ -42,6 +50,10 @@ void players::initialize()
         .offset = 7,
         .relative_offsets = {{1, 5}},
     });
+    if (!get_inventory_id)
+    {
+        throw runtime_error("Failed to find GetInventoryId");
+    }
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
@@ -58,6 +70,10 @@ void players::initialize()
                "48 8b cf"        // mov rcx, rdi
                "e8 ?? ?? ?? ??", // call ChrIns::ClearSpEffect});
     });
+    if (!disable_enable_grace_warp_address)
+    {
+        throw runtime_error("Failed to find ChrIns::ApplyEffect and ChrIns::ClearSpEffect");
+    }
 
     apply_speffect = modutils::scan<ApplySpEffectFn>({
         .address = disable_enable_grace_warp_address + 11,
@@ -81,6 +97,10 @@ void players::initialize()
         .offset = 10,
         .relative_offsets = {{1, 5}},
     });
+    if (!spawn_one_shot_sfx_on_chr)
+    {
+        throw runtime_error("Failed to find EMEVD::SpawnOneShotSFXOnChr");
+    }
 }
 
 CS::PlayerIns *players::get_main_player()

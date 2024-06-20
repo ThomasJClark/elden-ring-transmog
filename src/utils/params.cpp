@@ -18,6 +18,7 @@ void params::initialize()
     });
 
     spdlog::info("Waiting for params...");
+
     while (true)
     {
         auto param_list = *param_list_address;
@@ -39,6 +40,6 @@ void params::initialize()
             }
         }
 
-        this_thread::sleep_for(chrono::milliseconds(100));
+        this_thread::sleep_for(chrono::seconds(1));
     }
 }

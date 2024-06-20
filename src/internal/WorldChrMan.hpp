@@ -43,7 +43,7 @@ struct EquipInventoryData
 struct ChrAsm
 {
     void **vftable;
-    std::byte unk1[0x74];
+    std::byte unk1[0x70];
     int32_t left_weapon_id1;
     int32_t right_weapon_id1;
     int32_t left_weapon_id2;
@@ -63,6 +63,7 @@ struct ChrAsm
     int32_t unk4;
     int32_t accessory_ids[4];
     int32_t unused;
+    int32_t unk5;
 };
 
 struct EquipGameData
@@ -129,6 +130,6 @@ struct WorldChrManImp
     std::byte unk2[0xd608];
     PlayerIns *main_player;
 };
-} 
+}
 
 #pragma pack(pop)

@@ -4,6 +4,7 @@
 #include <Pattern16.h>
 #include <cstdint>
 #include <span>
+#include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <windows.h>
 
@@ -78,6 +79,7 @@ void *modutils::scan(const ScanArgs &args)
         return match;
     }
 
+    spdlog::warn("Couldn't find AOB {}", args.aob);
     return nullptr;
 }
 
