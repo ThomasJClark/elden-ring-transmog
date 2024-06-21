@@ -123,7 +123,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
         auto protector_id = shop::get_protector_id_for_transmog_good(msg_id);
         if (protector_id > 0)
         {
-            return get_message(msg_repository, unknown, msgbnd_protector_caption, protector_id);
+            return L"";
         }
         break;
     }
