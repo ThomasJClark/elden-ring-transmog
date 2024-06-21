@@ -22,6 +22,12 @@ extern bool include_unobtained_armor;
 extern bool include_cut_armor;
 
 /**
+ * Include Shadow of the Erdtree armor pieces as transmogrification options. This can be disabled
+ * to avoid spoilers.
+ */
+extern bool include_dlc_armor;
+
+/**
  * Transmog affects the player's idle pose (e.g. the way your arms spread out while wearing
  * Lionel's Armor)
  */
