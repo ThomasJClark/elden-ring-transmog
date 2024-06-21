@@ -398,7 +398,7 @@ void shop::initialize()
 
         // Skip invalid items, and cut items that don't have a name (these are usually duplicates
         // used for NPCs)
-        auto protector_name = msg::get_protector_name(protector_id);
+        auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
         if (protector_name.empty() || protector_name == msg::cut_item_prefix)
         {
             continue;
@@ -407,6 +407,14 @@ void shop::initialize()
         // Skip cut items, if configured to do so
         if (!config::include_cut_armor && protector_name.starts_with(msg::cut_item_prefix))
         {
+            spdlog::debug("Skipping cut content protector {}", protector_id);
+            continue;
+        }
+
+        // Skip DLC items, if configured to do so
+        if (!config::include_dlc_armor && protector_is_dlc)
+        {
+            spdlog::debug("Skipping DLC protector {}", protector_id);
             continue;
         }
 

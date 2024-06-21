@@ -54,6 +54,10 @@ void initialize();
 
 void set_active_transmog_shop_protector_category(int8_t protector_category);
 
-const std::wstring_view get_protector_name(int32_t id);
+/**
+ * Returns the name of the armor with the given ID, and true if it's a DLC item (which is
+ * determined) by checking if the name is in the DLC messages or not.
+ */
+const std::pair<std::wstring_view, bool> get_protector_data(int32_t id);
 };
 };

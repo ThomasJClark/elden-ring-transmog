@@ -20,6 +20,7 @@ static const uint32_t msgbnd_menu_text = 200;
 static const uint32_t msgbnd_line_help = 201;
 static const uint32_t msgbnd_system_message_win64 = 203;
 static const uint32_t msgbnd_dialogues = 204;
+static const uint32_t msgbnd_dlc_protector_name = 313;
 
 struct ISteamApps;
 extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
@@ -105,7 +106,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
                 return transmog_messages.invisible.c_str();
             }
 
-            auto protector_name = msg::get_protector_name(protector_id);
+            auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
 
             // Remove the "[ERROR]" prefix from cut items in the transmog shop
             if (protector_name.starts_with(msg::cut_item_prefix))
@@ -212,12 +213,19 @@ void msg::initialize()
     }
 }
 
-const wstring_view msg::get_protector_name(int32_t id)
+const pair<wstring_view, bool> msg::get_protector_data(int32_t id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
-    if (result == nullptr)
+    if (result != nullptr)
     {
-        return L"";
+        return pair(result, false);
     }
-    return result;
+
+    result = get_message(msg_repository, 0, msgbnd_dlc_protector_name, id);
+    if (result != nullptr)
+    {
+        return pair(result, true);
+    }
+
+    return pair(L"", false);
 }
