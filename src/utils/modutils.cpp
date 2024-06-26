@@ -1,18 +1,29 @@
-#define WIN32_LEAN_AND_MEAN
+#include <codecvt>
+#include <filesystem>
+#include <locale>
+#include <span>
+#include <stdexcept>
+#include <string>
 
 #include <MinHook.h>
 #include <Pattern16.h>
-#include <cstdint>
-#include <span>
 #include <spdlog/spdlog.h>
-#include <stdexcept>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <winver.h>
 
 #include "modutils.hpp"
 
 using namespace std;
 
-static span<byte> memory;
+static span<unsigned char> memory;
+
+static string sus_filenames[] = {
+    "ALI213.ini",      "ColdAPI.ini",   "ColdClientLoader.ini",  "CPY.ini",
+    "ds.ini",          "hlm.ini",       "local_save.txt",        "SmartSteamEmu.ini",
+    "steam_api.ini",   "steam_emu.ini", "steam_interfaces.ini",  "steam_settings",
+    "SteamConfig.ini", "valve.ini",     "Language Selector.exe",
+};
 
 void modutils::initialize()
 {
@@ -20,6 +31,21 @@ void modutils::initialize()
     if (!module_handle)
     {
         throw runtime_error("Failed to get handle for eldenring.exe process");
+    }
+
+    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+
+    wchar_t exe_filename[MAX_PATH] = {0};
+    GetModuleFileNameW(module_handle, exe_filename, MAX_PATH);
+    spdlog::info("Found handle for eldenring.exe process: {}", convert.to_bytes(exe_filename));
+
+    auto exe_directory = filesystem::path(exe_filename).parent_path();
+    for (auto i = 0; i < size(sus_filenames); i++)
+    {
+        if (filesystem::exists(exe_directory / sus_filenames[i]))
+        {
+            spdlog::error("Game may be modified, compatibility is unlikely [{}]", i);
+        }
     }
 
     MEMORY_BASIC_INFORMATION memory_info;
@@ -35,7 +61,8 @@ void modutils::initialize()
     if ((dos_header->e_magic == IMAGE_DOS_SIGNATURE) &&
         (nt_headers->Signature == IMAGE_NT_SIGNATURE))
     {
-        memory = {(byte *)memory_info.AllocationBase, nt_headers->OptionalHeader.SizeOfImage};
+        memory = {(unsigned char *)memory_info.AllocationBase,
+                  nt_headers->OptionalHeader.SizeOfImage};
     }
 
     auto mh_status = MH_Initialize();
@@ -52,14 +79,15 @@ void modutils::deinitialize()
 
 void *modutils::scan(const ScanArgs &args)
 {
-    byte *match;
+    unsigned char *match;
     if (args.address != nullptr)
     {
-        match = reinterpret_cast<byte *>(args.address);
+        match = reinterpret_cast<unsigned char *>(args.address);
     }
     else if (!args.aob.empty())
     {
-        match = reinterpret_cast<byte *>(Pattern16::scan(&memory.front(), memory.size(), args.aob));
+        match = reinterpret_cast<unsigned char *>(
+            Pattern16::scan(&memory.front(), memory.size(), args.aob));
     }
     else
     {
@@ -72,7 +100,7 @@ void *modutils::scan(const ScanArgs &args)
 
         for (auto [first, second] : args.relative_offsets)
         {
-            ptrdiff_t offset = *reinterpret_cast<const int32_t *>(&match[first]) + second;
+            ptrdiff_t offset = *reinterpret_cast<const int *>(&match[first]) + second;
             match += offset;
         }
 
