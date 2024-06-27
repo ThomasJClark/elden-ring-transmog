@@ -43,7 +43,7 @@ struct EquipInventoryData
 struct ChrAsm
 {
     void **vftable;
-    std::byte unk1[0x70];
+    std::byte unk1[0x74];
     int32_t left_weapon_id1;
     int32_t right_weapon_id1;
     int32_t left_weapon_id2;
@@ -63,14 +63,13 @@ struct ChrAsm
     int32_t unk4;
     int32_t accessory_ids[4];
     int32_t unused;
-    int32_t unk5;
 };
 
 struct EquipGameData
 {
-    std::byte unk1[0x70];
+    std::byte unk1[0x6c];
     ChrAsm chr_asm;
-    std::byte unk2[0x14];
+    std::byte unk2[0x18];
     EquipInventoryData equip_inventory_data;
     EquipMagicData *equip_magic_data;
     EquipItemData *equip_item_data;
