@@ -7,6 +7,7 @@
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
 #include "ertransmogrify_vfx.hpp"
+#include "internal/GameDataMan.hpp"
 #include "utils/modutils.hpp"
 #include "utils/params.hpp"
 #include "utils/players.hpp"
@@ -54,21 +55,6 @@ struct FindEquipParamGoodsResult
     int32_t unknown;
     EquipParamGoods *row;
 };
-
-namespace CS
-{
-struct CSMenuSystemSaveLoad
-{
-    byte unk[0x1440];
-    int32_t sorts[20];
-};
-
-struct GameDataMan
-{
-    byte unk[0x60];
-    CSMenuSystemSaveLoad *menu_system_save_load;
-};
-}
 #pragma pack(pop)
 
 static CS::GameDataMan **game_data_man_addr;
@@ -237,10 +223,8 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
         auto game_data_man = *game_data_man_addr;
         if (game_data_man != nullptr)
         {
-            for (auto &sort : game_data_man->menu_system_save_load->sorts)
-            {
-                sort = sort_direction_ascending | sort_by_item_type;
-            }
+            game_data_man->menu_system_save_load->sorts[sort_index_all_items] =
+                menu_sort::item_type_ascending;
         }
     }
 }

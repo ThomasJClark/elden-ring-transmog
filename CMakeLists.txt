@@ -73,6 +73,7 @@ add_library(EldenRingTransmogMod SHARED
   src/ertransmogrify_vfx.cpp
   src/ertransmogrify_vfx.hpp
   src/internal/EzState.hpp
+  src/internal/GameDataMan.hpp
   src/internal/GameMan.hpp
   src/internal/List.hpp
   src/internal/WorldChrMan.hpp
