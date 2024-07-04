@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 
 namespace ertransmogrify
 {
@@ -24,6 +25,12 @@ static constexpr int64_t transmog_chest_shop_menu_id = 4100000;
 static constexpr int64_t transmog_arms_shop_menu_id = 4200000;
 static constexpr int64_t transmog_legs_shop_menu_id = 4300000;
 static constexpr int64_t transmog_shop_max_size = 100000;
+
+/**
+ * DLC transformations. These protectors have no item names or icons, so they need an explicit
+ * mapping to the goods that hold this data.
+ */
+extern const std::map<uint64_t, uint64_t> dlc_transformation_goods_by_protector_id;
 
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog shops

@@ -21,6 +21,7 @@ static const uint32_t msgbnd_line_help = 201;
 static const uint32_t msgbnd_system_message_win64 = 203;
 static const uint32_t msgbnd_dialogues = 204;
 static const uint32_t msgbnd_dlc_protector_name = 313;
+static const uint32_t msgbnd_dlc_goods_name = 319;
 
 struct ISteamApps;
 extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
@@ -55,6 +56,8 @@ static msg::Messages transmog_messages;
  * shop menu is open
  */
 static int8_t active_transmog_shop_protector_category = -1;
+
+static wstring_view get_goods_name(int32_t id);
 
 static const wchar_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_t unknown,
                                      uint32_t bnd_id, int32_t msg_id);
@@ -104,6 +107,14 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
             if (shop::is_invisible_protector_id(protector_id))
             {
                 return transmog_messages.invisible.c_str();
+            }
+
+            // Show DLC transformation options as the name of the item that activates them,
+            // e.g. "Priestess Heart"
+            if (shop::dlc_transformation_goods_by_protector_id.contains(protector_id))
+            {
+                auto goods_id = shop::dlc_transformation_goods_by_protector_id.at(protector_id);
+                return get_goods_name(goods_id).data();
             }
 
             auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
@@ -211,6 +222,23 @@ void msg::initialize()
         spdlog::info("Detected game language = {}", language);
         transmog_messages = messages_iterator->second;
     }
+}
+
+static wstring_view get_goods_name(int32_t id)
+{
+    auto result = get_message(msg_repository, 0, msgbnd_goods_name, id);
+    if (result != nullptr)
+    {
+        return result;
+    }
+
+    result = get_message(msg_repository, 0, msgbnd_dlc_goods_name, id);
+    if (result != nullptr)
+    {
+        return result;
+    }
+
+    return L"";
 }
 
 const pair<wstring_view, bool> msg::get_protector_data(int32_t id)

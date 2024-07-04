@@ -17,10 +17,6 @@ using namespace ertransmogrify;
 
 static constexpr uint16_t invisible_icon_id = 3142;
 
-static constexpr int32_t sort_direction_ascending = 0x80000000;
-static constexpr int32_t sort_direction_decscending = 0x00000000;
-static constexpr int32_t sort_by_item_type = 20801;
-
 static const unordered_set<uint64_t> exluded_protector_ids = {
     // Skip Grass Hair Ornament, which is a cut helmet that's missing an icon
     920000,
@@ -28,6 +24,18 @@ static const unordered_set<uint64_t> exluded_protector_ids = {
     // Skip the Roundtable Set, which is an unobtainable set present in Reforged that doesn't
     // have a model
     955000, 955100, 955200, 955300, 956100};
+
+const map<uint64_t, uint64_t> shop::dlc_transformation_goods_by_protector_id = {
+    {5040100, 2002010}, // Rock Heart (chest, includes full body)
+    {5040200, 2002010}, // Rock Heart (arms, invisible)
+    {5040300, 2002010}, // Rock Heart (legs, invisible)
+    {5050100, 2002020}, // Priestess Heart (chest, includes full body)
+    {5050200, 2002020}, // Priestess Heart (arms, invisible)
+    {5050300, 2002020}, // Priestess Heart (legs, invisible)
+    {5170100, 2002030}, // Lamenter's Mask (chest, includes full body)
+    {5170200, 2002030}, // Lamenter's Mask (arms, invisible)
+    {5170300, 2002030}, // Lamenter's Mask (legs, invisible)
+};
 
 typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
 static AddRemoveItemFn *add_remove_item = nullptr;
@@ -131,6 +139,14 @@ static inline bool is_protector_unlocked(int32_t goods_id)
     if (shop::is_invisible_protector_id(protector_id))
     {
         return true;
+    }
+
+    // DLC transformations are unlocked by the corresponding goods that activate them, such as
+    // the Priestess Heart for dragon mode
+    if (shop::dlc_transformation_goods_by_protector_id.contains(protector_id))
+    {
+        auto goods_id = shop::dlc_transformation_goods_by_protector_id.at(protector_id);
+        return players::has_item_in_inventory(main_player, shop::item_type_goods_begin + goods_id);
     }
 
     // Otherwise, only show armor pieces that the player has in their inventory
@@ -262,6 +278,39 @@ static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t qua
         }
     }
 
+    // If a DLC transformation item is chosen, override existing chest/arms/legs transmogs with the
+    // other pieces from the same set. The chest protectors apply the full body model swap, and the
+    // arms/legs protectors mask parts of the player model. The head protector for these sets isn't
+    // used, so we allow the player to transmog their head still.
+    auto transformation_goods_id_it =
+        shop::dlc_transformation_goods_by_protector_id.find(transmog_protector_id);
+    if (transformation_goods_id_it != shop::dlc_transformation_goods_by_protector_id.end())
+    {
+        for (auto [protector_id, protector] : equip_param_protector)
+        {
+            if (protector.protectorCategory != shop::protector_category_head &&
+                protector.protectorCategory != transmog_protector.protectorCategory)
+            {
+                auto goods_id = shop::get_transmog_goods_id_for_protector(protector_id);
+                auto other_transformation_goods_id_it =
+                    shop::dlc_transformation_goods_by_protector_id.find(protector_id);
+
+                if (other_transformation_goods_id_it !=
+                        shop::dlc_transformation_goods_by_protector_id.end() &&
+                    other_transformation_goods_id_it->second == transformation_goods_id_it->second)
+                {
+                    spdlog::info("DLC transformation protector {} chosen, also adding {}",
+                                 transmog_protector_id, protector_id);
+                    add_remove_item(shop::item_type_goods_begin, goods_id, +1);
+                }
+                else
+                {
+                    add_remove_item(shop::item_type_goods_begin, goods_id, -1);
+                }
+            }
+        }
+    }
+
     // Ensure the undo transmog effect isn't applied, so the new item is applied
     players::clear_speffect(players::get_main_player(), vfx::undo_transmog_speffect_id);
 
@@ -334,18 +383,37 @@ void shop::initialize()
         },
         get_shop_menu_detour, get_shop_menu);
 
+    auto equip_param_goods = params::get_param<EquipParamGoods>(L"EquipParamGoods");
+
     // Add goods and shop entries for every armor piece the player can buy
     for (auto [protector_id, protector_row] :
          params::get_param<EquipParamProtector>(L"EquipParamProtector"))
     {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
-        auto invisible_protector = shop::is_invisible_protector_id(protector_id);
+        bool invisible_protector = shop::is_invisible_protector_id(protector_id);
+        bool dlc_transformation_protector =
+            dlc_transformation_goods_by_protector_id.contains(protector_id);
 
-        uint16_t protector_icon_id =
-            invisible_protector ? invisible_icon_id : protector_row.iconIdM;
-        uint8_t protector_sort_group_id =
-            invisible_protector ? (uint8_t)10 : protector_row.sortGroupId;
+        uint8_t sort_group_id;
+        uint16_t icon_id;
+        if (invisible_protector)
+        {
+            sort_group_id = 121;
+            icon_id = invisible_icon_id;
+        }
+        else if (dlc_transformation_protector)
+        {
+            auto &goods =
+                equip_param_goods[dlc_transformation_goods_by_protector_id.at(protector_id)];
+            sort_group_id = 150;
+            icon_id = goods.iconId;
+        }
+        else
+        {
+            sort_group_id = (uint8_t)(120 + protector_row.sortGroupId / 10);
+            icon_id = protector_row.iconIdM;
+        }
 
         transmog_goods[goods_id] = {
             .refId_default = -1,
@@ -356,7 +424,7 @@ void shop::initialize()
             .appearanceReplaceItemId = -1,
             .yesNoDialogMessageId = -1,
             .potGroupId = -1,
-            .iconId = protector_icon_id,
+            .iconId = icon_id,
             .compTrophySedId = -1,
             .trophySeqId = -1,
             .maxNum = 1,
@@ -368,7 +436,7 @@ void shop::initialize()
             .effectSfxId = -1,
             .showLogCondType = 1,
             .showDialogCondType = 2,
-            .sortGroupId = (uint8_t)(120 + protector_sort_group_id / 10),
+            .sortGroupId = sort_group_id,
             .isUseNoAttackRegion = 1,
             .aiUseJudgeId = -1,
             .reinforceGoodsId = -1,
@@ -383,7 +451,8 @@ void shop::initialize()
         // Skip invalid items, and cut items that don't have a name (these are usually duplicates
         // used for NPCs)
         auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
-        if (protector_name.empty() || protector_name == msg::cut_item_prefix)
+        if ((protector_name.empty() || protector_name == msg::cut_item_prefix) &&
+            !dlc_transformation_protector)
         {
             continue;
         }
@@ -396,7 +465,7 @@ void shop::initialize()
         }
 
         // Skip DLC items, if configured to do so
-        if (!config::include_dlc_armor && protector_is_dlc)
+        if (!config::include_dlc_armor && (protector_is_dlc || dlc_transformation_protector))
         {
             spdlog::debug("Skipping DLC protector {}", protector_id);
             continue;
