@@ -73,6 +73,9 @@ static ReinforceParamProtector dummy_reinforce_param;
 
 static array<PlayerState, players::net_player_max> player_states;
 
+// The category used by transformation effects in the vanilla game (dragon forms and such)
+static constexpr uint8_t vfx_play_category_transmog = 8;
+
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
 {
     get_equip_param_protector(result, id);
@@ -502,12 +505,16 @@ void vfx::initialize()
         state.head_vfx.isFullBodyTransformProtectorId = false;
         state.head_vfx.isVisibleDeadChr = true;
         state.head_vfx.materialParamId = -1;
+        state.head_vfx.playCategory = vfx_play_category_transmog;
+        state.head_vfx.playPriority = 1;
 
         state.body_vfx_id = transmog_body_base_vfx_id + i;
         state.body_vfx.transformProtectorId = state.set_id;
         state.body_vfx.isFullBodyTransformProtectorId = true;
         state.body_vfx.isVisibleDeadChr = true;
         state.body_vfx.materialParamId = -1;
+        state.head_vfx.playCategory = vfx_play_category_transmog;
+        state.head_vfx.playPriority = 1;
 
         // Add two SpEffects that enable the above VFX
         if (i == 0)
@@ -534,5 +541,16 @@ void vfx::initialize()
 
         state.body_speffect = dummy_speffect_param;
         state.body_speffect.vfxId = state.body_vfx_id;
+    }
+
+    // Decrease the priority of DLC transformation effects, so transmog can be used to override
+    // them
+    for (auto [vfx_id, vfx] : params::get_param<SpEffectVfxParam>(L"SpEffectVfxParam"))
+    {
+        if (vfx.transformProtectorId != -1 && vfx.isFullBodyTransformProtectorId &&
+            vfx.playCategory == vfx_play_category_transmog)
+        {
+            vfx.playPriority = 100;
+        }
     }
 }
