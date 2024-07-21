@@ -7,12 +7,11 @@
 #include "utils/params.hpp"
 #include "utils/players.hpp"
 
-using namespace std;
 using namespace ertransmogrify;
 
-static constexpr int32_t transmog_sfx_id = 8020;
+static constexpr int transmog_sfx_id = 8020;
 
-static inline int64_t get_transmog_speffect_id_for_protector(int64_t protector_id)
+static inline long long get_transmog_speffect_id_for_protector(long long protector_id)
 {
     if (protector_id == -1)
     {
@@ -22,7 +21,7 @@ static inline int64_t get_transmog_speffect_id_for_protector(int64_t protector_i
     return vfx::transmog_dummy_speffect_start_id + protector_id / 100;
 }
 
-static inline int64_t get_protector_id_for_transmog_speffect(int64_t speffect_id)
+static inline long long get_protector_id_for_transmog_speffect(long long speffect_id)
 {
     if (speffect_id >= vfx::transmog_dummy_speffect_start_id &&
         speffect_id < vfx::transmog_dummy_speffect_end_id)
@@ -53,7 +52,7 @@ void PlayerState::refresh_transmog()
     }
 
     // Clear stale SpEffects from transmogs that are no longer applied
-    auto cleared_speffects = vector<int32_t>();
+    auto cleared_speffects = std::vector<int>();
     for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
     {
         auto protector_id = get_protector_id_for_transmog_speffect(entry->id);
@@ -165,8 +164,8 @@ void PlayerState::refresh_transmog_main_player()
             // inventory
             for (auto [protector_id, protector] : equip_param_protector)
             {
-                int32_t transmog_item_id = shop::item_type_goods_begin +
-                                           shop::get_transmog_goods_id_for_protector(protector_id);
+                int transmog_item_id = shop::item_type_goods_begin +
+                                       shop::get_transmog_goods_id_for_protector(protector_id);
 
                 if (players::has_item_in_inventory(player, transmog_item_id))
                 {
@@ -249,7 +248,7 @@ void PlayerState::refresh_transmog_net_player()
     auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
 
     bool undo_transmog = false;
-    auto transmog_speffect_ids = vector<int32_t>();
+    auto transmog_speffect_ids = std::vector<int>();
 
     for (auto entry = player->speffects->head; entry != nullptr; entry = entry->next)
     {

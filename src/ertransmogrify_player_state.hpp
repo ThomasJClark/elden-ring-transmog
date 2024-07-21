@@ -16,32 +16,32 @@ class PlayerState
     CS::PlayerIns *previous_player;
     bool previous_refreshed;
 
-    int64_t head_speffect_id;
+    long long head_speffect_id;
     SpEffectParam head_speffect;
 
-    int64_t body_speffect_id;
+    long long body_speffect_id;
     SpEffectParam body_speffect;
 
-    int64_t head_vfx_id;
+    long long head_vfx_id;
     SpEffectVfxParam head_vfx;
 
-    int64_t body_vfx_id;
+    long long body_vfx_id;
     SpEffectVfxParam body_vfx;
 
-    int64_t head_protector_id;
+    long long head_protector_id;
     EquipParamProtector *head_protector;
 
-    int64_t chest_protector_id;
+    long long chest_protector_id;
     EquipParamProtector *chest_protector;
 
-    int64_t arms_protector_id;
+    long long arms_protector_id;
     EquipParamProtector *arms_protector;
 
-    int64_t legs_protector_id;
+    long long legs_protector_id;
     EquipParamProtector *legs_protector;
 
-    int64_t set_id;
-    int64_t set_alt_id;
+    long long set_id;
+    long long set_alt_id;
 
     PlayerState()
         : player(nullptr), head_speffect_id(-1), body_speffect_id(-1), head_vfx_id(-1),
@@ -73,7 +73,7 @@ class PlayerState
         }
     }
 
-    inline void set_vfx_speffect_ids(int64_t head_or_body_speffect_id)
+    inline void set_vfx_speffect_ids(long long head_or_body_speffect_id)
     {
         if (head_or_body_speffect_id % 2 == 0)
         {
@@ -99,7 +99,7 @@ class PlayerState
         legs_protector = nullptr;
     }
 
-    inline bool set_transmog_protector(int64_t protector_id, EquipParamProtector &protector)
+    inline bool set_transmog_protector(long long protector_id, EquipParamProtector &protector)
     {
         switch (protector.protectorCategory)
         {

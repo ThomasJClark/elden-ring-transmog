@@ -9,14 +9,14 @@ namespace CS
 template <typename T> struct List
 {
     T *elements;
-    uint32_t count;
-    std::byte pad[4];
+    unsigned int count;
+    unsigned char pad[4];
 
     inline List() : count(0), elements(nullptr)
     {
     }
 
-    inline List(T *elements, uint32_t count) : elements(elements), count(count)
+    inline List(T *elements, unsigned int count) : elements(elements), count(count)
     {
     }
 
@@ -39,6 +39,6 @@ template <typename T> struct List
         return elements + count;
     }
 };
-}; 
+};
 
 #pragma pack(pop)

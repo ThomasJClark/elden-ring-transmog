@@ -21,12 +21,12 @@ void initialize();
 struct ParamListEntry
 {
     ParamResCap *param_res_cap;
-    std::byte unknown[64];
+    unsigned char unknown[64];
 };
 
 struct ParamList
 {
-    std::byte unknown[136];
+    unsigned char unknown[136];
     ParamListEntry entries[186];
 };
 
@@ -40,7 +40,7 @@ template <typename T> class ParamTableSequence
 
     static inline T *get_row_data(ParamTable *table, ParamRowInfo *row)
     {
-        return reinterpret_cast<T *>(reinterpret_cast<std::byte *>(table) + row->param_offset);
+        return reinterpret_cast<T *>(reinterpret_cast<unsigned char *>(table) + row->param_offset);
     }
 
   public:
@@ -77,15 +77,15 @@ template <typename T> class ParamTableSequence
             return !(*this == other);
         }
 
-        std::pair<uint64_t, T &> operator*()
+        std::pair<unsigned long long, T &> operator*()
         {
-            return std::pair<uint64_t, T &>(row->row_id, *get_row_data(table, row));
+            return std::pair<unsigned long long, T &>(row->row_id, *get_row_data(table, row));
         }
 
-        using difference_type = int64_t;
-        using value_type = std::pair<uint64_t, T &>;
-        using pointer = const std::pair<uint64_t, T &> *;
-        using reference = const std::pair<uint64_t, T &> &;
+        using difference_type = long long;
+        using value_type = std::pair<unsigned long long, T &>;
+        using pointer = const std::pair<unsigned long long, T &> *;
+        using reference = const std::pair<unsigned long long, T &> &;
         using iterator_category = std::output_iterator_tag;
     };
 
@@ -94,7 +94,7 @@ template <typename T> class ParamTableSequence
     {
     }
 
-    T &operator[](uint64_t id)
+    T &operator[](unsigned long long id)
     {
         // Binary search for the param row, assuming all rows are sorted
         ptrdiff_t begin_index = 0;

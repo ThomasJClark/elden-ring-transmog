@@ -10,7 +10,6 @@
 #include "utils/modutils.hpp"
 #include "utils/params.hpp"
 
-using namespace std;
 using namespace ertransmogrify;
 
 namespace
@@ -75,10 +74,10 @@ static EzState::Transition *patched_transitions[100];
 /**
  * Return true if the given EzState call is AddTalkListData(??, message_id, ??)
  */
-static bool is_add_talk_list_data_call(EzState::Call &call, int32_t message_id)
+static bool is_add_talk_list_data_call(EzState::Call &call, int message_id)
 {
     return call.command == EzState::Commands::add_talk_list_data && call.args.count == 3 &&
-           *reinterpret_cast<const int32_t *>(call.args[1].data + 1) == message_id;
+           *reinterpret_cast<const int *>(call.args[1].data + 1) == message_id;
 }
 
 /**
@@ -139,8 +138,8 @@ static void patch_state_group(EzState::StateGroup *state_group)
     auto &commands = add_menu_state->entry_commands;
 
     int command_index = call_iter - commands.begin();
-    copy(commands.begin(), call_iter, patched_commands);
-    copy(call_iter, commands.end(), patched_commands + command_index + 1);
+    std::copy(commands.begin(), call_iter, patched_commands);
+    std::copy(call_iter, commands.end(), patched_commands + command_index + 1);
     patched_commands[command_index] = main_menu_transmog_command;
 
     commands.elements = patched_commands;
@@ -150,8 +149,8 @@ static void patch_state_group(EzState::StateGroup *state_group)
     auto &transitions = menu_transition_state->transitions;
 
     int transition_index = transition_iter - transitions.begin();
-    copy(transitions.begin(), transition_iter, patched_transitions);
-    copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
+    std::copy(transitions.begin(), transition_iter, patched_transitions);
+    std::copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
     patched_transitions[transition_index] = &main_menu_transmog_transition;
 
     transitions.elements = patched_transitions;

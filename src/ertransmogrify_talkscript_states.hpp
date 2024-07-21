@@ -18,7 +18,7 @@ class ApplySpEffectState : public EzState::State
     EzState::Transition *transitions[1] = {&pass_transition};
 
   public:
-    ApplySpEffectState(int32_t id, int32_t speffect_id, EzState::State *main_menu_state)
+    ApplySpEffectState(int id, int speffect_id, EzState::State *main_menu_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           speffect_id_arg(speffect_id), pass_transition(main_menu_state, "\x41\xa1")
     {
@@ -39,7 +39,7 @@ class OpenShopState : public EzState::State
     EzState::Transition *transitions[1] = {&close_shop_transition};
 
   public:
-    OpenShopState(int32_t id, int32_t begin_shop_lineup_id, int32_t end_up_lineup_id,
+    OpenShopState(int id, int begin_shop_lineup_id, int end_up_lineup_id,
                   EzState::State *main_menu_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           begin_arg(begin_shop_lineup_id), end_arg(end_up_lineup_id),
@@ -136,7 +136,7 @@ class TransmogMenuState : public EzState::State
     EzState::Transition *transitions[1] = {&next_menu_transition};
 
   public:
-    TransmogMenuState(int32_t id, EzState::State *next_state)
+    TransmogMenuState(int id, EzState::State *next_state)
         : EzState::State({.id = id, .transitions = transitions, .entry_commands = entry_commands}),
           next_menu_transition(next_state,
                                // CheckSpecificPersonMenuIsOpen(1, 0) == 1
@@ -181,7 +181,7 @@ class TransmogMenuNextState : public EzState::State
         &select_disable_transmog_transition, &return_transition};
 
   public:
-    TransmogMenuNextState(int32_t id, EzState::State *transmog_head_state,
+    TransmogMenuNextState(int id, EzState::State *transmog_head_state,
                           EzState::State *transmog_chest_state, EzState::State *transmog_arms_state,
                           EzState::State *transmog_legs_state,
                           EzState::State *disable_transmog_state)

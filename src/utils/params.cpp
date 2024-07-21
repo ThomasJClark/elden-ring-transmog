@@ -6,8 +6,6 @@
 #include "modutils.hpp"
 #include "params.hpp"
 
-using namespace std;
-
 params::ParamList **params::param_list_address = nullptr;
 
 void params::initialize()
@@ -40,6 +38,6 @@ void params::initialize()
             }
         }
 
-        this_thread::sleep_for(chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

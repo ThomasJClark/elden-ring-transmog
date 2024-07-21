@@ -13,46 +13,45 @@
 #include "utils/params.hpp"
 #include "utils/players.hpp"
 
-using namespace std;
 using namespace ertransmogrify;
 
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
 {
-    int64_t id;
+    long long id;
     ReinforceParamProtector *row;
 };
 
 struct FindEquipParamProtectorResult
 {
-    int32_t id;
-    byte padding1[4];
+    int id;
+    unsigned char padding1[4];
     EquipParamProtector *row;
-    int32_t base_id;
-    byte padding2[4];
+    int base_id;
+    unsigned char padding2[4];
     FindReinforceParamProtectorResult reinforce_param_protector_result;
-    uint32_t unknown;
+    unsigned int unknown;
 };
 
 struct FindSpEffectParamResult
 {
     SpEffectParam *row;
-    int32_t id;
-    byte unknown;
+    int id;
+    unsigned char unknown;
 };
 
 struct FindSpEffectVfxParamResult
 {
-    int32_t id;
-    byte padding[4];
+    int id;
+    unsigned char padding[4];
     SpEffectVfxParam *row;
-    uint16_t unknown;
+    unsigned short unknown;
 };
 
 struct FindPostureControlParamProResult
 {
-    int32_t id;
-    byte padding[4];
+    int id;
+    unsigned char padding[4];
     PostureControlParam_Pro *row;
 };
 
@@ -60,9 +59,9 @@ struct InGameStep;
 
 #pragma pack(pop)
 
-typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, uint32_t id);
-typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, uint32_t id);
-typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, uint32_t id);
+typedef void FindEquipParamProtectorFn(FindEquipParamProtectorResult *result, unsigned int id);
+typedef void FindSpEffectParamFn(FindSpEffectParamResult *result, unsigned int id);
+typedef void FindSpEffectVfxParamFn(FindSpEffectVfxParamResult *result, unsigned int id);
 
 static FindEquipParamProtectorFn *get_equip_param_protector;
 static FindSpEffectParamFn *get_speffect_param;
@@ -71,12 +70,12 @@ static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 static SpEffectParam dummy_speffect_param;
 static ReinforceParamProtector dummy_reinforce_param;
 
-static array<PlayerState, players::net_player_max> player_states;
+static std::array<PlayerState, players::net_player_max> player_states;
 
 // The category used by transformation effects in the vanilla game (dragon forms and such)
-static constexpr uint8_t vfx_play_category_transmog = 8;
+static constexpr unsigned char vfx_play_category_transmog = 8;
 
-static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, uint32_t id)
+static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, unsigned int id)
 {
     get_equip_param_protector(result, id);
     if (result->row != nullptr)
@@ -138,7 +137,7 @@ static void get_equip_param_protector_detour(FindEquipParamProtectorResult *resu
     }
 }
 
-static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t id)
+static void get_speffect_param_detour(FindSpEffectParamResult *result, unsigned int id)
 {
     get_speffect_param(result, id);
     if (result->row != nullptr)
@@ -159,7 +158,7 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
         {
             result->id = state.head_speffect_id;
             result->row = &state.head_speffect;
-            result->unknown = byte(0x04);
+            result->unknown = unsigned char(0x04);
             return;
         }
 
@@ -167,7 +166,7 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
         {
             result->id = state.body_speffect_id;
             result->row = &state.body_speffect;
-            result->unknown = byte(0x04);
+            result->unknown = unsigned char(0x04);
             return;
         }
     }
@@ -180,12 +179,12 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, uint32_t 
     {
         result->id = id;
         result->row = &dummy_speffect_param;
-        result->unknown = byte(0x04);
+        result->unknown = unsigned char(0x04);
         return;
     }
 }
 
-static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, uint32_t id)
+static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, unsigned int id)
 {
     get_speffect_vfx_param(result, id);
     if (result->row != nullptr)
@@ -219,8 +218,8 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, ui
     }
 }
 
-typedef int32_t GetPostureControlInnerFn(FindPostureControlParamProResult *, int8_t, int32_t);
-typedef int32_t GetPostureControlFn(CS::ChrAsm **, int8_t, int32_t, int32_t);
+typedef int GetPostureControlInnerFn(FindPostureControlParamProResult *, signed char, int);
+typedef int GetPostureControlFn(CS::ChrAsm **, signed char, int, int);
 
 static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
 static GetPostureControlFn *get_posture_control = nullptr;
@@ -230,8 +229,8 @@ static GetPostureControlFn *get_posture_control = nullptr;
  * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
  * goofy if this isn't tied to the selected chest transmog.
  */
-static int32_t get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, int8_t unk1,
-                                          int32_t posture_control_group, int32_t unk2)
+static int get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, signed char unk1,
+                                      int posture_control_group, int unk2)
 {
     auto &chr_asm = **chr_asm_ptr;
 
@@ -315,8 +314,8 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
 
 static void (*in_game_stay_step_load_finish)(InGameStep *) = nullptr;
 
-static uint64_t update_count = 0;
-static uint64_t update_interval = 2; // TODO: 1 might be fine
+static unsigned long long update_count = 0;
+static unsigned long long update_interval = 2; // TODO: 1 might be fine
 
 /**
  * Update the main player and each network player's transmog state as part of the main game loop
@@ -392,7 +391,7 @@ void vfx::initialize()
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
-    auto disable_enable_grace_warp_address = modutils::scan<byte>({
+    auto disable_enable_grace_warp_address = modutils::scan<unsigned char>({
         .aob = "45 33 c0"        // xor r8d, r8d
                "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
                "48 8b cf"        // mov rcx, rdi
@@ -445,7 +444,7 @@ void vfx::initialize()
                            get_posture_control);
 
             get_posture_control_inner = modutils::scan<GetPostureControlInnerFn>({
-                .address = (byte *)get_posture_control_original + 175,
+                .address = (unsigned char *)get_posture_control_original + 175,
                 .relative_offsets = {{1, 5}},
             });
         }
@@ -521,9 +520,9 @@ void vfx::initialize()
         {
             // For the main player, pick two random IDs (an even and odd one) to avoid conflicts in
             // Seamless Co-op
-            random_device dev;
-            mt19937 rng(dev());
-            uniform_int_distribution<mt19937::result_type> speffect_id_dist(
+            std::random_device dev;
+            std::mt19937 rng(dev());
+            std::uniform_int_distribution<std::mt19937::result_type> speffect_id_dist(
                 transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
 
             state.set_vfx_speffect_ids(speffect_id_dist(rng));

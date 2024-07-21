@@ -3,7 +3,7 @@
 
 #include "ertransmogrify_config.hpp"
 
-using namespace std;
+namespace fs = std::filesystem;
 using namespace ertransmogrify;
 
 bool config::include_unobtained_armor = true;
@@ -11,9 +11,9 @@ bool config::include_cut_armor = true;
 bool config::include_dlc_armor = true;
 bool config::transmog_affects_posture = true;
 bool config::patch_grace_talk_script = true;
-uint32_t config::initialize_delay = 0;
+unsigned int config::initialize_delay = 0;
 
-void config::load(const filesystem::path &ini_path)
+void config::load(const fs::path &ini_path)
 {
     spdlog::info("Loading config from {}", ini_path.string());
 

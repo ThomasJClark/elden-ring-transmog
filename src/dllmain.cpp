@@ -18,13 +18,13 @@
 #include "utils/params.hpp"
 #include "utils/players.hpp"
 
-using namespace std;
+namespace fs = std::filesystem;
 
-thread mod_thread;
+std::thread mod_thread;
 
-void setup_logger(const filesystem::path &logs_path)
+void setup_logger(const fs::path &logs_path)
 {
-    auto logger = make_shared<spdlog::logger>("transmog");
+    auto logger = std::make_shared<spdlog::logger>("transmog");
     logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
     logger->sinks().push_back(
         make_shared<spdlog::sinks::daily_file_sink_st>(logs_path.string(), 0, 0, false, 5));
@@ -36,20 +36,20 @@ void setup_logger(const filesystem::path &logs_path)
     freopen_s(&stream, "CONOUT$", "w", stdout);
     freopen_s(&stream, "CONOUT$", "w", stderr);
     freopen_s(&stream, "CONIN$", "r", stdin);
-    logger->sinks().push_back(make_shared<spdlog::sinks::stdout_color_sink_st>());
+    logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
     logger->set_level(spdlog::level::trace);
 #endif
 
     spdlog::set_default_logger(logger);
 }
 
-bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reserved)
+bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_reserved)
 {
     if (fdw_reason == DLL_PROCESS_ATTACH)
     {
         wchar_t dll_filename[MAX_PATH] = {0};
         GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH);
-        auto folder = filesystem::path(dll_filename).parent_path();
+        auto folder = fs::path(dll_filename).parent_path();
 
         setup_logger(folder / "logs" / "ertransmogrify.log");
 
@@ -59,7 +59,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
 
         ertransmogrify::config::load(folder / "ertransmogrify.ini");
 
-        mod_thread = thread([]() {
+        mod_thread = std::thread([]() {
             try
             {
                 modutils::initialize();
@@ -71,11 +71,11 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 ertransmogrify::msg::initialize();
 
                 spdlog::info("Adding transmog VFX...");
-                this_thread::sleep_for(chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::vfx::initialize();
 
                 spdlog::info("Adding transmog shops...");
-                this_thread::sleep_for(chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::shop::initialize();
 
                 if (ertransmogrify::config::patch_grace_talk_script)
@@ -88,15 +88,15 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
                 {
                     spdlog::info("Waiting {}ms to enable...",
                                  ertransmogrify::config::initialize_delay);
-                    this_thread::sleep_for(
-                        chrono::milliseconds(ertransmogrify::config::initialize_delay));
+                    std::this_thread::sleep_for(
+                        std::chrono::milliseconds(ertransmogrify::config::initialize_delay));
                 }
 
                 modutils::enable_hooks();
 
                 spdlog::info("Initialized transmog");
             }
-            catch (runtime_error const &e)
+            catch (std::runtime_error const &e)
             {
                 spdlog::error("Error initializing mod: {}", e.what());
                 modutils::deinitialize();
@@ -111,7 +111,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reser
             modutils::deinitialize();
             spdlog::info("Deinitialized transmog");
         }
-        catch (runtime_error const &e)
+        catch (std::runtime_error const &e)
         {
             spdlog::error("Error deinitializing mod: {}", e.what());
             spdlog::shutdown();

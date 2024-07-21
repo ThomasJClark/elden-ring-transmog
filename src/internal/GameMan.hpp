@@ -9,8 +9,8 @@ namespace CS
 {
 struct GameMan
 {
-    std::byte unk1[0xbf0];
-    std::byte ceremony_type;
+    unsigned char unk1[0xbf0];
+    unsigned char ceremony_type;
 };
 }
 

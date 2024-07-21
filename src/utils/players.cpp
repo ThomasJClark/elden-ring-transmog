@@ -4,12 +4,10 @@
 #include "../internal/GameMan.hpp"
 #include "modutils.hpp"
 
-using namespace std;
-
 static CS::WorldChrManImp **world_chr_man_addr = nullptr;
 static CS::GameMan **game_man_addr = nullptr;
 
-typedef int GetInventoryIdFn(CS::EquipInventoryData *, int32_t *item_id);
+typedef int GetInventoryIdFn(CS::EquipInventoryData *, int *item_id);
 static GetInventoryIdFn *get_inventory_id = nullptr;
 
 players::ApplySpEffectFn *players::apply_speffect = nullptr;
@@ -27,7 +25,7 @@ void players::initialize()
     });
     if (!world_chr_man_addr)
     {
-        throw runtime_error("Failed to find WorldChrMan base");
+        throw std::runtime_error("Failed to find WorldChrMan base");
     }
 
     game_man_addr = modutils::scan<CS::GameMan *>({
@@ -37,7 +35,7 @@ void players::initialize()
     });
     if (!game_man_addr)
     {
-        throw runtime_error("Failed to find GameDataMan base");
+        throw std::runtime_error("Failed to find GameDataMan base");
     }
 
     get_inventory_id = modutils::scan<GetInventoryIdFn>({
@@ -52,12 +50,12 @@ void players::initialize()
     });
     if (!get_inventory_id)
     {
-        throw runtime_error("Failed to find GetInventoryId");
+        throw std::runtime_error("Failed to find GetInventoryId");
     }
 
     // Locate both ChrIns::ApplyEffect() and ChrIns::ClearSpEffect() from this snippet that manages
     // speffect 4270 (Disable Grace Warp)
-    auto disable_enable_grace_warp_address = modutils::scan<byte>({
+    auto disable_enable_grace_warp_address = modutils::scan<unsigned char>({
         .aob = "45 33 c0"        // xor r8d, r8d
                "ba ae 10 00 00"  // mov edx, 4270 ; Disable Grace Warp
                "48 8b cf"        // mov rcx, rdi
@@ -72,7 +70,7 @@ void players::initialize()
     });
     if (!disable_enable_grace_warp_address)
     {
-        throw runtime_error("Failed to find ChrIns::ApplyEffect and ChrIns::ClearSpEffect");
+        throw std::runtime_error("Failed to find ChrIns::ApplyEffect and ChrIns::ClearSpEffect");
     }
 
     apply_speffect = modutils::scan<ApplySpEffectFn>({
@@ -99,7 +97,7 @@ void players::initialize()
     });
     if (!spawn_one_shot_sfx_on_chr)
     {
-        throw runtime_error("Failed to find EMEVD::SpawnOneShotSFXOnChr");
+        throw std::runtime_error("Failed to find EMEVD::SpawnOneShotSFXOnChr");
     }
 }
 
@@ -125,7 +123,7 @@ CS::NetPlayer *players::get_net_players()
     return nullptr;
 }
 
-bool players::has_item_in_inventory(CS::PlayerIns *player, int32_t item_id)
+bool players::has_item_in_inventory(CS::PlayerIns *player, int item_id)
 {
     if (player == nullptr)
     {
@@ -136,7 +134,7 @@ bool players::has_item_in_inventory(CS::PlayerIns *player, int32_t item_id)
     return get_inventory_id(&equip_game_data.equip_inventory_data, &item_id) != -1;
 }
 
-bool players::has_speffect(CS::PlayerIns *player, int32_t speffect_id)
+bool players::has_speffect(CS::PlayerIns *player, int speffect_id)
 {
     if (player == nullptr)
     {
@@ -154,12 +152,12 @@ bool players::has_speffect(CS::PlayerIns *player, int32_t speffect_id)
     return false;
 }
 
-byte players::get_ceremony_type()
+unsigned char players::get_ceremony_type()
 {
     auto game_man = *game_man_addr;
     if (game_man == nullptr)
     {
-        return byte(0);
+        return unsigned char(0);
     }
 
     return game_man->ceremony_type;

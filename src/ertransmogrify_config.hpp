@@ -43,6 +43,6 @@ extern bool patch_grace_talk_script;
  * Delay (in milliseconds) before enabling the mod. This can help workaround a Seamless Co-op
  * compatibility issue where Seamless overrides some hooks if it initializes after this mod.
  */
-extern uint32_t initialize_delay;
+extern unsigned int initialize_delay;
 };
 };

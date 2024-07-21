@@ -14,84 +14,84 @@ struct ChrIns;
 
 struct PlayerInventoryEntry
 {
-    uint32_t ga_item_id;
-    int32_t item_id;
-    uint32_t quantity;
-    int32_t display_id;
-    int32_t unk;
+    unsigned int ga_item_id;
+    int item_id;
+    unsigned int quantity;
+    int display_id;
+    int unk;
 };
 
 struct EquipInventoryData
 {
     void **vftable;
-    std::byte unk1[0x8];
+    unsigned char unk1[0x8];
     PlayerInventoryEntry *entries1;
-    uint32_t count_info;
-    int32_t start_index;
-    std::byte unk2[0x8];
-    int32_t todo1;
-    std::byte unk3[0x14];
+    unsigned int count_info;
+    int start_index;
+    unsigned char unk2[0x8];
+    int todo1;
+    unsigned char unk3[0x14];
     PlayerInventoryEntry *entries2; // I think this only includes stackable items? idk
-    std::byte unk4[0x8];
+    unsigned char unk4[0x8];
     PlayerInventoryEntry *key_items; // idk??? why are there three entries lists?
-    std::byte unk5[0x28];
-    uint32_t length;
-    uint32_t todo2;
-    std::byte unk6[0x1a];
+    unsigned char unk5[0x28];
+    unsigned int length;
+    unsigned int todo2;
+    unsigned char unk6[0x1a];
 };
 
 struct ChrAsm
 {
     void **vftable;
-    std::byte unk1[0x74];
-    int32_t left_weapon_id1;
-    int32_t right_weapon_id1;
-    int32_t left_weapon_id2;
-    int32_t right_weapon_id2;
-    int32_t left_weapon_id3;
-    int32_t right_weapon_id3;
-    int32_t arrow_id1;
-    int32_t bolt_id1;
-    int32_t arrow_id2;
-    int32_t bolt_id2;
-    int32_t unk2;
-    int32_t unk3;
-    int32_t head_protector_id;
-    int32_t chest_protector_id;
-    int32_t arms_protector_id;
-    int32_t legs_protector_id;
-    int32_t unk4;
-    int32_t accessory_ids[4];
-    int32_t unused;
+    unsigned char unk1[0x74];
+    int left_weapon_id1;
+    int right_weapon_id1;
+    int left_weapon_id2;
+    int right_weapon_id2;
+    int left_weapon_id3;
+    int right_weapon_id3;
+    int arrow_id1;
+    int bolt_id1;
+    int arrow_id2;
+    int bolt_id2;
+    int unk2;
+    int unk3;
+    int head_protector_id;
+    int chest_protector_id;
+    int arms_protector_id;
+    int legs_protector_id;
+    int unk4;
+    int accessory_ids[4];
+    int unused;
 };
 
 struct EquipGameData
 {
-    std::byte unk1[0x6c];
+    unsigned char unk1[0x6c];
     ChrAsm chr_asm;
-    std::byte unk2[0x18];
+    unsigned char unk2[0x18];
     EquipInventoryData equip_inventory_data;
     EquipMagicData *equip_magic_data;
     EquipItemData *equip_item_data;
-    std::byte unk3[0x218];
+    unsigned char unk3[0x218];
 };
 
 struct PlayerGameData
 {
-    std::byte unk1[0x9c];
+    unsigned char unk1[0x9c];
     wchar_t *name;
-    std::byte unk2[0x20c];
+    unsigned char unk2[0x20c];
     EquipGameData equip_game_data;
-    std::byte unk3[0x360];
+    unsigned char unk3[0x360];
 };
 
 struct SpEffectEntry
 {
     SpEffectParam *param;
-    int32_t id;
-    std::byte unk1[0x24];
+    int id;
+    unsigned char unk1[0x24];
     SpEffectEntry *next;
-    std::byte unk2[0x8c];
+    unsigned char unk2[0x8c];
 };
 
 struct SpEffectList
@@ -102,31 +102,31 @@ struct SpEffectList
 
 struct ChrIns
 {
-    std::byte unk1[0x6C];
-    std::byte team_type;
-    std::byte unk2[0x10b];
+    unsigned char unk1[0x6C];
+    unsigned char team_type;
+    unsigned char unk2[0x10b];
     SpEffectList *speffects;
-    std::byte unk3[0x3f0];
+    unsigned char unk3[0x3f0];
 };
 
 struct PlayerIns : ChrIns
 {
-    std::byte unk3[0x10];
+    unsigned char unk3[0x10];
     PlayerGameData *player_game_data;
-    std::byte unk4[0x1b8];
+    unsigned char unk4[0x1b8];
 };
 
 struct NetPlayer
 {
     PlayerIns *player;
-    std::byte unk[0x8];
+    unsigned char unk[0x8];
 };
 
 struct WorldChrManImp
 {
-    std::byte unk1[0x10EF8];
+    unsigned char unk1[0x10EF8];
     NetPlayer *net_players;
-    std::byte unk2[0xd608];
+    unsigned char unk2[0xd608];
     PlayerIns *main_player;
 };
 }

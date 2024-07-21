@@ -12,12 +12,11 @@
 #include "utils/params.hpp"
 #include "utils/players.hpp"
 
-using namespace std;
 using namespace ertransmogrify;
 
-static constexpr uint16_t invisible_icon_id = 3142;
+static constexpr unsigned short invisible_icon_id = 3142;
 
-static const unordered_set<uint64_t> exluded_protector_ids = {
+static const std::unordered_set<unsigned long long> exluded_protector_ids = {
     // Skip Grass Hair Ornament, which is a cut helmet that's missing an icon
     920000,
 
@@ -25,42 +24,43 @@ static const unordered_set<uint64_t> exluded_protector_ids = {
     // have a model
     955000, 955100, 955200, 955300, 956100};
 
-const map<uint64_t, uint64_t> shop::dlc_transformation_goods_by_protector_id = {
-    {5040100, 2002010}, // Rock Heart (chest, includes full body)
-    {5040200, 2002010}, // Rock Heart (arms, invisible)
-    {5040300, 2002010}, // Rock Heart (legs, invisible)
-    {5050100, 2002020}, // Priestess Heart (chest, includes full body)
-    {5050200, 2002020}, // Priestess Heart (arms, invisible)
-    {5050300, 2002020}, // Priestess Heart (legs, invisible)
-    {5170100, 2002030}, // Lamenter's Mask (chest, includes full body)
-    {5170200, 2002030}, // Lamenter's Mask (arms, invisible)
-    {5170300, 2002030}, // Lamenter's Mask (legs, invisible)
+const std::map<unsigned long long, unsigned long long>
+    shop::dlc_transformation_goods_by_protector_id = {
+        {5040100, 2002010}, // Rock Heart (chest, includes full body)
+        {5040200, 2002010}, // Rock Heart (arms, invisible)
+        {5040300, 2002010}, // Rock Heart (legs, invisible)
+        {5050100, 2002020}, // Priestess Heart (chest, includes full body)
+        {5050200, 2002020}, // Priestess Heart (arms, invisible)
+        {5050300, 2002020}, // Priestess Heart (legs, invisible)
+        {5170100, 2002030}, // Lamenter's Mask (chest, includes full body)
+        {5170200, 2002030}, // Lamenter's Mask (arms, invisible)
+        {5170300, 2002030}, // Lamenter's Mask (legs, invisible)
 };
 
-typedef void AddRemoveItemFn(uint64_t item_type, uint32_t item_id, int32_t quantity);
+typedef void AddRemoveItemFn(unsigned long long item_type, unsigned int item_id, int quantity);
 static AddRemoveItemFn *add_remove_item = nullptr;
 
 #pragma pack(push, 1)
 struct FindShopMenuResult
 {
-    byte shop_type;
-    byte padding[3];
-    int32_t id;
+    unsigned char shop_type;
+    unsigned char padding[3];
+    int id;
     ShopLineupParam *row;
 };
 
 struct FindShopLineupParamResult
 {
-    byte shop_type;
-    byte padding[3];
-    int32_t id;
+    unsigned char shop_type;
+    unsigned char padding[3];
+    int id;
     ShopLineupParam *row;
 };
 
 struct FindEquipParamGoodsResult
 {
-    int32_t id;
-    int32_t unknown;
+    int id;
+    int unknown;
     EquipParamGoods *row;
 };
 #pragma pack(pop)
@@ -72,34 +72,34 @@ static ShopLineupParam transmog_chest_shop_menu = {0};
 static ShopLineupParam transmog_arms_shop_menu = {0};
 static ShopLineupParam transmog_legs_shop_menu = {0};
 
-static unordered_map<int32_t, ShopLineupParam> transmog_shop_lineups;
-static unordered_map<int32_t, EquipParamGoods> transmog_goods;
+static std::unordered_map<int, ShopLineupParam> transmog_shop_lineups;
+static std::unordered_map<int, EquipParamGoods> transmog_goods;
 
-static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result, byte shop_type,
-                                            int32_t begin_id, int32_t end_id);
+static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result, unsigned char shop_type,
+                                            int begin_id, int end_id);
 
-FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_type,
-                                         int32_t begin_id, int32_t end_id)
+FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, unsigned char shop_type,
+                                         int begin_id, int end_id)
 {
     switch (begin_id)
     {
     case shop::transmog_head_shop_menu_id:
-        result->shop_type = (byte)0;
+        result->shop_type = (unsigned char)0;
         result->id = shop::transmog_head_shop_menu_id;
         result->row = &transmog_head_shop_menu;
         break;
     case shop::transmog_chest_shop_menu_id:
-        result->shop_type = (byte)0;
+        result->shop_type = (unsigned char)0;
         result->id = shop::transmog_chest_shop_menu_id;
         result->row = &transmog_chest_shop_menu;
         break;
     case shop::transmog_arms_shop_menu_id:
-        result->shop_type = (byte)0;
+        result->shop_type = (unsigned char)0;
         result->id = shop::transmog_arms_shop_menu_id;
         result->row = &transmog_arms_shop_menu;
         break;
     case shop::transmog_legs_shop_menu_id:
-        result->shop_type = (byte)0;
+        result->shop_type = (unsigned char)0;
         result->id = shop::transmog_legs_shop_menu_id;
         result->row = &transmog_legs_shop_menu;
         break;
@@ -110,12 +110,13 @@ FindShopMenuResult *get_shop_menu_detour(FindShopMenuResult *result, byte shop_t
     return result;
 }
 
-static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, byte shop_type, int32_t id);
+static void (*get_shop_lineup_param)(FindShopLineupParamResult *result, unsigned char shop_type,
+                                     int id);
 
 /**
  * Check if a protector is available for transmogrification
  */
-static inline bool is_protector_unlocked(int32_t goods_id)
+static inline bool is_protector_unlocked(int goods_id)
 {
     // If this config option is true, any armor can be chosen without obtaining it first
     if (config::include_unobtained_armor)
@@ -158,10 +159,10 @@ static inline bool is_protector_unlocked(int32_t goods_id)
     return false;
 }
 
-static void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte shop_type,
-                                         int32_t id)
+static void get_shop_lineup_param_detour(FindShopLineupParamResult *result, unsigned char shop_type,
+                                         int id)
 {
-    if (shop_type == byte(0) && id >= shop::transmog_head_shop_menu_id &&
+    if (shop_type == unsigned char(0) && id >= shop::transmog_head_shop_menu_id &&
         id < shop::transmog_legs_shop_menu_id + shop::transmog_shop_max_size)
     {
         auto entry = transmog_shop_lineups.find(id);
@@ -184,9 +185,9 @@ static void get_shop_lineup_param_detour(FindShopLineupParamResult *result, byte
     get_shop_lineup_param(result, shop_type, id);
 }
 
-static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int32_t id);
+static void (*get_equip_param_goods)(FindEquipParamGoodsResult *result, int id);
 
-void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
+void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int id)
 {
     if (id >= shop::transmog_goods_start_id && id < shop::transmog_goods_end_id)
     {
@@ -203,9 +204,10 @@ void get_equip_param_goods_detour(FindEquipParamGoodsResult *result, int32_t id)
     get_equip_param_goods(result, id);
 }
 
-static void (*open_regular_shop)(void *, uint64_t, uint64_t);
+static void (*open_regular_shop)(void *, unsigned long long, unsigned long long);
 
-static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_id)
+static void open_regular_shop_detour(void *unk, unsigned long long begin_id,
+                                     unsigned long long end_id)
 {
     bool is_transmog_shop = false;
 
@@ -245,9 +247,9 @@ static void open_regular_shop_detour(void *unk, uint64_t begin_id, uint64_t end_
     }
 }
 
-static bool (*add_inventory_from_shop)(int32_t *new_item_id, int32_t quantity) = nullptr;
+static bool (*add_inventory_from_shop)(int *new_item_id, int quantity) = nullptr;
 
-static bool add_inventory_from_shop_detour(int32_t *item_id_address, int32_t quantity)
+static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
 {
     auto result = add_inventory_from_shop(item_id_address, quantity);
 
@@ -348,7 +350,7 @@ void shop::initialize()
     });
     if (add_remove_item == nullptr)
     {
-        throw runtime_error("Couldn't find AddRemoveItem");
+        throw std::runtime_error("Couldn't find AddRemoveItem");
     }
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
@@ -395,8 +397,8 @@ void shop::initialize()
         bool dlc_transformation_protector =
             dlc_transformation_goods_by_protector_id.contains(protector_id);
 
-        uint8_t sort_group_id;
-        uint16_t icon_id;
+        unsigned char sort_group_id;
+        unsigned short icon_id;
         if (invisible_protector)
         {
             sort_group_id = 121;
@@ -411,7 +413,7 @@ void shop::initialize()
         }
         else
         {
-            sort_group_id = (uint8_t)(120 + protector_row.sortGroupId / 10);
+            sort_group_id = (unsigned char)(120 + protector_row.sortGroupId / 10);
             icon_id = protector_row.iconIdM;
         }
 
@@ -471,7 +473,7 @@ void shop::initialize()
             continue;
         }
 
-        int32_t shop_lineup_param_id = -1;
+        int shop_lineup_param_id = -1;
         switch (protector_row.protectorCategory)
         {
         case protector_category_head:
@@ -489,7 +491,7 @@ void shop::initialize()
         }
 
         transmog_shop_lineups[shop_lineup_param_id] = {
-            .equipId = static_cast<int32_t>(goods_id),
+            .equipId = static_cast<int>(goods_id),
             .value = -1,
             .mtrlId = -1,
             .sellQuantity = -1,
@@ -550,7 +552,7 @@ void shop::initialize()
         open_regular_shop_detour, open_regular_shop);
 }
 
-void shop::remove_transmog_goods(int8_t protector_category)
+void shop::remove_transmog_goods(signed char protector_category)
 {
     for (auto [protector_id, protector] :
          params::get_param<EquipParamProtector>(L"EquipParamProtector"))
@@ -563,9 +565,9 @@ void shop::remove_transmog_goods(int8_t protector_category)
     }
 }
 
-void shop::add_transmog_good(uint64_t protector_id)
+void shop::add_transmog_good(unsigned long long protector_id)
 {
     auto goods_id =
-        (int32_t)(shop::item_type_goods_begin + get_transmog_goods_id_for_protector(protector_id));
+        (int)(shop::item_type_goods_begin + get_transmog_goods_id_for_protector(protector_id));
     add_inventory_from_shop(&goods_id, 1);
 }

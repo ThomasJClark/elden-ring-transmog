@@ -7,21 +7,20 @@
 #include "ertransmogrify_shop.hpp"
 #include "utils/modutils.hpp"
 
-using namespace std;
 using namespace ertransmogrify;
 
-static const uint32_t msgbnd_goods_name = 10;
-static const uint32_t msgbnd_protector_name = 12;
-static const uint32_t msgbnd_goods_info = 20;
-static const uint32_t msgbnd_goods_caption = 24;
-static const uint32_t msgbnd_protector_caption = 26;
-static const uint32_t msgbnd_event_text_for_talk = 33;
-static const uint32_t msgbnd_menu_text = 200;
-static const uint32_t msgbnd_line_help = 201;
-static const uint32_t msgbnd_system_message_win64 = 203;
-static const uint32_t msgbnd_dialogues = 204;
-static const uint32_t msgbnd_dlc_protector_name = 313;
-static const uint32_t msgbnd_dlc_goods_name = 319;
+static const unsigned int msgbnd_goods_name = 10;
+static const unsigned int msgbnd_protector_name = 12;
+static const unsigned int msgbnd_goods_info = 20;
+static const unsigned int msgbnd_goods_caption = 24;
+static const unsigned int msgbnd_protector_caption = 26;
+static const unsigned int msgbnd_event_text_for_talk = 33;
+static const unsigned int msgbnd_menu_text = 200;
+static const unsigned int msgbnd_line_help = 201;
+static const unsigned int msgbnd_system_message_win64 = 203;
+static const unsigned int msgbnd_dialogues = 204;
+static const unsigned int msgbnd_dlc_protector_name = 313;
+static const unsigned int msgbnd_dlc_goods_name = 319;
 
 struct ISteamApps;
 extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
@@ -33,7 +32,7 @@ extern "C" __declspec(dllimport) const
  *
  * https://partner.steamgames.com/doc/api/ISteamApps#GetCurrentGameLanguage
  */
-static string get_steam_language()
+static std::string get_steam_language()
 {
     auto steam_api = SteamAPI_SteamApps_v008();
     auto steam_language = SteamAPI_ISteamApps_GetCurrentGameLanguage(steam_api);
@@ -55,15 +54,15 @@ static msg::Messages transmog_messages;
  * Set while the transmog menu is open to adjust some of the UI strings, or to -1 while a different
  * shop menu is open
  */
-static int8_t active_transmog_shop_protector_category = -1;
+static signed char active_transmog_shop_protector_category = -1;
 
-static wstring_view get_goods_name(int32_t id);
+static std::wstring_view get_goods_name(int id);
 
-static const wchar_t *(*get_message)(CS::MsgRepository *msg_repository, uint32_t unknown,
-                                     uint32_t bnd_id, int32_t msg_id);
+static const wchar_t *(*get_message)(CS::MsgRepository *msg_repository, unsigned int unknown,
+                                     unsigned int bnd_id, int msg_id);
 
-const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t unknown,
-                                  uint32_t bnd_id, int32_t msg_id)
+const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, unsigned int unknown,
+                                  unsigned int bnd_id, int msg_id)
 {
     switch (bnd_id)
     {
@@ -180,7 +179,7 @@ const wchar_t *get_message_detour(CS::MsgRepository *msg_repository, uint32_t un
 }
 
 // Set a flag to adjust some UI strings for the transmog shop, but not other shops
-void msg::set_active_transmog_shop_protector_category(int8_t protector_category)
+void msg::set_active_transmog_shop_protector_category(signed char protector_category)
 {
     active_transmog_shop_protector_category = protector_category;
 }
@@ -195,7 +194,7 @@ void msg::initialize()
     spdlog::info("Waiting for messages...");
     while (!(msg_repository = *msg_repository_address))
     {
-        this_thread::sleep_for(chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     // Hook MsgRepositoryImp::LookupEntry() to return message strings used by the mod
@@ -224,7 +223,7 @@ void msg::initialize()
     }
 }
 
-static wstring_view get_goods_name(int32_t id)
+static std::wstring_view get_goods_name(int id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_goods_name, id);
     if (result != nullptr)
@@ -241,19 +240,19 @@ static wstring_view get_goods_name(int32_t id)
     return L"";
 }
 
-const pair<wstring_view, bool> msg::get_protector_data(int32_t id)
+const std::pair<std::wstring_view, bool> msg::get_protector_data(int id)
 {
     auto result = get_message(msg_repository, 0, msgbnd_protector_name, id);
     if (result != nullptr)
     {
-        return pair(result, false);
+        return {result, false};
     }
 
     result = get_message(msg_repository, 0, msgbnd_dlc_protector_name, id);
     if (result != nullptr)
     {
-        return pair(result, true);
+        return {result, true};
     }
 
-    return pair(L"", false);
+    return {L"", false};
 }
