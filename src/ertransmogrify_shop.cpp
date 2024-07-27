@@ -266,24 +266,31 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         return result;
     }
 
+    auto main_player = players::get_main_player();
+
+    long long prev_transmog_protector_id = -1;
+
     // Remove any other items of the same category in the player's inventory, so there's
     // only one item for each slot
     auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
-    auto transmog_protector = equip_param_protector[transmog_protector_id];
+    auto &transmog_protector = equip_param_protector[transmog_protector_id];
     for (auto [protector_id, protector] : equip_param_protector)
     {
         if (protector_id != transmog_protector_id &&
             protector.protectorCategory == transmog_protector.protectorCategory)
         {
             auto goods_id = shop::get_transmog_goods_id_for_protector(protector_id);
-            add_remove_item(shop::item_type_goods_begin, goods_id, -1);
+            if (players::has_item_in_inventory(main_player, shop::item_type_goods_begin + goods_id))
+            {
+                add_remove_item(shop::item_type_goods_begin, goods_id, -1);
+                prev_transmog_protector_id = protector_id;
+            }
         }
     }
 
-    // If a DLC transformation item is chosen, override existing chest/arms/legs transmogs with the
-    // other pieces from the same set. The chest protectors apply the full body model swap, and the
-    // arms/legs protectors mask parts of the player model. The head protector for these sets isn't
-    // used, so we allow the player to transmog their head still.
+    // If any DLC transformation protector is chosen, automatically apply the other protectors in
+    // the set. DLC transformations are made up of sets of 3 linked protectors that must be used
+    // together.
     auto transformation_goods_id_it =
         shop::dlc_transformation_goods_by_protector_id.find(transmog_protector_id);
     if (transformation_goods_id_it != shop::dlc_transformation_goods_by_protector_id.end())
@@ -312,6 +319,21 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
             }
         }
     }
+    // Likewise, if a DLC transformation protector is removed, also remove the other two protectors
+    else if (shop::dlc_transformation_goods_by_protector_id.contains(prev_transmog_protector_id))
+    {
+        spdlog::info("DLC transformation protector {} removed! Removing entire set.",
+                     prev_transmog_protector_id);
+
+        for (auto [protector_id, protector] : equip_param_protector)
+        {
+            if (shop::dlc_transformation_goods_by_protector_id.contains(protector_id))
+            {
+                auto goods_id = shop::get_transmog_goods_id_for_protector(protector_id);
+                add_remove_item(shop::item_type_goods_begin, goods_id, -1);
+            }
+        }
+    }
 
     // Ensure the undo transmog effect isn't applied, so the new item is applied
     players::clear_speffect(players::get_main_player(), vfx::undo_transmog_speffect_id);
@@ -331,9 +353,9 @@ void shop::initialize()
         .relative_offsets = {{3, 7}},
     });
 
-    // The Camera Offset mod memory hacks these instructions, and I'm not sure of a better AOB for
-    // GameDataMan. Because this is only used to set the shop sort order, it's fine if we don't
-    // find it.
+    // The Camera Offset mod memory hacks these instructions, and I'm not sure of a better AOB
+    // for GameDataMan. Because this is only used to set the shop sort order, it's fine if we
+    // don't find it.
     if (game_data_man_addr == nullptr)
     {
         spdlog::warn("Couldn't find GameDataMan, skipping initial sort fix");
@@ -368,8 +390,8 @@ void shop::initialize()
     transmog_legs_shop_menu.menuIconId = 5;
 
     // Hook get_shop_menu() to return the above shop menus. The player can select an appearance
-    // by buying an item from one of these shops for $0, since this is easier than making a custom
-    // menu.
+    // by buying an item from one of these shops for $0, since this is easier than making a
+    // custom menu.
     modutils::hook(
         {
             // Note - the mov instructions are 44 or 45 depending on if this is the Japanese or
@@ -450,8 +472,8 @@ void shop::initialize()
             continue;
         }
 
-        // Skip invalid items, and cut items that don't have a name (these are usually duplicates
-        // used for NPCs)
+        // Skip invalid items, and cut items that don't have a name (these are usually
+        // duplicates used for NPCs)
         auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
         if ((protector_name.empty() || protector_name == msg::cut_item_prefix) &&
             !dlc_transformation_protector)

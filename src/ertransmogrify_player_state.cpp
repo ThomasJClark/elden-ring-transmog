@@ -134,6 +134,9 @@ void PlayerState::refresh_transmog_main_player()
     auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
 
     bool any_changed = false;
+    bool has_chest_protector = false;
+    bool has_arms_protector = false;
+    bool has_legs_protector = false;
 
     // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
     // inventory isn't completely copied over, and it's not possible for this to have changed since
@@ -174,6 +177,19 @@ void PlayerState::refresh_transmog_main_player()
                         spdlog::info("Set main player transmog protector {}", protector_id);
                         any_changed = true;
                     }
+
+                    switch (protector.protectorCategory)
+                    {
+                    case shop::protector_category_chest:
+                        has_chest_protector = true;
+                        break;
+                    case shop::protector_category_arms:
+                        has_arms_protector = true;
+                        break;
+                    case shop::protector_category_legs:
+                        has_legs_protector = true;
+                        break;
+                    }
                 }
             }
         }
@@ -185,24 +201,24 @@ void PlayerState::refresh_transmog_main_player()
 
     // Body/arms/legs have to be combined in one spffect. If transmog is enabled on some but not
     // all of them, default the others to the player's current armor
-    if (is_body_transmog_enabled())
+    if (has_chest_protector || has_arms_protector || has_legs_protector)
     {
         auto &chr_asm = player->player_game_data->equip_game_data.chr_asm;
-        if (chest_protector == nullptr)
+        if (!has_chest_protector)
         {
             chest_protector_id = chr_asm.chest_protector_id;
             spdlog::info("Defaulting main player chest to protector {}", chest_protector_id);
             chest_protector = &equip_param_protector[chest_protector_id];
             shop::add_transmog_good(chr_asm.chest_protector_id);
         }
-        if (arms_protector == nullptr)
+        if (!has_arms_protector)
         {
             arms_protector_id = chr_asm.arms_protector_id;
             spdlog::info("Defaulting main player arms to protector {}", arms_protector_id);
             arms_protector = &equip_param_protector[arms_protector_id];
             shop::add_transmog_good(chr_asm.arms_protector_id);
         }
-        if (legs_protector == nullptr)
+        if (!has_legs_protector)
         {
             legs_protector_id = chr_asm.legs_protector_id;
             spdlog::info("Defaulting main player legs to protector {}", legs_protector_id);
