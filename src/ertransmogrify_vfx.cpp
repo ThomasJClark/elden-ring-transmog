@@ -15,6 +15,9 @@
 
 using namespace ertransmogrify;
 
+unsigned short head_transmog_state_info = 998;
+unsigned short body_transmog_state_info = 999;
+
 #pragma pack(push, 1)
 struct FindReinforceParamProtectorResult
 {
@@ -536,9 +539,11 @@ void vfx::initialize()
         }
 
         state.head_speffect = dummy_speffect_param;
+        state.head_speffect.stateInfo = head_transmog_state_info;
         state.head_speffect.vfxId = state.head_vfx_id;
 
         state.body_speffect = dummy_speffect_param;
+        state.body_speffect.stateInfo = body_transmog_state_info;
         state.body_speffect.vfxId = state.body_vfx_id;
     }
 
