@@ -96,7 +96,7 @@ void PlayerState::refresh_transmog()
     // with transmog already enabled.
     if (previous_refreshed && is_transmog_enabled() != previous_is_transmog_enabled)
     {
-        players::spawn_one_shot_sfx_on_chr(player, 900, transmog_sfx_id, nullptr);
+        players::spawn_one_shot_sfx_on_chr(player, 905, transmog_sfx_id, nullptr);
     };
 
     previous_player = player;
