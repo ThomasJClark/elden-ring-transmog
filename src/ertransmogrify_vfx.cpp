@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <map>
 #include <random>
 #include <spdlog/spdlog.h>
 #include <tga/param_containers.h>
@@ -77,6 +78,11 @@ static std::array<PlayerState, players::net_player_max> player_states;
 
 // The category used by transformation effects in the vanilla game (dragon forms and such)
 static constexpr unsigned char vfx_play_category_transmog = 8;
+
+// Patched versions of VFX params. We don't directly edit these in memory to avoid triggering
+// Seamless Co-op matchingmaking, which doesn't allow connections between players with different
+// params.
+static std::map<unsigned int, SpEffectVfxParam> patched_vfx_params;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, unsigned int id)
 {
@@ -189,13 +195,22 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, unsigned 
 
 static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, unsigned int id)
 {
+    auto patched_param = patched_vfx_params.find(id);
+    if (patched_param != patched_vfx_params.end())
+    {
+        result->id = patched_param->first;
+        result->row = &patched_param->second;
+        result->unknown = 1;
+        return;
+    }
+
     get_speffect_vfx_param(result, id);
     if (result->row != nullptr)
     {
         return;
     }
 
-    // These VFX params are used to apply a dragon head / torso transformation to the player
+    // These VFX params are used to apply the transmog VFX to the player
     for (auto &state : player_states)
     {
         if (state.player == nullptr)
@@ -554,7 +569,7 @@ void vfx::initialize()
         if (vfx.transformProtectorId != -1 && vfx.isFullBodyTransformProtectorId &&
             vfx.playCategory == vfx_play_category_transmog)
         {
-            vfx.playPriority = 100;
+            (patched_vfx_params[vfx_id] = vfx).playPriority = 100;
         }
     }
 }
