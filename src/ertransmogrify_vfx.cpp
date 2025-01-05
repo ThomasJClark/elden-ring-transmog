@@ -1,18 +1,17 @@
-#include <array>
-#include <cstdint>
-#include <map>
-#include <random>
-#include <spdlog/spdlog.h>
-#include <tga/param_containers.h>
-#include <tga/paramdefs.h>
-
+#include "ertransmogrify_vfx.hpp"
 #include "ertransmogrify_config.hpp"
 #include "ertransmogrify_player_state.hpp"
 #include "ertransmogrify_shop.hpp"
-#include "ertransmogrify_vfx.hpp"
-#include "utils/modutils.hpp"
-#include "utils/params.hpp"
 #include "utils/players.hpp"
+
+#include <elden-x/chr/world_chr_man.hpp>
+#include <elden-x/params/param_table.hpp>
+#include <elden-x/utils/modutils.hpp>
+#include <spdlog/spdlog.h>
+
+#include <map>
+#include <random>
+#include <vector>
 
 using namespace ertransmogrify;
 
@@ -23,14 +22,14 @@ unsigned short body_transmog_state_info = 999;
 struct FindReinforceParamProtectorResult
 {
     long long id;
-    ReinforceParamProtector *row;
+    from::paramdef::REINFORCE_PARAM_PROTECTOR_ST *row;
 };
 
 struct FindEquipParamProtectorResult
 {
     int id;
     unsigned char padding1[4];
-    EquipParamProtector *row;
+    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *row;
     int base_id;
     unsigned char padding2[4];
     FindReinforceParamProtectorResult reinforce_param_protector_result;
@@ -39,7 +38,7 @@ struct FindEquipParamProtectorResult
 
 struct FindSpEffectParamResult
 {
-    SpEffectParam *row;
+    from::paramdef::SP_EFFECT_PARAM_ST *row;
     int id;
     unsigned char unknown;
 };
@@ -48,7 +47,7 @@ struct FindSpEffectVfxParamResult
 {
     int id;
     unsigned char padding[4];
-    SpEffectVfxParam *row;
+    from::paramdef::SP_EFFECT_VFX_PARAM_ST *row;
     unsigned short unknown;
 };
 
@@ -56,7 +55,7 @@ struct FindPostureControlParamProResult
 {
     int id;
     unsigned char padding[4];
-    PostureControlParam_Pro *row;
+    from::paramdef::POSTURE_CONTROL_PARAM_PRO_ST *row;
 };
 
 struct InGameStep;
@@ -71,10 +70,10 @@ static FindEquipParamProtectorFn *get_equip_param_protector;
 static FindSpEffectParamFn *get_speffect_param;
 static FindSpEffectVfxParamFn *get_speffect_vfx_param;
 
-static SpEffectParam dummy_speffect_param;
-static ReinforceParamProtector dummy_reinforce_param;
+static from::paramdef::SP_EFFECT_PARAM_ST dummy_speffect_param;
+static from::paramdef::REINFORCE_PARAM_PROTECTOR_ST dummy_reinforce_param;
 
-static std::array<PlayerState, players::net_player_max> player_states;
+static auto player_states = std::array<PlayerState, players::net_player_max>();
 
 // The category used by transformation effects in the vanilla game (dragon forms and such)
 static constexpr unsigned char vfx_play_category_transmog = 8;
@@ -82,7 +81,7 @@ static constexpr unsigned char vfx_play_category_transmog = 8;
 // Patched versions of VFX params. We don't directly edit these in memory to avoid triggering
 // Seamless Co-op matchingmaking, which doesn't allow connections between players with different
 // params.
-static std::map<unsigned int, SpEffectVfxParam> patched_vfx_params;
+static std::map<unsigned int, from::paramdef::SP_EFFECT_VFX_PARAM_ST> patched_vfx_params;
 
 static void get_equip_param_protector_detour(FindEquipParamProtectorResult *result, unsigned int id)
 {
@@ -195,6 +194,7 @@ static void get_speffect_param_detour(FindSpEffectParamResult *result, unsigned 
 
 static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, unsigned int id)
 {
+
     auto patched_param = patched_vfx_params.find(id);
     if (patched_param != patched_vfx_params.end())
     {
@@ -237,7 +237,7 @@ static void get_speffect_vfx_param_detour(FindSpEffectVfxParamResult *result, un
 }
 
 typedef int GetPostureControlInnerFn(FindPostureControlParamProResult *, signed char, int);
-typedef int GetPostureControlFn(CS::ChrAsm **, signed char, int, int);
+typedef int GetPostureControlFn(from::CS::ChrAsm **, signed char, int, int);
 
 static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
 static GetPostureControlFn *get_posture_control = nullptr;
@@ -247,16 +247,17 @@ static GetPostureControlFn *get_posture_control = nullptr;
  * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
  * goofy if this isn't tied to the selected chest transmog.
  */
-static int get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, signed char unk1,
+static int get_posture_control_detour(from::CS::ChrAsm **chr_asm_ptr, signed char unk1,
                                       int posture_control_group, int unk2)
 {
     auto &chr_asm = **chr_asm_ptr;
 
     auto get_player_state = [chr_asm]() {
         // This unused field is used to link Mimic Tears' ChrAsm to a PlayerState
-        if (chr_asm.unused >= 0 && chr_asm.unused < player_states.size())
+        if (chr_asm.gear_param_ids.unused4 >= 0 &&
+            chr_asm.gear_param_ids.unused4 < player_states.size())
         {
-            return player_states.begin() + chr_asm.unused;
+            return player_states.begin() + chr_asm.gear_param_ids.unused4;
         }
 
         // Otherwise, check if this ChrAsm is exactly equal to one of the players. This function
@@ -264,8 +265,8 @@ static int get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, signed char unk1
         for (auto state = player_states.begin(); state != player_states.end(); state++)
         {
             if (state->player != nullptr &&
-                memcmp(&state->player->player_game_data->equip_game_data.chr_asm, &chr_asm,
-                       sizeof(CS::ChrAsm)) == 0)
+                memcmp(&state->player->game_data->equip_game_data.chr_asm, &chr_asm,
+                       sizeof(from::CS::ChrAsm)) == 0)
             {
                 return state;
             }
@@ -282,11 +283,9 @@ static int get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, signed char unk1
     {
         auto posture_control_id =
             100 * posture_control_group + state->chest_protector->postureControlId;
-        auto posture_control_param =
-            params::get_param<PostureControlParam_Pro>(L"PostureControlParam_Pro");
         FindPostureControlParamProResult posture_control_result = {
             .id = posture_control_id,
-            .row = &posture_control_param[posture_control_id],
+            .row = &from::param::PostureControlParam_Pro[posture_control_id].first,
         };
 
         return get_posture_control_inner(&posture_control_result, unk1, unk2);
@@ -295,13 +294,14 @@ static int get_posture_control_detour(CS::ChrAsm **chr_asm_ptr, signed char unk1
     return get_posture_control(chr_asm_ptr, unk1, posture_control_group, unk2);
 }
 
-static void (*copy_player_character_data)(CS::PlayerIns *, CS::PlayerIns *) = nullptr;
+static void (*copy_player_character_data)(from::CS::PlayerIns *, from::CS::PlayerIns *) = nullptr;
 
 /**
  * When a player character is copied onto an NPC (Mimic Tear), apply the relevant transmog VFX to
  * the NPC
  */
-static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerIns *source)
+static void copy_player_character_data_detour(from::CS::PlayerIns *target,
+                                              from::CS::PlayerIns *source)
 {
     copy_player_character_data(target, source);
 
@@ -325,7 +325,8 @@ static void copy_player_character_data_detour(CS::PlayerIns *target, CS::PlayerI
             // Store a value in this unused field in order to link this Mimic Tear's ChrAsm to the
             // player. The posture adjustment function, which doesn't have access to the PlayerIns
             // object, checks this to associate the Mimic Tear with a PlayerState.
-            target->player_game_data->equip_game_data.chr_asm.unused = i;
+            auto &chr_asm = target->game_data->equip_game_data.chr_asm;
+            chr_asm.gear_param_ids.unused4 = i;
         }
     }
 }
@@ -342,21 +343,22 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 {
     if (update_count++ % update_interval == 0)
     {
-        auto main_player = players::get_main_player();
-        auto net_players = players::get_net_players();
+        auto world_chr_man = from::CS::WorldChrManImp::instance();
+
+        auto main_player = world_chr_man->main_player;
+        auto net_players = world_chr_man->player_chr_set;
 
         auto &main_player_state = player_states[0];
         main_player_state.player = main_player;
         main_player_state.refresh_transmog();
 
-        if (main_player != nullptr && net_players != nullptr)
+        if (main_player != nullptr)
         {
             for (int i = 1; i < players::net_player_max; i++)
             {
                 auto &state = player_states[i];
-                auto player = net_players == nullptr ? nullptr : net_players[i].player;
                 auto prev_player = state.player;
-                state.player = player;
+                state.player = net_players.at(i);
                 state.refresh_transmog();
 
                 if (prev_player == nullptr && state.player != nullptr)
@@ -486,12 +488,11 @@ void vfx::initialize()
                    in_game_stay_step_load_finish);
 
     // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
-    dummy_reinforce_param =
-        params::get_param<ReinforceParamProtector>(L"ReinforceParamProtector")[0];
+    dummy_reinforce_param = from::param::ReinforceParamProtector[0].first;
 
     // Initialize the speffects from speffect 2 (basically a no-op effect), overiding the VFX and
     // a few other properties
-    dummy_speffect_param = params::get_param<SpEffectParam>(L"SpEffectParam")[2];
+    dummy_speffect_param = from::param::SpEffectParam[2].first;
     dummy_speffect_param.effectEndurance = -1;
     dummy_speffect_param.effectTargetSelf = true;
     dummy_speffect_param.effectTargetFriend = true;
@@ -515,6 +516,9 @@ void vfx::initialize()
 
         state.clear_transmog_protectors();
 
+        memset(&state.head_vfx, 0, sizeof(state.head_vfx));
+        memset(&state.body_vfx, 0, sizeof(state.body_vfx));
+
         // Add two VFX for transforming the player's head and the rest of their body into the above
         // armor set.
         state.head_vfx_id = transmog_head_base_vfx_id + i;
@@ -530,8 +534,8 @@ void vfx::initialize()
         state.body_vfx.isFullBodyTransformProtectorId = true;
         state.body_vfx.isVisibleDeadChr = true;
         state.body_vfx.materialParamId = -1;
-        state.head_vfx.playCategory = vfx_play_category_transmog;
-        state.head_vfx.playPriority = 1;
+        state.body_vfx.playCategory = vfx_play_category_transmog;
+        state.body_vfx.playPriority = 1;
 
         // Add two SpEffects that enable the above VFX
         if (i == 0)
@@ -544,7 +548,6 @@ void vfx::initialize()
                 transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
 
             state.set_vfx_speffect_ids(speffect_id_dist(rng));
-            spdlog::info("SpEffect IDs = {} {}", state.head_speffect_id, state.body_speffect_id);
         }
         else
         {
@@ -564,7 +567,7 @@ void vfx::initialize()
 
     // Decrease the priority of DLC transformation effects, so transmog can be used to override
     // them
-    for (auto [vfx_id, vfx] : params::get_param<SpEffectVfxParam>(L"SpEffectVfxParam"))
+    for (auto [vfx_id, vfx] : from::param::SpEffectVfxParam)
     {
         if (vfx.transformProtectorId != -1 && vfx.isFullBodyTransformProtectorId &&
             vfx.playCategory == vfx_play_category_transmog)

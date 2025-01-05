@@ -1,10 +1,11 @@
 #pragma once
 
-#include <cstdint>
-#include <tga/paramdefs.h>
-
 #include "ertransmogrify_shop.hpp"
-#include "internal/WorldChrMan.hpp"
+
+#include <elden-x/chr/player.hpp>
+#include <elden-x/paramdef/EQUIP_PARAM_PROTECTOR_ST.hpp>
+#include <elden-x/paramdef/SP_EFFECT_PARAM_ST.hpp>
+#include <elden-x/paramdef/SP_EFFECT_VFX_PARAM_ST.hpp>
 
 namespace ertransmogrify
 {
@@ -12,33 +13,33 @@ namespace ertransmogrify
 class PlayerState
 {
   public:
-    CS::PlayerIns *player;
-    CS::PlayerIns *previous_player;
+    from::CS::PlayerIns *player;
+    from::CS::PlayerIns *previous_player;
     bool previous_refreshed;
 
     long long head_speffect_id;
-    SpEffectParam head_speffect;
+    from::paramdef::SP_EFFECT_PARAM_ST head_speffect;
 
     long long body_speffect_id;
-    SpEffectParam body_speffect;
+    from::paramdef::SP_EFFECT_PARAM_ST body_speffect;
 
     long long head_vfx_id;
-    SpEffectVfxParam head_vfx;
+    from::paramdef::SP_EFFECT_VFX_PARAM_ST head_vfx;
 
     long long body_vfx_id;
-    SpEffectVfxParam body_vfx;
+    from::paramdef::SP_EFFECT_VFX_PARAM_ST body_vfx;
 
     long long head_protector_id;
-    EquipParamProtector *head_protector;
+    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *head_protector;
 
     long long chest_protector_id;
-    EquipParamProtector *chest_protector;
+    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *chest_protector;
 
     long long arms_protector_id;
-    EquipParamProtector *arms_protector;
+    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *arms_protector;
 
     long long legs_protector_id;
-    EquipParamProtector *legs_protector;
+    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *legs_protector;
 
     long long set_id;
     long long set_alt_id;
@@ -99,7 +100,8 @@ class PlayerState
         legs_protector = nullptr;
     }
 
-    inline bool set_transmog_protector(long long protector_id, EquipParamProtector &protector)
+    inline bool set_transmog_protector(long long protector_id,
+                                       from::paramdef::EQUIP_PARAM_PROTECTOR_ST &protector)
     {
         switch (protector.protectorCategory)
         {

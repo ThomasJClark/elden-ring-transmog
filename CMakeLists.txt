@@ -11,22 +11,6 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 include(FetchContent)
 
-FetchContent_Declare(minhook
-  GIT_REPOSITORY        https://github.com/TsudaKageyu/minhook.git
-  GIT_TAG               f5485b8454544c2f034c78f8f127c1d03dea3636)
-
-FetchContent_Declare(ertga
-  GIT_REPOSITORY        https://github.com/The-Grand-Archives/Elden-Ring-CT-TGA.git
-  GIT_TAG               v1.7.1
-  CONFIGURE_COMMAND     ""
-  BUILD_COMMAND         "")
-
-FetchContent_Declare(pattern16
-  GIT_REPOSITORY        https://github.com/Dasaav-dsv/Pattern16.git
-  GIT_TAG               728eac543cee7e7bf6fda445d7db06e3dc8a61d0
-  CONFIGURE_COMMAND     ""
-  BUILD_COMMAND         "")
-
 FetchContent_Declare(mini
   GIT_REPOSITORY        https://github.com/metayeti/mINI.git
   GIT_TAG               0.9.15
@@ -46,19 +30,15 @@ FetchContent_Declare(steamworks-sdk
   CONFIGURE_COMMAND     ""
   BUILD_COMMAND         "")
 
+FetchContent_Declare(elden-x
+  GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
+  GIT_TAG               b69c39ccc32bfb5fb2c6ff242c4aa8c44fbadbba)
+
 FetchContent_MakeAvailable(
-  minhook
-  ertga
-  pattern16
   mini
   spdlog
-  steamworks-sdk)
-
-add_library(ertga INTERFACE)
-target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
-
-add_library(pattern16 INTERFACE)
-target_include_directories(pattern16 INTERFACE ${pattern16_SOURCE_DIR}/include)
+  steamworks-sdk
+  elden-x)
 
 add_library(mini INTERFACE)
 target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
@@ -74,30 +54,13 @@ add_library(
   ${PROJECT_NAME} SHARED
   src/dllmain.cpp
   src/ertransmogrify_config.cpp
-  src/ertransmogrify_config.hpp
   src/ertransmogrify_messages_by_lang.cpp
   src/ertransmogrify_messages.cpp
-  src/ertransmogrify_messages.hpp
   src/ertransmogrify_player_state.cpp
-  src/ertransmogrify_player_state.hpp
   src/ertransmogrify_shop.cpp
-  src/ertransmogrify_shop.hpp
-  src/ertransmogrify_talkscript_states.hpp
   src/ertransmogrify_talkscript.cpp
-  src/ertransmogrify_talkscript.hpp
   src/ertransmogrify_vfx.cpp
-  src/ertransmogrify_vfx.hpp
-  src/internal/EzState.hpp
-  src/internal/GameDataMan.hpp
-  src/internal/GameMan.hpp
-  src/internal/List.hpp
-  src/internal/WorldChrMan.hpp
-  src/utils/modutils.cpp
-  src/utils/modutils.hpp
-  src/utils/params.cpp
-  src/utils/params.hpp
-  src/utils/players.cpp
-  src/utils/players.hpp)
+  src/utils/players.cpp)
 
 add_definitions(-DPROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 
@@ -111,9 +74,7 @@ add_custom_command(
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
-  minhook
-  ertga
-  pattern16
   mini
   spdlog
-  steamworks-sdk)
+  steamworks-sdk
+  elden-x)

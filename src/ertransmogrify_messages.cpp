@@ -1,13 +1,13 @@
+#include "ertransmogrify_messages.hpp"
+#include "ertransmogrify_shop.hpp"
+
+#include <elden-x/utils/modutils.hpp>
+#include <spdlog/spdlog.h>
 #include <steam/isteamapps.h>
 
 #include <chrono>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <thread>
-
-#include "ertransmogrify_messages.hpp"
-#include "ertransmogrify_shop.hpp"
-#include "utils/modutils.hpp"
 
 using namespace ertransmogrify;
 

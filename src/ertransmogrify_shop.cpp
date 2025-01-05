@@ -1,16 +1,18 @@
-#include <cstdint>
-#include <tga/paramdefs.h>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "ertransmogrify_shop.hpp"
 #include "ertransmogrify_config.hpp"
 #include "ertransmogrify_messages.hpp"
-#include "ertransmogrify_shop.hpp"
 #include "ertransmogrify_vfx.hpp"
-#include "internal/GameDataMan.hpp"
-#include "utils/modutils.hpp"
-#include "utils/params.hpp"
 #include "utils/players.hpp"
+
+#include <elden-x/chr/world_chr_man.hpp>
+#include <elden-x/gamedata/game_data_man.hpp>
+#include <elden-x/params/param_table.hpp>
+#include <elden-x/utils/modutils.hpp>
+
+#include <spdlog/spdlog.h>
+
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace ertransmogrify;
 
@@ -46,7 +48,7 @@ struct FindShopMenuResult
     unsigned char shop_type;
     unsigned char padding[3];
     int id;
-    ShopLineupParam *row;
+    from::paramdef::SHOP_LINEUP_PARAM *row;
 };
 
 struct FindShopLineupParamResult
@@ -54,26 +56,24 @@ struct FindShopLineupParamResult
     unsigned char shop_type;
     unsigned char padding[3];
     int id;
-    ShopLineupParam *row;
+    from::paramdef::SHOP_LINEUP_PARAM *row;
 };
 
 struct FindEquipParamGoodsResult
 {
     int id;
     int unknown;
-    EquipParamGoods *row;
+    from::paramdef::EQUIP_PARAM_GOODS_ST *row;
 };
 #pragma pack(pop)
 
-static CS::GameDataMan **game_data_man_addr;
+static from::paramdef::SHOP_LINEUP_PARAM transmog_head_shop_menu = {0};
+static from::paramdef::SHOP_LINEUP_PARAM transmog_chest_shop_menu = {0};
+static from::paramdef::SHOP_LINEUP_PARAM transmog_arms_shop_menu = {0};
+static from::paramdef::SHOP_LINEUP_PARAM transmog_legs_shop_menu = {0};
 
-static ShopLineupParam transmog_head_shop_menu = {0};
-static ShopLineupParam transmog_chest_shop_menu = {0};
-static ShopLineupParam transmog_arms_shop_menu = {0};
-static ShopLineupParam transmog_legs_shop_menu = {0};
-
-static std::unordered_map<int, ShopLineupParam> transmog_shop_lineups;
-static std::unordered_map<int, EquipParamGoods> transmog_goods;
+static std::unordered_map<int, from::paramdef::SHOP_LINEUP_PARAM> transmog_shop_lineups;
+static std::unordered_map<int, from::paramdef::EQUIP_PARAM_GOODS_ST> transmog_goods;
 
 static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result, unsigned char shop_type,
                                             int begin_id, int end_id);
@@ -124,7 +124,7 @@ static inline bool is_protector_unlocked(int goods_id)
         return true;
     }
 
-    auto main_player = players::get_main_player();
+    auto main_player = from::CS::WorldChrManImp::instance()->main_player;
 
     // If the player already chose a transmog, show it even if it's not unlocked. This can happen
     // if they discard the armor piece or change their include_unobtained_armor setting and restart
@@ -236,13 +236,13 @@ static void open_regular_shop_detour(void *unk, unsigned long long begin_id,
     open_regular_shop(unk, begin_id, end_id);
 
     // Override the default sort type for the transmog shop to sort by item type
-    if (is_transmog_shop && game_data_man_addr != nullptr)
+    if (is_transmog_shop)
     {
-        auto game_data_man = *game_data_man_addr;
-        if (game_data_man != nullptr)
+        auto game_data_man = from::CS::GameDataMan::instance();
+        if (game_data_man)
         {
-            game_data_man->menu_system_save_load->sorts[sort_index_all_items] =
-                menu_sort::item_type_ascending;
+            game_data_man->menu_system_save_load->sorts[from::sort_index_all_items] =
+                from::menu_sort::item_type_ascending;
         }
     }
 }
@@ -266,15 +266,14 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         return result;
     }
 
-    auto main_player = players::get_main_player();
+    auto main_player = from::CS::WorldChrManImp::instance()->main_player;
 
     long long prev_transmog_protector_id = -1;
 
     // Remove any other items of the same category in the player's inventory, so there's
     // only one item for each slot
-    auto equip_param_protector = params::get_param<EquipParamProtector>(L"EquipParamProtector");
-    auto &transmog_protector = equip_param_protector[transmog_protector_id];
-    for (auto [protector_id, protector] : equip_param_protector)
+    auto &transmog_protector = from::param::EquipParamProtector[transmog_protector_id].first;
+    for (auto [protector_id, protector] : from::param::EquipParamProtector)
     {
         if (protector_id != transmog_protector_id &&
             protector.protectorCategory == transmog_protector.protectorCategory)
@@ -295,7 +294,7 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         shop::dlc_transformation_goods_by_protector_id.find(transmog_protector_id);
     if (transformation_goods_id_it != shop::dlc_transformation_goods_by_protector_id.end())
     {
-        for (auto [protector_id, protector] : equip_param_protector)
+        for (auto [protector_id, protector] : from::param::EquipParamProtector)
         {
             if (protector.protectorCategory != shop::protector_category_head &&
                 protector.protectorCategory != transmog_protector.protectorCategory)
@@ -325,7 +324,7 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         spdlog::info("DLC transformation protector {} removed! Removing entire set.",
                      prev_transmog_protector_id);
 
-        for (auto [protector_id, protector] : equip_param_protector)
+        for (auto [protector_id, protector] : from::param::EquipParamProtector)
         {
             if (shop::dlc_transformation_goods_by_protector_id.contains(protector_id))
             {
@@ -336,31 +335,13 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
     }
 
     // Ensure the undo transmog effect isn't applied, so the new item is applied
-    players::clear_speffect(players::get_main_player(), vfx::undo_transmog_speffect_id);
+    players::clear_speffect(main_player, vfx::undo_transmog_speffect_id);
 
     return result;
 }
 
 void shop::initialize()
 {
-    game_data_man_addr = modutils::scan<CS::GameDataMan *>({
-        .aob = "48 8B 05 ?? ?? ?? ??" // mov rax, [GameDataMan]
-               "48 85 C0"             // test rax, rax
-               "74 05"                // je 10
-               "48 8B 40 58"          // move rax, [rax + 0x58]
-               "C3"                   // ret
-               "C3",                  // ret
-        .relative_offsets = {{3, 7}},
-    });
-
-    // The Camera Offset mod memory hacks these instructions, and I'm not sure of a better AOB
-    // for GameDataMan. Because this is only used to set the shop sort order, it's fine if we
-    // don't find it.
-    if (game_data_man_addr == nullptr)
-    {
-        spdlog::warn("Couldn't find GameDataMan, skipping initial sort fix");
-    }
-
     add_remove_item = modutils::scan<AddRemoveItemFn>({
         .aob = "8b 99 90 01 00 00" // mov ebx, [rcx + 0x190] ; param->hostModeCostItemId
                "41 83 c8 ff"       // or r8d, -1
@@ -407,11 +388,8 @@ void shop::initialize()
         },
         get_shop_menu_detour, get_shop_menu);
 
-    auto equip_param_goods = params::get_param<EquipParamGoods>(L"EquipParamGoods");
-
     // Add goods and shop entries for every armor piece the player can buy
-    for (auto [protector_id, protector_row] :
-         params::get_param<EquipParamProtector>(L"EquipParamProtector"))
+    for (auto [protector_id, protector_row] : from::param::EquipParamProtector)
     {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
@@ -428,8 +406,9 @@ void shop::initialize()
         }
         else if (dlc_transformation_protector)
         {
-            auto &goods =
-                equip_param_goods[dlc_transformation_goods_by_protector_id.at(protector_id)];
+            auto &goods = from::param::EquipParamGoods[dlc_transformation_goods_by_protector_id.at(
+                                                           protector_id)]
+                              .first;
             sort_group_id = 150;
             icon_id = goods.iconId;
         }
@@ -440,31 +419,12 @@ void shop::initialize()
         }
 
         transmog_goods[goods_id] = {
-            .refId_default = -1,
-            .sfxVariationId = -1,
-            .weight = 1,
-            .replaceItemId = -1,
             .sortId = protector_row.sortId,
-            .appearanceReplaceItemId = -1,
-            .yesNoDialogMessageId = -1,
-            .potGroupId = -1,
             .iconId = icon_id,
-            .compTrophySedId = -1,
-            .trophySeqId = -1,
             .maxNum = 1,
             .goodsType = 1,
-            .refId_1 = -1,
-            .refVirtualWepId = -1,
-            .castSfxId = -1,
-            .fireSfxId = -1,
-            .effectSfxId = -1,
-            .showLogCondType = 1,
-            .showDialogCondType = 2,
             .sortGroupId = sort_group_id,
-            .isUseNoAttackRegion = 1,
-            .aiUseJudgeId = -1,
-            .reinforceGoodsId = -1,
-            .reinforceMaterialId = -1,
+            .saleValue = 0,
         };
 
         if (exluded_protector_ids.contains(protector_id))
@@ -514,13 +474,7 @@ void shop::initialize()
 
         transmog_shop_lineups[shop_lineup_param_id] = {
             .equipId = static_cast<int>(goods_id),
-            .value = -1,
-            .mtrlId = -1,
-            .sellQuantity = -1,
             .equipType = 3,
-            .setNum = 1,
-            .iconId = -1,
-            .nameMsgId = -1,
         };
     }
 
@@ -576,8 +530,7 @@ void shop::initialize()
 
 void shop::remove_transmog_goods(signed char protector_category)
 {
-    for (auto [protector_id, protector] :
-         params::get_param<EquipParamProtector>(L"EquipParamProtector"))
+    for (auto [protector_id, protector] : from::param::EquipParamProtector)
     {
         if (protector_category == -1 || protector.protectorCategory == protector_category)
         {

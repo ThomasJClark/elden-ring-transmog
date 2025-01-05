@@ -1,14 +1,13 @@
-#include <cstdint>
-#include <spdlog/spdlog.h>
-
+#include "ertransmogrify_talkscript.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
-#include "ertransmogrify_talkscript.hpp"
 #include "ertransmogrify_talkscript_states.hpp"
 #include "ertransmogrify_vfx.hpp"
 #include "internal/EzState.hpp"
-#include "utils/modutils.hpp"
-#include "utils/params.hpp"
+
+#include <elden-x/utils/modutils.hpp>
+
+#include <spdlog/spdlog.h>
 
 using namespace ertransmogrify;
 

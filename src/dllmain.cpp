@@ -1,22 +1,26 @@
 #define WIN32_LEAN_AND_MEAN
-#include <cstdio>
-#include <filesystem>
-#include <memory>
-#include <spdlog/sinks/daily_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
-#include <stdexcept>
-#include <thread>
-#include <windows.h>
 
 #include "ertransmogrify_config.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
 #include "ertransmogrify_talkscript.hpp"
 #include "ertransmogrify_vfx.hpp"
-#include "utils/modutils.hpp"
-#include "utils/params.hpp"
 #include "utils/players.hpp"
+
+#include <elden-x/params/params.hpp>
+#include <elden-x/utils/modutils.hpp>
+
+#include <spdlog/sinks/daily_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+#include <windows.h>
+
+#include <cstdio>
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
+#include <thread>
 
 namespace fs = std::filesystem;
 
@@ -40,6 +44,8 @@ void setup_logger(const fs::path &logs_path)
     logger->set_level(spdlog::level::trace);
 #endif
 
+    logger->flush_on(spdlog::level::trace);
+
     spdlog::set_default_logger(logger);
 }
 
@@ -62,10 +68,11 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
         mod_thread = std::thread([]() {
             try
             {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 modutils::initialize();
-
-                params::initialize();
                 players::initialize();
+
+                from::CS::SoloParamRepository::wait_for_params();
 
                 spdlog::info("Hooking transmog messages...");
                 ertransmogrify::msg::initialize();
