@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28.1)
 
 set(CMAKE_GENERATOR_PLATFORM x64)
 
-project(EldenRingTransmogMod
+project(ertransmogrify
   VERSION   "2.3.8"
   LANGUAGES CXX)
 
@@ -39,7 +39,20 @@ FetchContent_Declare(spdlog
   GIT_REPOSITORY        https://github.com/gabime/spdlog.git
   GIT_TAG               v1.13.0)
 
-FetchContent_MakeAvailable(minhook ertga pattern16 mini spdlog)
+set(SWSDK_VERSION "1.59")
+set(SWSDK_RELEASE "x64")
+FetchContent_Declare(steamworks-sdk
+  URL                   https://github.com/julianxhokaxhiu/SteamworksSDKCI/releases/download/${SWSDK_VERSION}/SteamworksSDK-v${SWSDK_VERSION}.0_${SWSDK_RELEASE}.zip
+  CONFIGURE_COMMAND     ""
+  BUILD_COMMAND         "")
+
+FetchContent_MakeAvailable(
+  minhook
+  ertga
+  pattern16
+  mini
+  spdlog
+  steamworks-sdk)
 
 add_library(ertga INTERFACE)
 target_include_directories(ertga INTERFACE ${ertga_SOURCE_DIR}/resources/include)
@@ -50,13 +63,15 @@ target_include_directories(pattern16 INTERFACE ${pattern16_SOURCE_DIR}/include)
 add_library(mini INTERFACE)
 target_include_directories(mini INTERFACE ${mini_SOURCE_DIR}/src)
 
-add_library(steamapi STATIC IMPORTED GLOBAL)
-set_property(TARGET steamapi APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
-set_target_properties(steamapi PROPERTIES
+add_library(steamworks-sdk STATIC IMPORTED GLOBAL)
+target_include_directories(steamworks-sdk INTERFACE ${steamworks-sdk_SOURCE_DIR}/include)
+set_property(TARGET steamworks-sdk APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+set_target_properties(steamworks-sdk PROPERTIES
         IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG CXX
-        IMPORTED_LOCATION_DEBUG steam_api64.lib)
+        IMPORTED_LOCATION_DEBUG ${steamworks-sdk_SOURCE_DIR}/lib/steam/steam_api64.lib)
 
-add_library(EldenRingTransmogMod SHARED
+add_library(
+  ${PROJECT_NAME} SHARED
   src/dllmain.cpp
   src/ertransmogrify_config.cpp
   src/ertransmogrify_config.hpp
@@ -84,19 +99,21 @@ add_library(EldenRingTransmogMod SHARED
   src/utils/players.cpp
   src/utils/players.hpp)
 
-set_target_properties(EldenRingTransmogMod PROPERTIES OUTPUT_NAME "ertransmogrify")
-
 add_definitions(-DPROJECT_VERSION="${CMAKE_PROJECT_VERSION}")
 
-add_custom_command(TARGET EldenRingTransmogMod POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/ertransmogrify.ini
-  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:EldenRingTransmogMod> ${CMAKE_SOURCE_DIR}/LICENSE.txt
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:${PROJECT_NAME}> ${CMAKE_SOURCE_DIR}/ertransmogrify.ini
+  COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:${PROJECT_NAME}> ${CMAKE_SOURCE_DIR}/LICENSE.txt
   COMMAND_EXPAND_LISTS)
 
-target_link_libraries(EldenRingTransmogMod
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE
   minhook
   ertga
   pattern16
   mini
   spdlog
-  ${CMAKE_SOURCE_DIR}/steam_api64.lib)
+  steamworks-sdk)

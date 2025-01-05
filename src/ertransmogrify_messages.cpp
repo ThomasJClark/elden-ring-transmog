@@ -1,3 +1,5 @@
+#include <steam/isteamapps.h>
+
 #include <chrono>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -21,23 +23,6 @@ static const unsigned int msgbnd_system_message_win64 = 203;
 static const unsigned int msgbnd_dialogues = 204;
 static const unsigned int msgbnd_dlc_protector_name = 313;
 static const unsigned int msgbnd_dlc_goods_name = 319;
-
-struct ISteamApps;
-extern "C" __declspec(dllimport) ISteamApps *__cdecl SteamAPI_SteamApps_v008();
-extern "C" __declspec(dllimport) const
-    char *__cdecl SteamAPI_ISteamApps_GetCurrentGameLanguage(ISteamApps *);
-
-/**
- * Return the player's selected language using the Steamworks SDK
- *
- * https://partner.steamgames.com/doc/api/ISteamApps#GetCurrentGameLanguage
- */
-static std::string get_steam_language()
-{
-    auto steam_api = SteamAPI_SteamApps_v008();
-    auto steam_language = SteamAPI_ISteamApps_GetCurrentGameLanguage(steam_api);
-    return steam_language != nullptr ? steam_language : "";
-}
 
 namespace CS
 {
@@ -207,7 +192,7 @@ void msg::initialize()
         get_message_detour, get_message);
 
     // Pick the messages to use based on the player's selected language for the game in Steam
-    auto language = get_steam_language();
+    std::string language = SteamApps()->GetCurrentGameLanguage();
 
     auto messages_iterator = messages_by_lang.find(language);
     if (messages_iterator == messages_by_lang.end())
