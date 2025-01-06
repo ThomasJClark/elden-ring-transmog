@@ -1,10 +1,11 @@
 #include "ertransmogrify_talkscript.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
-#include "ertransmogrify_talkscript_states.hpp"
 #include "ertransmogrify_vfx.hpp"
-#include "internal/EzState.hpp"
+#include "utils/talkscript_utils.hpp"
 
+#include <elden-x/ezstate/ezstate.hpp>
+#include <elden-x/ezstate/talk_commands.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 #include <spdlog/spdlog.h>
@@ -13,162 +14,182 @@ using namespace ertransmogrify;
 
 namespace
 {
-extern TransmogMenuNextState transmog_menu_next_state;
-extern OpenShopState transmog_head_state;
-extern OpenShopState transmog_chest_state;
-extern OpenShopState transmog_arms_state;
-extern OpenShopState transmog_legs_state;
-extern ApplySpEffectState disable_transmog_state;
+extern talkscript_menu_state transmog_menu_state;
 
-// TalkESD state for the main "Transmogrify armor" menu
-TransmogMenuState transmog_menu_state(69000, &transmog_menu_next_state);
+auto transmog_option =
+    talkscript_menu_option{69, msg::event_text_for_talk_transmog_armor, &transmog_menu_state};
 
-// TalkESD state that advances to the next state based on the menu selection
-TransmogMenuNextState transmog_menu_next_state(69001, &transmog_head_state, &transmog_chest_state,
-                                               &transmog_arms_state, &transmog_legs_state,
-                                               &disable_transmog_state);
+auto transmog_head_menu_state = open_regular_shop_state{
+    shop::transmog_head_shop_menu_id,
+    shop::transmog_head_shop_menu_id + shop::transmog_shop_max_size - 1, &transmog_menu_state};
 
-// TalkESD states to open the menu for each protector category
-OpenShopState transmog_head_state(69002, shop::transmog_head_shop_menu_id,
-                                  shop::transmog_head_shop_menu_id + shop::transmog_shop_max_size -
-                                      1,
-                                  &transmog_menu_state);
+auto transmog_chest_menu_state = open_regular_shop_state{
+    shop::transmog_chest_shop_menu_id,
+    shop::transmog_chest_shop_menu_id + shop::transmog_shop_max_size - 1, &transmog_menu_state};
 
-OpenShopState transmog_chest_state(69003, shop::transmog_chest_shop_menu_id,
-                                   shop::transmog_chest_shop_menu_id +
-                                       shop::transmog_shop_max_size - 1,
-                                   &transmog_menu_state);
+auto transmog_arms_menu_state = open_regular_shop_state{
+    shop::transmog_arms_shop_menu_id,
+    shop::transmog_arms_shop_menu_id + shop::transmog_shop_max_size - 1, &transmog_menu_state};
 
-OpenShopState transmog_arms_state(69004, shop::transmog_arms_shop_menu_id,
-                                  shop::transmog_arms_shop_menu_id + shop::transmog_shop_max_size -
-                                      1,
-                                  &transmog_menu_state);
+auto transmog_legs_menu_state = open_regular_shop_state{
+    shop::transmog_legs_shop_menu_id,
+    shop::transmog_legs_shop_menu_id + shop::transmog_shop_max_size - 1, &transmog_menu_state};
 
-OpenShopState transmog_legs_state(69005, shop::transmog_legs_shop_menu_id,
-                                  shop::transmog_legs_shop_menu_id + shop::transmog_shop_max_size -
-                                      1,
-                                  &transmog_menu_state);
+auto undo_transmog_state =
+    give_speffect_to_player_state{vfx::undo_transmog_speffect_id, &transmog_menu_state};
 
-// TalkESD state that disables transmogrification
-ApplySpEffectState disable_transmog_state(69006, vfx::undo_transmog_speffect_id,
-                                          &transmog_menu_state);
-};
+talkscript_menu_state transmog_menu_state = {{
+    {1, ertransmogrify::msg::event_text_for_talk_transmog_head, &transmog_head_menu_state},
+    {2, ertransmogrify::msg::event_text_for_talk_transmog_chest, &transmog_chest_menu_state},
+    {3, ertransmogrify::msg::event_text_for_talk_transmog_arms, &transmog_arms_menu_state},
+    {4, ertransmogrify::msg::event_text_for_talk_transmog_legs, &transmog_legs_menu_state},
+    {5, ertransmogrify::msg::event_text_for_talk_undo_transmog, &undo_transmog_state},
+    {99, ertransmogrify::msg::event_text_for_talk_cancel, nullptr, true},
+}};
 
-// AddTalkListData(69, "Transmogrify armor", -1)
-static EzState::IntValue transmog_talk_list_index = 69;
-static EzState::IntValue transmog_menu_text_id = msg::event_text_for_talk_transmog_armor;
-static EzState::IntValue unk = -1;
-static EzState::CommandArg transmog_arg_list[] = {transmog_talk_list_index, transmog_menu_text_id,
-                                                  unk};
-static EzState::Call main_menu_transmog_command(EzState::Commands::add_talk_list_data,
-                                                transmog_arg_list);
-
-// GetTalkListEntryResult() == 69
-static EzState::Transition main_menu_transmog_transition(&transmog_menu_state,
-                                                         "\x57\x84\x82\x45\x00\x00\x00\x95\xa1");
-
-static EzState::Call patched_commands[100];
-static EzState::Transition *patched_transitions[100];
+}
+static auto patched_events = std::array<from::ezstate::event, 100>{};
+static auto patched_transitions = std::array<from::ezstate::transition *, 100>{};
 
 /**
- * Return true if the given EzState call is AddTalkListData(??, message_id, ??)
+ * Return true if the given EzState event is AddTalkListData(??, message_id, ??)
  */
-static bool is_add_talk_list_data_call(EzState::Call &call, int message_id)
+static bool is_add_talk_list_data_event(from::ezstate::event &event, int message_id)
 {
-    return call.command == EzState::Commands::add_talk_list_data && call.args.count == 3 &&
-           *reinterpret_cast<const int *>(call.args[1].data + 1) == message_id;
+    return event.command == from::talk_command::add_talk_list_data && event.args.size() == 3 &&
+           get_ezstate_int_value(event.args[1]) == message_id;
+}
+
+/**
+ * Return true if the given EzState event is the site of grace "Sort chest" menu option
+ */
+static bool is_sort_chest_event(from::ezstate::event &event)
+{
+    if (event.command == from::talk_command::add_talk_list_data)
+    {
+        auto message_id = get_ezstate_int_value(event.args[1]);
+        return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
+    }
+
+    if (event.command == from::talk_command::add_talk_list_data_if ||
+        event.command == from::talk_command::add_talk_list_data_alt)
+    {
+        auto message_id = get_ezstate_int_value(event.args[2]);
+        return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
+    }
+
+    return false;
+}
+
+static bool is_grace_state_group(from::ezstate::state_group *state_group)
+{
+    for (auto &state : state_group->states)
+    {
+        for (auto &event : state.entry_events)
+        {
+            if (is_sort_chest_event(event))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
  * Return true if the given EzState transition goes to a state that opens the storage chest
  */
-static bool is_sort_chest_transition(const EzState::Transition *transition)
+static bool is_sort_chest_transition(const from::ezstate::transition *transition)
 {
     auto target_state = transition->target_state;
-    return target_state != nullptr && target_state->entry_commands.count != 0 &&
-           target_state->entry_commands[0].command == EzState::Commands::open_repository;
+    return target_state && !target_state->entry_events.empty() &&
+           target_state->entry_events[0].command == from::talk_command::open_repository;
 }
 
 /**
  * Patch the site of grace menu to contain a "Transmogrify armor" option
  */
-static void patch_state_group(EzState::StateGroup *state_group)
+static bool patch_state_group(from::ezstate::state_group *state_group)
 {
-    EzState::State *add_menu_state = nullptr;
-    EzState::Call *call_iter = nullptr;
+    from::ezstate::state *add_menu_state = nullptr;
+    from::ezstate::state *menu_transition_state = nullptr;
 
-    EzState::State *menu_transition_state = nullptr;
-    EzState::Transition **transition_iter = nullptr;
+    int event_index = -1;
+    int transition_index = -1;
 
     // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
     // chest.
     for (auto &state : state_group->states)
     {
-        for (auto &call : state.entry_commands)
+        for (int i = 0; i < state.entry_events.size(); i++)
         {
-            if (is_add_talk_list_data_call(call, msg::event_text_for_talk_sort_chest))
+            auto &event = state.entry_events[i];
+            if (is_sort_chest_event(event))
             {
                 add_menu_state = &state;
-                call_iter = &call + 1;
+                event_index = i;
             }
-            else if (is_add_talk_list_data_call(call, msg::event_text_for_talk_transmog_armor))
+            else if (event.command == from::talk_command::add_talk_list_data)
             {
-                spdlog::debug("Not patching state group x{}, already patched",
-                              0x7fffffff - state_group->id);
-                return;
+                auto message_id = get_ezstate_int_value(event.args[1]);
+                if (message_id == ertransmogrify::msg::event_text_for_talk_transmog_armor)
+                {
+                    spdlog::debug("Not patching state group x{}, already patched",
+                                  0x7fffffff - state_group->id);
+                    return false;
+                }
             }
         }
 
-        for (auto &transition : state.transitions)
+        for (int i = 0; i < state.transitions.size(); i++)
         {
-            if (is_sort_chest_transition(transition))
+            if (is_sort_chest_transition(state.transitions[i]))
             {
                 menu_transition_state = &state;
-                transition_iter = &transition + 1;
+                transition_index = i;
+                break;
             }
         }
     }
-    if (add_menu_state == nullptr || menu_transition_state == nullptr)
+
+    if (event_index == -1 || transition_index == -1)
     {
-        return;
+        return false;
     }
 
-    // Add "Transmogrify armor" menu option
-    auto &commands = add_menu_state->entry_commands;
+    spdlog::info("Patching state group x{}", 0x7fffffff - state_group->id);
 
-    int command_index = call_iter - commands.begin();
-    std::copy(commands.begin(), call_iter, patched_commands);
-    std::copy(call_iter, commands.end(), patched_commands + command_index + 1);
-    patched_commands[command_index] = main_menu_transmog_command;
+    // Add an "Apply dyes" menu option
+    auto &events = add_menu_state->entry_events;
+    std::copy(events.begin(), events.end(), patched_events.begin());
+    patched_events[events.size()] = {from::talk_command::add_talk_list_data, transmog_option.args};
+    events = {patched_events.data(), events.size() + 1};
 
-    commands.elements = patched_commands;
-    commands.count++;
-
-    // Add a transition to the "Transmogrify armor" menu
+    // Add a transition to the "Apply dyes" menu
     auto &transitions = menu_transition_state->transitions;
+    std::copy(transitions.begin(), transitions.begin() + transition_index,
+              patched_transitions.begin());
+    std::copy(transitions.begin() + transition_index, transitions.end(),
+              patched_transitions.begin() + transition_index + 1);
+    patched_transitions[transition_index] = &transmog_option.transition;
+    transitions = {patched_transitions.data(), transitions.size() + 1};
 
-    int transition_index = transition_iter - transitions.begin();
-    std::copy(transitions.begin(), transition_iter, patched_transitions);
-    std::copy(transition_iter, transitions.end(), patched_transitions + transition_index + 1);
-    patched_transitions[transition_index] = &main_menu_transmog_transition;
-
-    transitions.elements = patched_transitions;
-    transitions.count++;
-
-    // When closing the transmog menu, return to the main site of grace menu
-    transmog_menu_next_state.set_return_state(state_group->initial_state);
-
-    spdlog::info("Patched state group x{}", 0x7fffffff - state_group->id);
+    return true;
 }
 
-static void (*ezstate_enter_state)(EzState::State *state, EzState::MachineImpl *machine, void *unk);
+static void (*ezstate_enter_state)(from::ezstate::state *state, from::ezstate::machine *machine,
+                                   void *unk);
 
-static void ezstate_enter_state_detour(EzState::State *state, EzState::MachineImpl *machine,
+static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstate::machine *machine,
                                        void *unk)
 {
-    if (state == machine->state_group->initial_state)
+    if (is_grace_state_group(machine->state_group))
     {
-        patch_state_group(machine->state_group);
+        if (state == machine->state_group->initial_state && patch_state_group(machine->state_group))
+        {
+            transmog_menu_state.opts.back().transition.target_state =
+                machine->state_group->initial_state;
+        }
     }
 
     ezstate_enter_state(state, machine, unk);
