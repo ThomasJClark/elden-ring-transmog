@@ -422,7 +422,7 @@ void shop::initialize()
             .sortId = protector_row.sortId,
             .iconId = icon_id,
             .maxNum = 1,
-            .goodsType = 1,
+            .goodsType = 13, // goodsType 13 is hidden from the inventory menu
             .sortGroupId = sort_group_id,
             .saleValue = 0,
         };

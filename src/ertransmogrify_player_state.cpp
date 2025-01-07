@@ -3,7 +3,6 @@
 #include "utils/players.hpp"
 
 #include <elden-x/chr/world_chr_man.hpp>
-#include <elden-x/game_man.hpp>
 #include <elden-x/params/param_table.hpp>
 
 #include <spdlog/spdlog.h>
@@ -139,66 +138,56 @@ void PlayerState::refresh_transmog_main_player()
     bool has_arms_protector = false;
     bool has_legs_protector = false;
 
-    // Skip checking the inventory if the player is in a ceremony (i.e. pseudo-multiplayer), because
-    // inventory isn't completely copied over, and it's not possible for this to have changed since
-    // the last time it was checked.
-    auto game_man = from::CS::GameMan::instance();
-    if (!game_man || game_man->ceremony_type == from::CS::ceremony_type::none)
+    if (player != previous_player)
     {
-        if (player != previous_player)
+        spdlog::info("Loaded main player - clearing previous transmog");
+        clear_transmog_protectors();
+    }
+
+    if (should_clear_transmog())
+    {
+        if (is_transmog_enabled())
         {
-            spdlog::info("Loaded main player - clearing previous transmog");
+            spdlog::info("Main player - undoing transmog");
+            // If the player was given the undo transmog SpEffect, don't set any protector slots
+            // and remove any transmog goods.
             clear_transmog_protectors();
-        }
-
-        if (should_clear_transmog())
-        {
-            if (is_transmog_enabled())
-            {
-                spdlog::info("Main player - undoing transmog");
-                // If the player was given the undo transmog SpEffect, don't set any protector slots
-                // and remove any transmog goods.
-                clear_transmog_protectors();
-                shop::remove_transmog_goods();
-            }
-        }
-        else
-        {
-            // Otherwise, set the protector slots based on the transmog goods in the player's
-            // inventory
-            for (auto [protector_id, protector] : from::param::EquipParamProtector)
-            {
-                int transmog_item_id = shop::item_type_goods_begin +
-                                       shop::get_transmog_goods_id_for_protector(protector_id);
-
-                if (players::has_item_in_inventory(player, transmog_item_id))
-                {
-                    if (set_transmog_protector(protector_id, protector))
-                    {
-                        spdlog::info("Set main player transmog protector {}", protector_id);
-                        any_changed = true;
-                    }
-
-                    switch (protector.protectorCategory)
-                    {
-                    case shop::protector_category_chest:
-                        has_chest_protector = true;
-                        break;
-                    case shop::protector_category_arms:
-                        has_arms_protector = true;
-                        break;
-                    case shop::protector_category_legs:
-                        has_legs_protector = true;
-                        break;
-                    }
-                }
-            }
+            shop::remove_transmog_goods();
         }
     }
     else
     {
-        spdlog::debug("Ceremony is active, skipping transmog update");
+        // Otherwise, set the protector slots based on the transmog goods in the player's
+        // inventory
+        for (auto [protector_id, protector] : from::param::EquipParamProtector)
+        {
+            int transmog_item_id = shop::item_type_goods_begin +
+                                   shop::get_transmog_goods_id_for_protector(protector_id);
+
+            if (players::has_item_in_inventory(player, transmog_item_id))
+            {
+                if (set_transmog_protector(protector_id, protector))
+                {
+                    spdlog::info("Set main player transmog protector {}", protector_id);
+                    any_changed = true;
+                }
+
+                switch (protector.protectorCategory)
+                {
+                case shop::protector_category_chest:
+                    has_chest_protector = true;
+                    break;
+                case shop::protector_category_arms:
+                    has_arms_protector = true;
+                    break;
+                case shop::protector_category_legs:
+                    has_legs_protector = true;
+                    break;
+                }
+            }
+        }
     }
+
     // Body/arms/legs have to be combined in one spffect. If transmog is enabled on some but not
     // all of them, default the others to the player's current armor
     if (has_chest_protector || has_arms_protector || has_legs_protector)
