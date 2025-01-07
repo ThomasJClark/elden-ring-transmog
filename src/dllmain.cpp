@@ -29,10 +29,8 @@ std::thread mod_thread;
 void setup_logger(const fs::path &logs_path)
 {
     auto logger = std::make_shared<spdlog::logger>("transmog");
-    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
     logger->sinks().push_back(
         make_shared<spdlog::sinks::daily_file_sink_st>(logs_path.string(), 0, 0, false, 5));
-    logger->flush_on(spdlog::level::info);
 
 #if _DEBUG
     AllocConsole();
@@ -43,6 +41,10 @@ void setup_logger(const fs::path &logs_path)
     logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);
+    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ [%s:%#] %v");
+#else
+    logger->flush_on(spdlog::level::warn);
+    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
 #endif
 
     spdlog::set_default_logger(logger);
