@@ -134,8 +134,8 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
                 auto message_id = get_ezstate_int_value(event.args[1]);
                 if (message_id == ertransmogrify::msg::event_text_for_talk_transmog_armor)
                 {
-                    spdlog::debug("Not patching state group x{}, already patched",
-                                  0x7fffffff - state_group->id);
+                    SPDLOG_DEBUG("Not patching state group x{}, already patched",
+                                 0x7fffffff - state_group->id);
                     return false;
                 }
             }
@@ -157,7 +157,7 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
         return false;
     }
 
-    spdlog::info("Patching state group x{}", 0x7fffffff - state_group->id);
+    SPDLOG_INFO("Patching state group x{}", 0x7fffffff - state_group->id);
 
     // Add an "Apply dyes" menu option
     auto &events = add_menu_state->entry_events;

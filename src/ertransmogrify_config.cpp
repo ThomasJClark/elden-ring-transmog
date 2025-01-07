@@ -15,7 +15,7 @@ unsigned int config::initialize_delay = 0;
 
 void config::load(const fs::path &ini_path)
 {
-    spdlog::info("Loading config from {}", ini_path.string());
+    SPDLOG_INFO("Loading config from {}", ini_path.string());
 
     mINI::INIFile file(ini_path.string());
     mINI::INIStructure ini;
@@ -42,10 +42,10 @@ void config::load(const fs::path &ini_path)
             initialize_delay = stoi(config["initialize_delay"], nullptr, 10);
     }
 
-    spdlog::info("include_unobtained_armor = {} ", include_unobtained_armor);
-    spdlog::info("include_cut_armor = {} ", include_cut_armor);
-    spdlog::info("include_dlc_armor = {} ", include_dlc_armor);
-    spdlog::info("transmog_affects_posture = {} ", transmog_affects_posture);
-    spdlog::info("patch_grace_talk_script = {} ", patch_grace_talk_script);
-    spdlog::info("initialize_delay = {} ", initialize_delay);
+    SPDLOG_INFO("include_unobtained_armor = {} ", include_unobtained_armor);
+    SPDLOG_INFO("include_cut_armor = {} ", include_cut_armor);
+    SPDLOG_INFO("include_dlc_armor = {} ", include_dlc_armor);
+    SPDLOG_INFO("transmog_affects_posture = {} ", transmog_affects_posture);
+    SPDLOG_INFO("patch_grace_talk_script = {} ", patch_grace_talk_script);
+    SPDLOG_INFO("initialize_delay = {} ", initialize_delay);
 }

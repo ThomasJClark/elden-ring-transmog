@@ -312,13 +312,13 @@ static void copy_player_character_data_detour(from::CS::PlayerIns *target,
         {
             if (state.is_head_transmog_enabled())
             {
-                spdlog::info("Applying head transmog to Mimic Tear");
+                SPDLOG_INFO("Applying head transmog to Mimic Tear");
                 players::apply_speffect(target, state.head_speffect_id, false);
             }
 
             if (state.is_body_transmog_enabled())
             {
-                spdlog::info("Applying body transmog to Mimic Tear");
+                SPDLOG_INFO("Applying body transmog to Mimic Tear");
                 players::apply_speffect(target, state.body_speffect_id, false);
             }
 
@@ -363,7 +363,7 @@ static void in_game_stay_step_load_finish_detour(InGameStep *step)
 
                 if (prev_player == nullptr && state.player != nullptr)
                 {
-                    spdlog::info("Net player joined - forcing refresh of main player transmog");
+                    SPDLOG_INFO("Net player joined - forcing refresh of main player transmog");
                     player_states[0].remove_transmog();
                 }
             }
@@ -470,7 +470,7 @@ void vfx::initialize()
         }
         else
         {
-            spdlog::warn("Couldn't find GetPostureControl(), skipping posture fix");
+            SPDLOG_WARN("Couldn't find GetPostureControl(), skipping posture fix");
         }
     }
 

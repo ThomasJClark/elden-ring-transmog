@@ -307,8 +307,8 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
                         shop::dlc_transformation_goods_by_protector_id.end() &&
                     other_transformation_goods_id_it->second == transformation_goods_id_it->second)
                 {
-                    spdlog::info("DLC transformation protector {} chosen, also adding {}",
-                                 transmog_protector_id, protector_id);
+                    SPDLOG_INFO("DLC transformation protector {} chosen, also adding {}",
+                                transmog_protector_id, protector_id);
                     add_remove_item(shop::item_type_goods_begin, goods_id, +1);
                 }
                 else
@@ -321,8 +321,8 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
     // Likewise, if a DLC transformation protector is removed, also remove the other two protectors
     else if (shop::dlc_transformation_goods_by_protector_id.contains(prev_transmog_protector_id))
     {
-        spdlog::info("DLC transformation protector {} removed! Removing entire set.",
-                     prev_transmog_protector_id);
+        SPDLOG_INFO("DLC transformation protector {} removed! Removing entire set.",
+                    prev_transmog_protector_id);
 
         for (auto [protector_id, protector] : from::param::EquipParamProtector)
         {
@@ -444,14 +444,14 @@ void shop::initialize()
         // Skip cut items, if configured to do so
         if (!config::include_cut_armor && protector_name.starts_with(msg::cut_item_prefix))
         {
-            spdlog::debug("Skipping cut content protector {}", protector_id);
+            SPDLOG_DEBUG("Skipping cut content protector {}", protector_id);
             continue;
         }
 
         // Skip DLC items, if configured to do so
         if (!config::include_dlc_armor && (protector_is_dlc || dlc_transformation_protector))
         {
-            spdlog::debug("Skipping DLC protector {}", protector_id);
+            SPDLOG_DEBUG("Skipping DLC protector {}", protector_id);
             continue;
         }
 

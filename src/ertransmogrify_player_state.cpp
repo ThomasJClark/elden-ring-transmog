@@ -140,7 +140,7 @@ void PlayerState::refresh_transmog_main_player()
 
     if (player != previous_player)
     {
-        spdlog::info("Loaded main player - clearing previous transmog");
+        SPDLOG_INFO("Loaded main player - clearing previous transmog");
         clear_transmog_protectors();
     }
 
@@ -148,7 +148,7 @@ void PlayerState::refresh_transmog_main_player()
     {
         if (is_transmog_enabled())
         {
-            spdlog::info("Main player - undoing transmog");
+            SPDLOG_INFO("Main player - undoing transmog");
             // If the player was given the undo transmog SpEffect, don't set any protector slots
             // and remove any transmog goods.
             clear_transmog_protectors();
@@ -168,7 +168,7 @@ void PlayerState::refresh_transmog_main_player()
             {
                 if (set_transmog_protector(protector_id, protector))
                 {
-                    spdlog::info("Set main player transmog protector {}", protector_id);
+                    SPDLOG_INFO("Set main player transmog protector {}", protector_id);
                     any_changed = true;
                 }
 
@@ -196,21 +196,21 @@ void PlayerState::refresh_transmog_main_player()
         if (!has_chest_protector)
         {
             chest_protector_id = gear_param_ids.chest_protector_id;
-            spdlog::info("Defaulting main player chest to protector {}", chest_protector_id);
+            SPDLOG_INFO("Defaulting main player chest to protector {}", chest_protector_id);
             chest_protector = &from::param::EquipParamProtector[chest_protector_id].first;
             shop::add_transmog_good(gear_param_ids.chest_protector_id);
         }
         if (!has_arms_protector)
         {
             arms_protector_id = gear_param_ids.arms_protector_id;
-            spdlog::info("Defaulting main player arms to protector {}", arms_protector_id);
+            SPDLOG_INFO("Defaulting main player arms to protector {}", arms_protector_id);
             arms_protector = &from::param::EquipParamProtector[arms_protector_id].first;
             shop::add_transmog_good(gear_param_ids.arms_protector_id);
         }
         if (!has_legs_protector)
         {
             legs_protector_id = gear_param_ids.legs_protector_id;
-            spdlog::info("Defaulting main player legs to protector {}", legs_protector_id);
+            SPDLOG_INFO("Defaulting main player legs to protector {}", legs_protector_id);
             legs_protector = &from::param::EquipParamProtector[legs_protector_id].first;
             shop::add_transmog_good(gear_param_ids.legs_protector_id);
         }
@@ -281,7 +281,7 @@ void PlayerState::refresh_transmog_net_player()
 
     if (undo_transmog)
     {
-        spdlog::info("Net player - undoing transmog");
+        SPDLOG_INFO("Net player - undoing transmog");
         remove_transmog();
     }
     else
@@ -294,7 +294,7 @@ void PlayerState::refresh_transmog_net_player()
                 set_transmog_protector(protector_id,
                                        from::param::EquipParamProtector[protector_id].first))
             {
-                spdlog::info("Set net player transmog protector {}", protector_id);
+                SPDLOG_INFO("Set net player transmog protector {}", protector_id);
                 any_changed = true;
             }
         }

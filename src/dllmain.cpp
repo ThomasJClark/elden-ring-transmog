@@ -42,9 +42,8 @@ void setup_logger(const fs::path &logs_path)
     freopen_s(&stream, "CONIN$", "r", stdin);
     logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
     logger->set_level(spdlog::level::trace);
-#endif
-
     logger->flush_on(spdlog::level::trace);
+#endif
 
     spdlog::set_default_logger(logger);
 }
@@ -60,7 +59,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
         setup_logger(folder / "logs" / "ertransmogrify.log");
 
 #ifdef PROJECT_VERSION
-        spdlog::info("Transmog version {}", PROJECT_VERSION);
+        SPDLOG_INFO("Transmog version {}", PROJECT_VERSION);
 #endif
 
         ertransmogrify::config::load(folder / "ertransmogrify.ini");
@@ -74,38 +73,38 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
 
                 from::CS::SoloParamRepository::wait_for_params();
 
-                spdlog::info("Hooking transmog messages...");
+                SPDLOG_INFO("Hooking transmog messages...");
                 ertransmogrify::msg::initialize();
 
-                spdlog::info("Adding transmog VFX...");
+                SPDLOG_INFO("Adding transmog VFX...");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::vfx::initialize();
 
-                spdlog::info("Adding transmog shops...");
+                SPDLOG_INFO("Adding transmog shops...");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::shop::initialize();
 
                 if (ertransmogrify::config::patch_grace_talk_script)
                 {
-                    spdlog::info("Hooking talk scripts...");
+                    SPDLOG_INFO("Hooking talk scripts...");
                     ertransmogrify::talkscript::initialize();
                 }
 
                 if (ertransmogrify::config::initialize_delay)
                 {
-                    spdlog::info("Waiting {}ms to enable...",
-                                 ertransmogrify::config::initialize_delay);
+                    SPDLOG_INFO("Waiting {}ms to enable...",
+                                ertransmogrify::config::initialize_delay);
                     std::this_thread::sleep_for(
                         std::chrono::milliseconds(ertransmogrify::config::initialize_delay));
                 }
 
                 modutils::enable_hooks();
 
-                spdlog::info("Initialized transmog");
+                SPDLOG_INFO("Initialized transmog");
             }
             catch (std::runtime_error const &e)
             {
-                spdlog::error("Error initializing mod: {}", e.what());
+                SPDLOG_ERROR("Error initializing mod: {}", e.what());
                 modutils::deinitialize();
             }
         });
@@ -116,11 +115,11 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
         {
             mod_thread.join();
             modutils::deinitialize();
-            spdlog::info("Deinitialized transmog");
+            SPDLOG_INFO("Deinitialized transmog");
         }
         catch (std::runtime_error const &e)
         {
-            spdlog::error("Error deinitializing mod: {}", e.what());
+            SPDLOG_ERROR("Error deinitializing mod: {}", e.what());
             spdlog::shutdown();
             return false;
         }
