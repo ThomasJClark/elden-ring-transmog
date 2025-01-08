@@ -56,9 +56,10 @@ add_library(
   ${PROJECT_NAME} SHARED
   src/dllmain.cpp
   src/ertransmogrify_config.cpp
+  src/ertransmogrify_local_player.cpp
   src/ertransmogrify_messages_by_lang.cpp
   src/ertransmogrify_messages.cpp
-  src/ertransmogrify_player_state.cpp
+  src/ertransmogrify_net.cpp
   src/ertransmogrify_shop.cpp
   src/ertransmogrify_talkscript.cpp
   src/ertransmogrify_vfx.cpp

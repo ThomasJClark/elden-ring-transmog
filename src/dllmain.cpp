@@ -32,7 +32,7 @@ void setup_logger(const fs::path &logs_path)
     logger->sinks().push_back(
         make_shared<spdlog::sinks::daily_file_sink_st>(logs_path.string(), 0, 0, false, 5));
 
-#if _DEBUG
+#if _DEBUG || 1
     AllocConsole();
     FILE *stream;
     freopen_s(&stream, "CONOUT$", "w", stdout);
@@ -60,16 +60,14 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
 
         setup_logger(folder / "logs" / "ertransmogrify.log");
 
-#ifdef PROJECT_VERSION
         SPDLOG_INFO("Transmog version {}", PROJECT_VERSION);
-#endif
 
         ertransmogrify::config::load(folder / "ertransmogrify.ini");
 
         mod_thread = std::thread([]() {
             try
             {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 modutils::initialize();
                 players::initialize();
 

@@ -19,13 +19,6 @@ static constexpr long long transmog_body_base_vfx_id = 6902000;
 static constexpr long long transmog_vfx_speffect_start_id = 169000000;
 static constexpr long long transmog_vfx_speffect_end_id = 169500000;
 
-// SpEffects applied to keep track of the player's transmog selections. These aren't used locally
-// since we can simply check in memory what those selections are, but they allow us to side channel
-// the transmog selections to other players in co-op, since applied SpEffect IDs are automatically
-// synced.
-static constexpr long long transmog_dummy_speffect_start_id = 169500000;
-static constexpr long long transmog_dummy_speffect_end_id = 169900000;
-
 // Magic SpEffect applied to the player to undo transmogrification. This decouples the VFX from the
 // talkscript system, so we can disable talkscript patching and allow modpack authors to dispel
 // transmogrification in some other way.
@@ -35,6 +28,14 @@ static constexpr long long head_protector_offset = 0;
 static constexpr long long chest_protector_offset = 100;
 static constexpr long long arms_protector_offset = 200;
 static constexpr long long legs_protector_offset = 300;
+
+struct player_state_st
+{
+    int head_protector_id{-1};
+    int chest_protector_id{-1};
+    int arms_protector_id{-1};
+    int legs_protector_id{-1};
+};
 
 /**
  * Hook the internal get_*_param() functions to return the new params used for the transmog VFX
