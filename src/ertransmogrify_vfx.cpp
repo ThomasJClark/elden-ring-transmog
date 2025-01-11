@@ -63,8 +63,42 @@ struct posture_control_param_pro_result_st
 
 struct InGameStep;
 
-static from::paramdef::SP_EFFECT_PARAM_ST dummy_speffect_param;
-static from::paramdef::REINFORCE_PARAM_PROTECTOR_ST dummy_reinforce_param;
+static auto dummy_speffect_param = from::paramdef::SP_EFFECT_PARAM_ST{
+    .effectEndurance = -1.f,
+    .fallDamageRate = 1.f,
+    .soulRate = 1.f,
+    .equipWeightChangeRate = 1.f,
+    .allItemWeightChangeRate = 1.f,
+    .soulStealRate = 1.f,
+    .lifeReductionRate = 1.f,
+    .hpRecoverRate = 1.f,
+    .effectTargetSelf = true,
+    .effectTargetFriend = true,
+    .effectTargetEnemy = true,
+    .effectTargetPlayer = true,
+    .vowType0 = true,
+    .vowType1 = true,
+    .vowType2 = true,
+    .vowType3 = true,
+    .vowType4 = true,
+    .vowType5 = true,
+    .vowType6 = true,
+    .vowType7 = true,
+    .vowType8 = true,
+    .vowType9 = true,
+    .vowType10 = true,
+    .vowType11 = true,
+    .vowType12 = true,
+    .vowType13 = true,
+    .vowType14 = true,
+    .vowType15 = true,
+    .effectTargetOpposeTarget = true,
+    .effectTargetFriendlyTarget = true,
+    .effectTargetSelfTarget = true,
+};
+
+// The category used by transformation effects in the vanilla game (dragon forms and such)
+static constexpr unsigned char vfx_play_category_transmog = 8;
 
 struct player_context_st
 {
@@ -81,15 +115,18 @@ struct player_context_st
     // Fake speffect params returned to apply the above transmog using transformProtectorId
     from::paramdef::SP_EFFECT_PARAM_ST head_speffect;
     from::paramdef::SP_EFFECT_PARAM_ST body_speffect;
-    from::paramdef::SP_EFFECT_VFX_PARAM_ST head_vfx;
-    from::paramdef::SP_EFFECT_VFX_PARAM_ST body_vfx;
+    from::paramdef::SP_EFFECT_VFX_PARAM_ST head_vfx{.playCategory = vfx_play_category_transmog,
+                                                    .playPriority = 1,
+                                                    .isFullBodyTransformProtectorId = false,
+                                                    .isVisibleDeadChr = true};
+    from::paramdef::SP_EFFECT_VFX_PARAM_ST body_vfx{.playCategory = vfx_play_category_transmog,
+                                                    .playPriority = 1,
+                                                    .isFullBodyTransformProtectorId = false,
+                                                    .isVisibleDeadChr = true};
 };
 
-static auto player_context_buffer = std::array<player_context_st, players::net_player_max>{};
+static auto player_context_buffer = std::array<player_context_st, 128>{};
 static auto player_contexts = std::span{player_context_buffer.data(), 0};
-
-// The category used by transformation effects in the vanilla game (dragon forms and such)
-static constexpr unsigned char vfx_play_category_transmog = 8;
 
 // Patched versions of VFX params. We don't directly edit these in memory to avoid triggering
 // Seamless Co-op matchingmaking, which doesn't allow connections between players with different
@@ -628,60 +665,30 @@ void vfx::initialize()
     modutils::hook({.address = in_game_stay_step_vfptr[4]}, in_game_stay_step_load_finish_detour,
                    in_game_stay_step_load_finish);
 
-    // Initialize to reinforce level +0 (doesn't matter though because the armor is never equipped)
-    dummy_reinforce_param = from::param::ReinforceParamProtector[0].first;
-
-    // Initialize the speffects from speffect 2 (basically a no-op effect), overiding the VFX and
-    // a few other properties
-    dummy_speffect_param = from::param::SpEffectParam[2].first;
-    dummy_speffect_param.effectEndurance = -1;
-    dummy_speffect_param.effectTargetSelf = true;
-    dummy_speffect_param.effectTargetFriend = true;
-    dummy_speffect_param.effectTargetEnemy = true;
-    dummy_speffect_param.effectTargetPlayer = true;
-    dummy_speffect_param.effectTargetOpposeTarget = true;
-    dummy_speffect_param.effectTargetFriendlyTarget = true;
-    dummy_speffect_param.effectTargetSelfTarget = true;
-    dummy_speffect_param.vfxId = -1;
-
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> speffect_id_dist(
         transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
     auto base_vfx_speffect_id = speffect_id_dist(rng);
 
-    for (int i = 0; i < players::net_player_max; i++)
+    int i = 0;
+    for (auto &context : player_context_buffer)
     {
-        auto &context = player_context_buffer[i];
-
         context.player = nullptr;
-
-        memset(&context.head_vfx, 0, sizeof(context.head_vfx));
-        memset(&context.body_vfx, 0, sizeof(context.body_vfx));
 
         // Add two VFX for transforming the player's head and the rest of their body into the above
         // armor set.
         context.head_vfx.transformProtectorId =
-            ertransmogrify::vfx::transmog_set_base_id + 10000 * i;
-        context.head_vfx.isFullBodyTransformProtectorId = false;
-        context.head_vfx.isVisibleDeadChr = true;
-        context.head_vfx.materialParamId = -1;
-        context.head_vfx.playCategory = vfx_play_category_transmog;
-        context.head_vfx.playPriority = 1;
-
+            (int)(ertransmogrify::vfx::transmog_set_base_id + 10000 * i);
         context.body_vfx.transformProtectorId =
-            ertransmogrify::vfx::transmog_set_base_id + 10000 * i;
+            (int)(ertransmogrify::vfx::transmog_set_base_id + 10000 * i);
         context.body_vfx.isFullBodyTransformProtectorId = true;
-        context.body_vfx.isVisibleDeadChr = true;
-        context.body_vfx.materialParamId = -1;
-        context.body_vfx.playCategory = vfx_play_category_transmog;
-        context.body_vfx.playPriority = 1;
 
-        // Add two SpEffects that enable the above VFX
+        // For the main player, pick two random IDs (an even and odd one) to avoid conflicts in
+        // Seamless Co-op. For networked players, the SpEffects will be chosen in the other
+        // player's game
         if (i == 0)
         {
-            // For the main player, pick two random IDs (an even and odd one) to avoid conflicts in
-            // Seamless Co-op
             std::random_device dev;
             std::mt19937 rng(dev());
             std::uniform_int_distribution<std::mt19937::result_type> speffect_id_dist(
@@ -699,12 +706,6 @@ void vfx::initialize()
                 context.body_speffect_id = id;
             }
         }
-        else
-        {
-            // For networked players, the SpEffects will be chosen in the other player's game
-            context.head_speffect_id = -1;
-            context.body_speffect_id = -1;
-        }
 
         context.head_speffect = dummy_speffect_param;
         context.head_speffect.stateInfo = head_transmog_state_info;
@@ -713,6 +714,8 @@ void vfx::initialize()
         context.body_speffect = dummy_speffect_param;
         context.body_speffect.stateInfo = body_transmog_state_info;
         context.body_speffect.vfxId = transmog_body_base_vfx_id + i;
+
+        i++;
     }
 
     // Decrease the priority of DLC transformation effects, so transmog can be used to override

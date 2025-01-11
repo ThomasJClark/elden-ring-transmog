@@ -5,8 +5,6 @@
 
 namespace players
 {
-static constexpr size_t net_player_max = 128;
-
 typedef int ApplySpEffectFn(from::CS::ChrIns *, unsigned int speffect_id, bool unk);
 typedef int ClearSpEffectFn(from::CS::ChrIns *, unsigned int speffect_id);
 typedef void SpawnOneShotVFXOnChrFn(from::CS::ChrIns *, int dummy_poly_id, int sfx_id, void *unk);
