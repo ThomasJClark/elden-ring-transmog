@@ -352,6 +352,50 @@ static bool update_player_context(player_context_st &context,
             players::spawn_one_shot_sfx_on_chr(context.player, 905, transmog_sfx_id, nullptr);
         }
 
+        // Check for any protectors that apply purely cosmetic VFX, such as Midras Gaze in
+        // The Convergence. We should apply these effects when the protectors are chosen as
+        // transmogs, but we shouldn't include any effects that have mechanical benefits.
+        auto get_cosmetic_vfx_id = [](std::initializer_list<int> protector_ids) {
+            for (auto protector_id : protector_ids)
+            {
+                if (protector_id == -1)
+                    continue;
+
+                auto &protector = from::param::EquipParamProtector[protector_id].first;
+                for (auto sp_effect_id :
+                     {protector.residentSpEffectId, protector.residentSpEffectId2,
+                      protector.residentSpEffectId3})
+                {
+                    if (sp_effect_id == -1)
+                        continue;
+
+                    auto &sp_effect = from::param::SpEffectParam[sp_effect_id].first;
+                    for (auto vfx_id :
+                         {sp_effect.vfxId, sp_effect.vfxId1, sp_effect.vfxId2, sp_effect.vfxId3,
+                          sp_effect.vfxId4, sp_effect.vfxId5, sp_effect.vfxId6, sp_effect.vfxId7})
+                    {
+                        if (vfx_id == -1)
+                            continue;
+
+                        auto &vfx = from::param::SpEffectVfxParam[vfx_id].first;
+                        if (!vfx.isSilence)
+                            return vfx_id;
+                    }
+                }
+            }
+            return -1;
+        };
+
+        context.head_speffect.vfxId1 = get_cosmetic_vfx_id({
+            new_state.head_protector_id,
+        });
+
+        context.body_speffect.vfxId1 = get_cosmetic_vfx_id({
+            new_state.chest_protector_id,
+            new_state.arms_protector_id,
+            new_state.legs_protector_id,
+        });
+
         context.state = new_state;
 
         return true;
