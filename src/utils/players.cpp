@@ -5,7 +5,7 @@
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/utils/modutils.hpp>
 
-typedef int GetInventoryIdFn(from::CS::EquipInventoryData *, int *item_id);
+typedef int GetInventoryIdFn(er::CS::EquipInventoryData *, int *item_id);
 static GetInventoryIdFn *get_inventory_id = nullptr;
 
 players::ApplySpEffectFn *players::apply_speffect = nullptr;
@@ -77,7 +77,7 @@ void players::initialize()
     }
 }
 
-bool players::has_item_in_inventory(from::CS::PlayerIns *player, int item_id)
+bool players::has_item_in_inventory(er::CS::PlayerIns *player, int item_id)
 {
     if (player == nullptr)
     {
@@ -88,7 +88,7 @@ bool players::has_item_in_inventory(from::CS::PlayerIns *player, int item_id)
     return get_inventory_id(&equip_game_data.equip_inventory_data, &item_id) != -1;
 }
 
-bool players::has_speffect(from::CS::PlayerIns *player, int speffect_id)
+bool players::has_speffect(er::CS::PlayerIns *player, int speffect_id)
 {
     if (player == nullptr)
     {

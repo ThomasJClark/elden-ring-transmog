@@ -21,7 +21,7 @@ static constexpr int steam_networking_channel_transmog = 100069;
 
 void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_st &state)
 {
-    auto session_manager = from::CS::CSSessionManagerImp::instance();
+    auto session_manager = er::CS::CSSessionManagerImp::instance();
     if (!session_manager || session_manager->player_entries().empty())
     {
         return;
@@ -75,10 +75,9 @@ void ertransmogrify::net::receive_messages()
     }
 
     // Remove entries for players who aren't connected anymore
-    auto session_manager = from::CS::CSSessionManagerImp::instance();
-    auto player_entries = session_manager
-                              ? session_manager->player_entries()
-                              : std::span<from::CS::CSSessionManagerImp::player_entry>{};
+    auto session_manager = er::CS::CSSessionManagerImp::instance();
+    auto player_entries = session_manager ? session_manager->player_entries()
+                                          : std::span<er::CS::CSSessionManagerImp::player_entry>{};
 
     for (auto it = net_state_by_steam_id.begin(); it != net_state_by_steam_id.end();)
     {

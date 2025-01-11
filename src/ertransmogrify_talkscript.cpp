@@ -48,31 +48,31 @@ talkscript_menu_state transmog_menu_state = {{
 }};
 
 }
-static auto patched_events = std::array<from::ezstate::event, 100>{};
-static auto patched_transitions = std::array<from::ezstate::transition *, 100>{};
+static auto patched_events = std::array<er::ezstate::event, 100>{};
+static auto patched_transitions = std::array<er::ezstate::transition *, 100>{};
 
 /**
  * Return true if the given EzState event is AddTalkListData(??, message_id, ??)
  */
-static bool is_add_talk_list_data_event(from::ezstate::event &event, int message_id)
+static bool is_add_talk_list_data_event(er::ezstate::event &event, int message_id)
 {
-    return event.command == from::talk_command::add_talk_list_data && event.args.size() == 3 &&
+    return event.command == er::talk_command::add_talk_list_data && event.args.size() == 3 &&
            get_ezstate_int_value(event.args[1]) == message_id;
 }
 
 /**
  * Return true if the given EzState event is the site of grace "Sort chest" menu option
  */
-static bool is_sort_chest_event(from::ezstate::event &event)
+static bool is_sort_chest_event(er::ezstate::event &event)
 {
-    if (event.command == from::talk_command::add_talk_list_data)
+    if (event.command == er::talk_command::add_talk_list_data)
     {
         auto message_id = get_ezstate_int_value(event.args[1]);
         return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
     }
 
-    if (event.command == from::talk_command::add_talk_list_data_if ||
-        event.command == from::talk_command::add_talk_list_data_alt)
+    if (event.command == er::talk_command::add_talk_list_data_if ||
+        event.command == er::talk_command::add_talk_list_data_alt)
     {
         auto message_id = get_ezstate_int_value(event.args[2]);
         return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
@@ -81,7 +81,7 @@ static bool is_sort_chest_event(from::ezstate::event &event)
     return false;
 }
 
-static bool is_grace_state_group(from::ezstate::state_group *state_group)
+static bool is_grace_state_group(er::ezstate::state_group *state_group)
 {
     for (auto &state : state_group->states)
     {
@@ -99,20 +99,20 @@ static bool is_grace_state_group(from::ezstate::state_group *state_group)
 /**
  * Return true if the given EzState transition goes to a state that opens the storage chest
  */
-static bool is_sort_chest_transition(const from::ezstate::transition *transition)
+static bool is_sort_chest_transition(const er::ezstate::transition *transition)
 {
     auto target_state = transition->target_state;
     return target_state && !target_state->entry_events.empty() &&
-           target_state->entry_events[0].command == from::talk_command::open_repository;
+           target_state->entry_events[0].command == er::talk_command::open_repository;
 }
 
 /**
  * Patch the site of grace menu to contain a "Transmogrify armor" option
  */
-static bool patch_state_group(from::ezstate::state_group *state_group)
+static bool patch_state_group(er::ezstate::state_group *state_group)
 {
-    from::ezstate::state *add_menu_state = nullptr;
-    from::ezstate::state *menu_transition_state = nullptr;
+    er::ezstate::state *add_menu_state = nullptr;
+    er::ezstate::state *menu_transition_state = nullptr;
 
     int event_index = -1;
     int transition_index = -1;
@@ -129,7 +129,7 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
                 add_menu_state = &state;
                 event_index = i;
             }
-            else if (event.command == from::talk_command::add_talk_list_data)
+            else if (event.command == er::talk_command::add_talk_list_data)
             {
                 auto message_id = get_ezstate_int_value(event.args[1]);
                 if (message_id == ertransmogrify::msg::event_text_for_talk_transmog_armor)
@@ -162,7 +162,7 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
     // Add an "Apply dyes" menu option
     auto &events = add_menu_state->entry_events;
     std::copy(events.begin(), events.end(), patched_events.begin());
-    patched_events[events.size()] = {from::talk_command::add_talk_list_data, transmog_option.args};
+    patched_events[events.size()] = {er::talk_command::add_talk_list_data, transmog_option.args};
     events = {patched_events.data(), events.size() + 1};
 
     // Add a transition to the "Apply dyes" menu
@@ -177,10 +177,10 @@ static bool patch_state_group(from::ezstate::state_group *state_group)
     return true;
 }
 
-static void (*ezstate_enter_state)(from::ezstate::state *state, from::ezstate::machine *machine,
+static void (*ezstate_enter_state)(er::ezstate::state *state, er::ezstate::machine *machine,
                                    void *unk);
 
-static void ezstate_enter_state_detour(from::ezstate::state *state, from::ezstate::machine *machine,
+static void ezstate_enter_state_detour(er::ezstate::state *state, er::ezstate::machine *machine,
                                        void *unk)
 {
     if (is_grace_state_group(machine->state_group))

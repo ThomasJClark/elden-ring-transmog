@@ -48,7 +48,7 @@ struct FindShopMenuResult
     unsigned char shop_type;
     unsigned char padding[3];
     int id;
-    from::paramdef::SHOP_LINEUP_PARAM *row;
+    er::paramdef::shop_lineup_param *row;
 };
 
 struct FindShopLineupParamResult
@@ -56,24 +56,24 @@ struct FindShopLineupParamResult
     unsigned char shop_type;
     unsigned char padding[3];
     int id;
-    from::paramdef::SHOP_LINEUP_PARAM *row;
+    er::paramdef::shop_lineup_param *row;
 };
 
 struct FindEquipParamGoodsResult
 {
     int id;
     int unknown;
-    from::paramdef::EQUIP_PARAM_GOODS_ST *row;
+    er::paramdef::equip_param_goods_st *row;
 };
 #pragma pack(pop)
 
-static from::paramdef::SHOP_LINEUP_PARAM transmog_head_shop_menu = {0};
-static from::paramdef::SHOP_LINEUP_PARAM transmog_chest_shop_menu = {0};
-static from::paramdef::SHOP_LINEUP_PARAM transmog_arms_shop_menu = {0};
-static from::paramdef::SHOP_LINEUP_PARAM transmog_legs_shop_menu = {0};
+static er::paramdef::shop_lineup_param transmog_head_shop_menu = {0};
+static er::paramdef::shop_lineup_param transmog_chest_shop_menu = {0};
+static er::paramdef::shop_lineup_param transmog_arms_shop_menu = {0};
+static er::paramdef::shop_lineup_param transmog_legs_shop_menu = {0};
 
-static std::unordered_map<int, from::paramdef::SHOP_LINEUP_PARAM> transmog_shop_lineups;
-static std::unordered_map<int, from::paramdef::EQUIP_PARAM_GOODS_ST> transmog_goods;
+static std::unordered_map<int, er::paramdef::shop_lineup_param> transmog_shop_lineups;
+static std::unordered_map<int, er::paramdef::equip_param_goods_st> transmog_goods;
 
 static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result, unsigned char shop_type,
                                             int begin_id, int end_id);
@@ -124,7 +124,7 @@ static inline bool is_protector_unlocked(int goods_id)
         return true;
     }
 
-    auto main_player = from::CS::WorldChrManImp::instance()->main_player;
+    auto main_player = er::CS::WorldChrManImp::instance()->main_player;
 
     // If the player already chose a transmog, show it even if it's not unlocked. This can happen
     // if they discard the armor piece or change their include_unobtained_armor setting and restart
@@ -238,11 +238,11 @@ static void open_regular_shop_detour(void *unk, unsigned long long begin_id,
     // Override the default sort type for the transmog shop to sort by item type
     if (is_transmog_shop)
     {
-        auto game_data_man = from::CS::GameDataMan::instance();
+        auto game_data_man = er::CS::GameDataMan::instance();
         if (game_data_man)
         {
-            game_data_man->menu_system_save_load->sorts[from::sort_index_all_items] =
-                from::menu_sort::item_type_ascending;
+            game_data_man->menu_system_save_load->sorts[er::sort_index_all_items] =
+                er::menu_sort::item_type_ascending;
         }
     }
 }
@@ -266,14 +266,14 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         return result;
     }
 
-    auto main_player = from::CS::WorldChrManImp::instance()->main_player;
+    auto main_player = er::CS::WorldChrManImp::instance()->main_player;
 
     long long prev_transmog_protector_id = -1;
 
     // Remove any other items of the same category in the player's inventory, so there's
     // only one item for each slot
-    auto &transmog_protector = from::param::EquipParamProtector[transmog_protector_id].first;
-    for (auto [protector_id, protector] : from::param::EquipParamProtector)
+    auto &transmog_protector = er::param::EquipParamProtector[transmog_protector_id].first;
+    for (auto [protector_id, protector] : er::param::EquipParamProtector)
     {
         if (protector_id != transmog_protector_id &&
             protector.protectorCategory == transmog_protector.protectorCategory)
@@ -294,7 +294,7 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         shop::dlc_transformation_goods_by_protector_id.find(transmog_protector_id);
     if (transformation_goods_id_it != shop::dlc_transformation_goods_by_protector_id.end())
     {
-        for (auto [protector_id, protector] : from::param::EquipParamProtector)
+        for (auto [protector_id, protector] : er::param::EquipParamProtector)
         {
             if (protector.protectorCategory != shop::protector_category_head &&
                 protector.protectorCategory != transmog_protector.protectorCategory)
@@ -324,7 +324,7 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity)
         SPDLOG_INFO("DLC transformation protector {} removed! Removing entire set.",
                     prev_transmog_protector_id);
 
-        for (auto [protector_id, protector] : from::param::EquipParamProtector)
+        for (auto [protector_id, protector] : er::param::EquipParamProtector)
         {
             if (shop::dlc_transformation_goods_by_protector_id.contains(protector_id))
             {
@@ -389,7 +389,7 @@ void shop::initialize()
         get_shop_menu_detour, get_shop_menu);
 
     // Add goods and shop entries for every armor piece the player can buy
-    for (auto [protector_id, protector_row] : from::param::EquipParamProtector)
+    for (auto [protector_id, protector_row] : er::param::EquipParamProtector)
     {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
 
@@ -406,8 +406,8 @@ void shop::initialize()
         }
         else if (dlc_transformation_protector)
         {
-            auto &goods = from::param::EquipParamGoods[dlc_transformation_goods_by_protector_id.at(
-                                                           protector_id)]
+            auto &goods = er::param::EquipParamGoods[dlc_transformation_goods_by_protector_id.at(
+                                                         protector_id)]
                               .first;
             sort_group_id = 150;
             icon_id = goods.iconId;
@@ -530,7 +530,7 @@ void shop::initialize()
 
 void shop::remove_transmog_goods(signed char protector_category)
 {
-    for (auto [protector_id, protector] : from::param::EquipParamProtector)
+    for (auto [protector_id, protector] : er::param::EquipParamProtector)
     {
         if (protector_category == -1 || protector.protectorCategory == protector_category)
         {

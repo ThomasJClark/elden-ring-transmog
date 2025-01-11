@@ -9,7 +9,6 @@ using namespace ertransmogrify;
 bool config::include_unobtained_armor = true;
 bool config::include_cut_armor = true;
 bool config::include_dlc_armor = true;
-bool config::transmog_affects_posture = true;
 bool config::patch_grace_talk_script = true;
 unsigned int config::initialize_delay = 0;
 
@@ -32,9 +31,6 @@ void config::load(const fs::path &ini_path)
         if (config.has("include_dlc_armor"))
             include_dlc_armor = config["include_dlc_armor"] != "false";
 
-        if (config.has("transmog_affects_posture"))
-            transmog_affects_posture = config["transmog_affects_posture"] != "false";
-
         if (config.has("patch_grace_talk_script"))
             patch_grace_talk_script = config["patch_grace_talk_script"] != "false";
 
@@ -45,7 +41,6 @@ void config::load(const fs::path &ini_path)
     SPDLOG_INFO("include_unobtained_armor = {} ", include_unobtained_armor);
     SPDLOG_INFO("include_cut_armor = {} ", include_cut_armor);
     SPDLOG_INFO("include_dlc_armor = {} ", include_dlc_armor);
-    SPDLOG_INFO("transmog_affects_posture = {} ", transmog_affects_posture);
     SPDLOG_INFO("patch_grace_talk_script = {} ", patch_grace_talk_script);
     SPDLOG_INFO("initialize_delay = {} ", initialize_delay);
 }

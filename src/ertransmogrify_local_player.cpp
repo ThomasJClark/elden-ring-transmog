@@ -7,7 +7,7 @@
 #include <elden-x/params/param_table.hpp>
 
 ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_player_state(
-    from::CS::PlayerIns *player)
+    er::CS::PlayerIns *player)
 {
     ertransmogrify::vfx::player_state_st state;
 
@@ -20,7 +20,7 @@ ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_pla
     }
 
     // Otherwise, check which dummy transmog items they have in their inventory
-    for (auto [protector_id, protector] : from::param::EquipParamProtector)
+    for (auto [protector_id, protector] : er::param::EquipParamProtector)
     {
         int transmog_item_id =
             ertransmogrify::shop::item_type_goods_begin +

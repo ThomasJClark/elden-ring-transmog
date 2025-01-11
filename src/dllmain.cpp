@@ -32,7 +32,7 @@ void setup_logger(const fs::path &logs_path)
     logger->sinks().push_back(
         make_shared<spdlog::sinks::daily_file_sink_st>(logs_path.string(), 0, 0, false, 5));
 
-#if _DEBUG || 1
+#if _DEBUG
     AllocConsole();
     FILE *stream;
     freopen_s(&stream, "CONOUT$", "w", stdout);
@@ -71,7 +71,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
                 modutils::initialize();
                 players::initialize();
 
-                from::CS::SoloParamRepository::wait_for_params();
+                er::CS::SoloParamRepository::wait_for_params();
 
                 SPDLOG_INFO("Hooking transmog messages...");
                 ertransmogrify::msg::initialize();

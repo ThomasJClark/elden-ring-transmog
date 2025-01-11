@@ -24,13 +24,13 @@ static constexpr int transmog_sfx_id = 8020;
 struct reinforce_param_protector_result_st
 {
     long long id;
-    from::paramdef::REINFORCE_PARAM_PROTECTOR_ST *row;
+    er::paramdef::reinforce_param_protector_st *row;
 };
 
 struct equip_param_protector_result_st
 {
     int id;
-    from::paramdef::EQUIP_PARAM_PROTECTOR_ST *row;
+    er::paramdef::equip_param_protector_st *row;
     int base_id;
     reinforce_param_protector_result_st reinforce_param_protector_result;
     unsigned int unknown;
@@ -43,7 +43,7 @@ struct speffect_param_result_st
         unk = 4
     };
 
-    from::paramdef::SP_EFFECT_PARAM_ST *row;
+    er::paramdef::sp_effect_param_st *row;
     int id;
     unkc_en unkc;
 };
@@ -51,19 +51,19 @@ struct speffect_param_result_st
 struct speffect_vfx_param_result_st
 {
     int id;
-    from::paramdef::SP_EFFECT_VFX_PARAM_ST *row;
+    er::paramdef::sp_effect_vfx_param_st *row;
     unsigned short unknown;
 };
 
 struct posture_control_param_pro_result_st
 {
     int id;
-    from::paramdef::POSTURE_CONTROL_PARAM_PRO_ST *row;
+    er::paramdef::posture_control_param_pro_st *row;
 };
 
 struct InGameStep;
 
-static auto dummy_speffect_param = from::paramdef::SP_EFFECT_PARAM_ST{
+static auto dummy_speffect_param = er::paramdef::sp_effect_param_st{
     .effectEndurance = -1.f,
     .fallDamageRate = 1.f,
     .soulRate = 1.f,
@@ -102,7 +102,7 @@ static constexpr unsigned char vfx_play_category_transmog = 8;
 
 struct player_context_st
 {
-    from::CS::PlayerIns *player;
+    er::CS::PlayerIns *player;
 
     // Randomized speffects used to apply the head and body VFX, so networked players can have
     // different params
@@ -113,16 +113,16 @@ struct player_context_st
     ertransmogrify::vfx::player_state_st state;
 
     // Fake speffect params returned to apply the above transmog using transformProtectorId
-    from::paramdef::SP_EFFECT_PARAM_ST head_speffect;
-    from::paramdef::SP_EFFECT_PARAM_ST body_speffect;
-    from::paramdef::SP_EFFECT_VFX_PARAM_ST head_vfx{.playCategory = vfx_play_category_transmog,
-                                                    .playPriority = 1,
-                                                    .isFullBodyTransformProtectorId = false,
-                                                    .isVisibleDeadChr = true};
-    from::paramdef::SP_EFFECT_VFX_PARAM_ST body_vfx{.playCategory = vfx_play_category_transmog,
-                                                    .playPriority = 1,
-                                                    .isFullBodyTransformProtectorId = false,
-                                                    .isVisibleDeadChr = true};
+    er::paramdef::sp_effect_param_st head_speffect;
+    er::paramdef::sp_effect_param_st body_speffect;
+    er::paramdef::sp_effect_vfx_param_st head_vfx{.playCategory = vfx_play_category_transmog,
+                                                  .playPriority = 1,
+                                                  .isFullBodyTransformProtectorId = false,
+                                                  .isVisibleDeadChr = true};
+    er::paramdef::sp_effect_vfx_param_st body_vfx{.playCategory = vfx_play_category_transmog,
+                                                  .playPriority = 1,
+                                                  .isFullBodyTransformProtectorId = false,
+                                                  .isVisibleDeadChr = true};
 };
 
 static auto player_context_buffer = std::array<player_context_st, 128>{};
@@ -131,7 +131,7 @@ static auto player_contexts = std::span{player_context_buffer.data(), 0};
 // Patched versions of VFX params. We don't directly edit these in memory to avoid triggering
 // Seamless Co-op matchingmaking, which doesn't allow connections between players with different
 // params.
-static std::map<unsigned int, from::paramdef::SP_EFFECT_VFX_PARAM_ST> patched_vfx_params;
+static std::map<unsigned int, er::paramdef::sp_effect_vfx_param_st> patched_vfx_params;
 
 /**
  * Utility to alias fake EquipParamProtector IDs to armor pieces chosen by the player
@@ -271,8 +271,8 @@ static GetPostureControlInnerFn *get_posture_control_inner = nullptr;
  * equipped armor. This technically has a mechanical effect (the player's hurtbox) but it looks
  * goofy if this isn't tied to the selected chest transmog.
  */
-static int (*get_posture_control)(from::CS::ChrAsm *&, signed char, int, int);
-static int get_posture_control_detour(from::CS::ChrAsm *&chr_asm, signed char unk1,
+static int (*get_posture_control)(er::CS::ChrAsm *&, signed char, int, int);
+static int get_posture_control_detour(er::CS::ChrAsm *&chr_asm, signed char unk1,
                                       int posture_control_group, int unk2)
 {
     auto get_player_context = [chr_asm]() {
@@ -288,7 +288,7 @@ static int get_posture_control_detour(from::CS::ChrAsm *&chr_asm, signed char un
         for (auto context = player_contexts.begin(); context != player_contexts.end(); context++)
         {
             if (context->player && memcmp(&context->player->game_data->equip_game_data.chr_asm,
-                                          chr_asm, sizeof(from::CS::ChrAsm)) == 0)
+                                          chr_asm, sizeof(er::CS::ChrAsm)) == 0)
             {
                 return context;
             }
@@ -305,11 +305,11 @@ static int get_posture_control_detour(from::CS::ChrAsm *&chr_asm, signed char un
         context->state.chest_protector_id > 0)
     {
         auto &chest_protector =
-            from::param::EquipParamProtector[context->state.chest_protector_id].first;
+            er::param::EquipParamProtector[context->state.chest_protector_id].first;
         auto posture_control_id = 100 * posture_control_group + chest_protector.postureControlId;
         posture_control_param_pro_result_st posture_control_result = {
             .id = posture_control_id,
-            .row = &from::param::PostureControlParam_Pro[posture_control_id].first,
+            .row = &er::param::PostureControlParam_Pro[posture_control_id].first,
         };
 
         return get_posture_control_inner(&posture_control_result, unk1, unk2);
@@ -322,9 +322,8 @@ static int get_posture_control_detour(from::CS::ChrAsm *&chr_asm, signed char un
  * When a player character is copied onto an NPC (Mimic Tear), apply the relevant transmog VFX to
  * the NPC
  */
-static void (*copy_player_character_data)(from::CS::PlayerIns *, from::CS::PlayerIns *);
-static void copy_player_character_data_detour(from::CS::PlayerIns *target,
-                                              from::CS::PlayerIns *source)
+static void (*copy_player_character_data)(er::CS::PlayerIns *, er::CS::PlayerIns *);
+static void copy_player_character_data_detour(er::CS::PlayerIns *target, er::CS::PlayerIns *source)
 {
     copy_player_character_data(target, source);
 
@@ -398,7 +397,7 @@ static bool update_player_context(player_context_st &context,
                 if (protector_id == -1)
                     continue;
 
-                auto &protector = from::param::EquipParamProtector[protector_id].first;
+                auto &protector = er::param::EquipParamProtector[protector_id].first;
                 for (auto sp_effect_id :
                      {protector.residentSpEffectId, protector.residentSpEffectId2,
                       protector.residentSpEffectId3})
@@ -406,7 +405,7 @@ static bool update_player_context(player_context_st &context,
                     if (sp_effect_id == -1)
                         continue;
 
-                    auto &sp_effect = from::param::SpEffectParam[sp_effect_id].first;
+                    auto &sp_effect = er::param::SpEffectParam[sp_effect_id].first;
                     for (auto vfx_id :
                          {sp_effect.vfxId, sp_effect.vfxId1, sp_effect.vfxId2, sp_effect.vfxId3,
                           sp_effect.vfxId4, sp_effect.vfxId5, sp_effect.vfxId6, sp_effect.vfxId7})
@@ -414,7 +413,7 @@ static bool update_player_context(player_context_st &context,
                         if (vfx_id == -1)
                             continue;
 
-                        auto &vfx = from::param::SpEffectVfxParam[vfx_id].first;
+                        auto &vfx = er::param::SpEffectVfxParam[vfx_id].first;
                         if (!vfx.isSilence)
                             return vfx_id;
                     }
@@ -446,7 +445,7 @@ static void update_player_contexts()
     static auto clock = std::chrono::steady_clock{};
     static auto next_net_update_time = std::chrono::steady_clock::time_point{};
 
-    auto world_chr_man = from::CS::WorldChrManImp::instance();
+    auto world_chr_man = er::CS::WorldChrManImp::instance();
     if (!world_chr_man)
     {
         return;
@@ -621,35 +620,32 @@ void vfx::initialize()
         .relative_offsets = {{3, 7}},
     });
 
-    if (config::transmog_affects_posture)
+    auto get_posture_control_original = modutils::scan<void>({
+        .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
+               "?? ?? ?? ?? ??"       // ...
+               "6b d6 64"             // imul edx, esi, 100
+               "48 8d 4c 24 20"       // lea rcx, postureControlResult.id
+               "4c 89 74 24 28"       // mov postureControlResult.row, r14
+               "03 d0"                // add edx, eax
+               "89 54 24 20",         // mov postureControlResult.id, edx
+        .offset = -127,
+    });
+
+    // First Person Souls has a memory hack that changes this function. If we can't find it,
+    // let's assume another mod is doing something more important with it.
+    if (get_posture_control_original != nullptr)
     {
-        auto get_posture_control_original = modutils::scan<void>({
-            .aob = "0f b6 80 27 01 00 00" // movzx eac, [rax + 0x127]
-                   "?? ?? ?? ?? ??"       // ...
-                   "6b d6 64"             // imul edx, esi, 100
-                   "48 8d 4c 24 20"       // lea rcx, postureControlResult.id
-                   "4c 89 74 24 28"       // mov postureControlResult.row, r14
-                   "03 d0"                // add edx, eax
-                   "89 54 24 20",         // mov postureControlResult.id, edx
-            .offset = -127,
+        modutils::hook({.address = get_posture_control_original}, get_posture_control_detour,
+                       get_posture_control);
+
+        get_posture_control_inner = modutils::scan<GetPostureControlInnerFn>({
+            .address = (unsigned char *)get_posture_control_original + 175,
+            .relative_offsets = {{1, 5}},
         });
-
-        // First Person Souls has a memory hack that changes this function. If we can't find it,
-        // let's assume another mod is doing something more important with it.
-        if (get_posture_control_original != nullptr)
-        {
-            modutils::hook({.address = get_posture_control_original}, get_posture_control_detour,
-                           get_posture_control);
-
-            get_posture_control_inner = modutils::scan<GetPostureControlInnerFn>({
-                .address = (unsigned char *)get_posture_control_original + 175,
-                .relative_offsets = {{1, 5}},
-            });
-        }
-        else
-        {
-            SPDLOG_WARN("Couldn't find GetPostureControl(), skipping posture fix");
-        }
+    }
+    else
+    {
+        SPDLOG_WARN("Couldn't find GetPostureControl(), skipping posture fix");
     }
 
     modutils::hook(
@@ -720,7 +716,7 @@ void vfx::initialize()
 
     // Decrease the priority of DLC transformation effects, so transmog can be used to override
     // them
-    for (auto [vfx_id, vfx] : from::param::SpEffectVfxParam)
+    for (auto [vfx_id, vfx] : er::param::SpEffectVfxParam)
     {
         if (vfx.transformProtectorId != -1 && vfx.isFullBodyTransformProtectorId &&
             vfx.playCategory == vfx_play_category_transmog)

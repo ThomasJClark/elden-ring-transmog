@@ -28,12 +28,6 @@ extern bool include_cut_armor;
 extern bool include_dlc_armor;
 
 /**
- * Transmog affects the player's idle pose (e.g. the way your arms spread out while wearing
- * Lionel's Armor)
- */
-extern bool transmog_affects_posture;
-
-/**
  * Add the "Tranmsogrify armor" option to the Site of Grace menu. This can be disabled by mod
  * authors to add their entrypoint for transmog.
  */
