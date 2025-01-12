@@ -332,16 +332,15 @@ static void copy_player_character_data_detour(er::CS::PlayerIns *target, er::CS:
     {
         if (context.player == source)
         {
-            if (context.state.head_protector_id > 0)
+            if (context.state.head_protector_id > 0 && context.head_speffect_id > 0)
             {
-                SPDLOG_INFO("Applying head transmog to Mimic Tear");
                 players::apply_speffect(target, context.head_speffect_id, false);
             }
 
-            if (context.state.chest_protector_id > 0 || context.state.arms_protector_id > 0 ||
-                context.state.legs_protector_id > 0)
+            if ((context.state.chest_protector_id > 0 || context.state.arms_protector_id > 0 ||
+                 context.state.legs_protector_id > 0) &&
+                context.body_speffect_id > 0)
             {
-                SPDLOG_INFO("Applying body transmog to Mimic Tear");
                 players::apply_speffect(target, context.body_speffect_id, false);
             }
 
@@ -350,13 +349,14 @@ static void copy_player_character_data_detour(er::CS::PlayerIns *target, er::CS:
             // object, checks this to associate the Mimic Tear with a PlayerState.
             auto &chr_asm = target->game_data->equip_game_data.chr_asm;
             chr_asm.gear_param_ids.unused4 = i;
+            return;
         }
         i++;
     }
 }
 
 static bool update_player_context(player_context_st &context,
-                                  const ertransmogrify::vfx::player_state_st &new_state)
+                                  const ertransmogrify::vfx::player_state_st &new_state, int index)
 {
     if (new_state.head_protector_id != context.state.head_protector_id ||
         new_state.chest_protector_id != context.state.chest_protector_id ||
@@ -379,11 +379,22 @@ static bool update_player_context(player_context_st &context,
             context.body_vfx.transformProtectorId += diff;
         }
 
+        auto is_head_applied = new_state.head_protector_id > 0;
+        auto is_body_applied = new_state.chest_protector_id > 0 ||
+                               new_state.arms_protector_id > 0 || new_state.legs_protector_id > 0;
+
+        // Set the VFX for the speffects applied to the player if they're applied. We could also
+        // just add and remove the speffects to toggle the VFX, but speffect removal is not synced
+        // in co-op.
+        context.head_speffect.vfxId =
+            is_head_applied ? ertransmogrify::vfx::transmog_head_base_vfx_id + index : -1;
+        context.body_speffect.vfxId =
+            is_body_applied ? ertransmogrify::vfx::transmog_body_base_vfx_id + index : -1;
+
         // Play a cool effect when a player applies or dispels transmog
-        if (!(new_state.head_protector_id > 0 || new_state.chest_protector_id > 0 ||
-              new_state.arms_protector_id > 0 || new_state.legs_protector_id > 0) ||
-            !(context.state.head_protector_id > 0 || context.state.chest_protector_id > 0 ||
-              context.state.arms_protector_id > 0 || context.state.legs_protector_id > 0))
+        if ((context.state.head_protector_id > 0 || context.state.chest_protector_id > 0 ||
+             context.state.arms_protector_id > 0 || context.state.legs_protector_id > 0) !=
+            (is_head_applied || is_body_applied))
         {
             players::spawn_one_shot_sfx_on_chr(context.player, 905, transmog_sfx_id, nullptr);
         }
@@ -458,7 +469,7 @@ static void update_player_contexts()
 
     // Update the local player VFX based on their transmog selections
     auto state = ertransmogrify::local_player::get_local_player_state(world_chr_man->main_player);
-    auto any_changed = update_player_context(local_player_context, state);
+    auto any_changed = update_player_context(local_player_context, state, 0);
 
     // Apply or remove the transmog SpEffects on the main player based on their selections
     if (local_player_context.player && any_changed)
@@ -536,7 +547,8 @@ static void update_player_contexts()
         // Update the networked player VFX based on the state previously sent over the network
         auto &state = ertransmogrify::net::get_net_player_state(
             player_context.player->session_holder.network_session->steam_id);
-        update_player_context(player_context, state);
+
+        update_player_context(player_context, state, i);
     }
 }
 
@@ -705,11 +717,9 @@ void vfx::initialize()
 
         context.head_speffect = dummy_speffect_param;
         context.head_speffect.stateInfo = head_transmog_state_info;
-        context.head_speffect.vfxId = transmog_head_base_vfx_id + i;
 
         context.body_speffect = dummy_speffect_param;
         context.body_speffect.stateInfo = body_transmog_state_info;
-        context.body_speffect.vfxId = transmog_body_base_vfx_id + i;
 
         i++;
     }
