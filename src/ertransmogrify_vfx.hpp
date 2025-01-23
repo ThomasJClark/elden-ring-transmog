@@ -7,7 +7,7 @@ namespace vfx
 // Fake armor set used as the transformProtector for transmogrification. The params that this ID
 // resolves to changes at runtime based on the player's transmog selection.
 static constexpr long long transmog_set_base_id = 69000000;
-static constexpr long long transmog_set_alt_base_id = 69001000;
+static constexpr long long transmog_set_alt_base_id = 69100000;
 
 // VFX IDs that apply the transmog visuals. In multiplayer, these IDs are offset by +1, +2, +3,
 // etc., so each player has a different VFX param.
