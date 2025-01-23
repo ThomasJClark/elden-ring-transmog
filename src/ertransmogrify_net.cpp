@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <steam/isteamfriends.h>
 #include <steam/isteamnetworkingmessages.h>
 #include <steam/isteamuser.h>
 
@@ -68,9 +69,17 @@ void ertransmogrify::net::receive_messages()
         }
 
         auto steam_id = message->m_identityPeer.GetSteamID64();
-        auto net_state =
+        auto &net_state =
             *reinterpret_cast<const ertransmogrify::vfx::player_state_st *>(message->GetData());
-        net_state_by_steam_id[steam_id] = net_state;
+        if (net_state_by_steam_id.insert_or_assign(steam_id, net_state).second)
+        {
+            auto steam_name = SteamFriends()->GetFriendPersonaName(steam_id);
+            if (steam_name)
+                SPDLOG_INFO("Received transmog state from Steam user {}", steam_name);
+            else
+                SPDLOG_INFO("Received transmog state from Steam user {}", steam_id);
+        }
+
         message->Release();
     }
 

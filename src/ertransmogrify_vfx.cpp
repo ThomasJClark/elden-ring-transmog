@@ -14,6 +14,9 @@
 #include <map>
 #include <random>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 using namespace ertransmogrify;
 
 unsigned short head_transmog_state_info = 998;
@@ -368,7 +371,7 @@ static bool update_player_context(player_context_st &context,
         // dynamically updated.
         int diff = ertransmogrify::vfx::transmog_set_alt_base_id -
                    ertransmogrify::vfx::transmog_set_base_id;
-        if (context.head_vfx.transformProtectorId > ertransmogrify::vfx::transmog_set_base_id)
+        if (context.head_vfx.transformProtectorId >= ertransmogrify::vfx::transmog_set_alt_base_id)
         {
             context.head_vfx.transformProtectorId -= diff;
             context.body_vfx.transformProtectorId -= diff;
@@ -451,8 +454,27 @@ static bool update_player_context(player_context_st &context,
     return false;
 }
 
+/**
+ * Returns true if the local player's transmog shouldn't be displayed on other player's screens
+ * and vice versa
+ */
+static bool is_client_side_only()
+{
+    auto result = ertransmogrify::config::client_side_only;
+
+    // F8 temporarily inverts this setting so you can peek at other players' actual armor
+    if (GetAsyncKeyState(VK_F8) & 0x8000)
+    {
+        return !result;
+    }
+
+    return result;
+}
+
 static void update_player_contexts()
 {
+    static auto empty_state = ertransmogrify::vfx::player_state_st{};
+
     static auto clock = std::chrono::steady_clock{};
     static auto next_net_update_time = std::chrono::steady_clock::time_point{};
 
@@ -499,26 +521,32 @@ static void update_player_contexts()
         }
     }
 
-    // Send the main player's transmog state to other players in the session when it changes, and
-    // also periodically just in case
-    bool should_send_net_update = false;
+    static bool prev_client_side_only = false;
+    bool client_side_only = is_client_side_only();
+    if (client_side_only != prev_client_side_only)
+    {
+        any_changed = true;
+        prev_client_side_only = client_side_only;
+    }
+    if (client_side_only)
+    {
+        state = empty_state;
+    }
+
+    // Send the main player's transmog state to other players in the session when it changes,
+    // and also periodically just in case
     auto now = clock.now();
     if (any_changed || now >= next_net_update_time)
     {
         next_net_update_time = now + std::chrono::seconds(5);
-        ertransmogrify::net::send_messages(local_player_context.state);
+        ertransmogrify::net::send_messages(state);
     }
 
     ertransmogrify::net::receive_messages();
     for (int i = 1; i < player_contexts.size(); i++)
     {
         auto &player_context = player_context_buffer[i];
-        auto player = world_chr_man->player_chr_set.at(i);
-        if (player_context.player != player)
-        {
-            player_context.player = player;
-        }
-
+        player_context.player = world_chr_man->player_chr_set.at(i);
         if (!player_context.player || !player_context.player->session_holder.network_session)
         {
             continue;
@@ -544,9 +572,12 @@ static void update_player_contexts()
             }
         }
 
-        // Update the networked player VFX based on the state previously sent over the network
-        auto &state = ertransmogrify::net::get_net_player_state(
-            player_context.player->session_holder.network_session->steam_id);
+        // Update the networked player VFX based on the state previously sent over the
+        // network
+        auto &state = client_side_only
+                          ? empty_state
+                          : ertransmogrify::net::get_net_player_state(
+                                player_context.player->session_holder.network_session->steam_id);
 
         update_player_context(player_context, state, i);
     }

@@ -3,16 +3,14 @@
 
 #include "ertransmogrify_config.hpp"
 
-namespace fs = std::filesystem;
-using namespace ertransmogrify;
+bool ertransmogrify::config::include_unobtained_armor = true;
+bool ertransmogrify::config::include_cut_armor = true;
+bool ertransmogrify::config::include_dlc_armor = true;
+bool ertransmogrify::config::patch_grace_talk_script = true;
+unsigned int ertransmogrify::config::initialize_delay = 0;
+bool ertransmogrify::config::client_side_only = false;
 
-bool config::include_unobtained_armor = true;
-bool config::include_cut_armor = true;
-bool config::include_dlc_armor = true;
-bool config::patch_grace_talk_script = true;
-unsigned int config::initialize_delay = 0;
-
-void config::load(const fs::path &ini_path)
+void ertransmogrify::config::load(const std::filesystem::path &ini_path)
 {
     SPDLOG_INFO("Loading config from {}", ini_path.string());
 
@@ -36,6 +34,9 @@ void config::load(const fs::path &ini_path)
 
         if (config.has("initialize_delay"))
             initialize_delay = stoi(config["initialize_delay"], nullptr, 10);
+
+        if (config.has("client_side_only"))
+            client_side_only = config["client_side_only"] != "false";
     }
 
     SPDLOG_INFO("include_unobtained_armor = {} ", include_unobtained_armor);
@@ -43,4 +44,5 @@ void config::load(const fs::path &ini_path)
     SPDLOG_INFO("include_dlc_armor = {} ", include_dlc_armor);
     SPDLOG_INFO("patch_grace_talk_script = {} ", patch_grace_talk_script);
     SPDLOG_INFO("initialize_delay = {} ", initialize_delay);
+    SPDLOG_INFO("client_side_only = {} ", client_side_only);
 }
