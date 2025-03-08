@@ -22,8 +22,6 @@ using namespace ertransmogrify;
 unsigned short head_transmog_state_info = 998;
 unsigned short body_transmog_state_info = 999;
 
-static constexpr int transmog_sfx_id = 8020;
-
 struct reinforce_param_protector_result_st
 {
     long long id;
@@ -393,14 +391,6 @@ static bool update_player_context(player_context_st &context,
             is_head_applied ? ertransmogrify::vfx::transmog_head_base_vfx_id + index : -1;
         context.body_speffect.vfxId =
             is_body_applied ? ertransmogrify::vfx::transmog_body_base_vfx_id + index : -1;
-
-        // Play a cool effect when a player applies or dispels transmog
-        if ((context.state.head_protector_id > 0 || context.state.chest_protector_id > 0 ||
-             context.state.arms_protector_id > 0 || context.state.legs_protector_id > 0) !=
-            (is_head_applied || is_body_applied))
-        {
-            players::spawn_one_shot_sfx_on_chr(context.player, 905, transmog_sfx_id, nullptr);
-        }
 
         // Check for any protectors that apply purely cosmetic VFX, such as Midras Gaze in
         // The Convergence. We should apply these effects when the protectors are chosen as
