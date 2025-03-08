@@ -26,6 +26,13 @@ static const std::unordered_set<unsigned long long> exluded_protector_ids = {
     // have a model
     955000, 955100, 955200, 955300, 956100};
 
+// Include protectors with missing names if they're from known mods. We filter out nameless rows
+// to exclude NPC duplicates and other junk, but we should skip this filtering for mods that might
+// not have localization in the user's current language.
+static const std::unordered_set<unsigned long long> known_modded_protector_ids = {
+    // Berserker Armor - https://www.nexusmods.com/eldenring/mods/729
+    964400, 964500, 964600, 964700, 965400, 965500};
+
 const std::map<unsigned long long, unsigned long long>
     shop::dlc_transformation_goods_by_protector_id = {
         {5040100, 2002010}, // Rock Heart (chest, includes full body)
@@ -435,8 +442,11 @@ void shop::initialize()
         // Skip invalid items, and cut items that don't have a name (these are usually
         // duplicates used for NPCs)
         auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
-        if ((protector_name.empty() || protector_name == msg::cut_item_prefix) &&
-            !dlc_transformation_protector)
+        if (protector_name == msg::cut_item_prefix && !dlc_transformation_protector)
+        {
+            continue;
+        }
+        if (protector_name.empty() && !known_modded_protector_ids.contains(protector_id))
         {
             continue;
         }
