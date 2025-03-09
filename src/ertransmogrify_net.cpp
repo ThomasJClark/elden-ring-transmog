@@ -1,20 +1,21 @@
+#include <steam/isteamfriends.h>
+#include <steam/isteamnetworkingmessages.h>
+#include <steam/isteamnetworkingutils.h>
+#include <steam/isteamuser.h>
+#include <steam/steamclientpublic.h>
+
 #include "ertransmogrify_net.hpp"
 
 #include <elden-x/session.hpp>
 
 #include <spdlog/spdlog.h>
 
-#include <steam/isteamfriends.h>
-#include <steam/isteamnetworkingmessages.h>
-#include <steam/isteamuser.h>
-
 #include <algorithm>
 #include <array>
 #include <map>
 #include <span>
 
-static auto net_state_by_steam_id =
-    std::map<unsigned long long, ertransmogrify::vfx::player_state_st>{};
+static auto net_state_by_steam_id = std::map<CSteamID, ertransmogrify::vfx::player_state_st>{};
 
 static const auto empty_state = ertransmogrify::vfx::player_state_st{};
 
@@ -28,7 +29,7 @@ void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_
         return;
     }
 
-    auto local_player_steam_id = SteamUser()->GetSteamID().ConvertToUint64();
+    auto local_player_steam_id = SteamUser()->GetSteamID();
 
     // Send the local player's transmog selections to every connected player in the current session
     for (auto &entry : session_manager->player_entries())
@@ -39,16 +40,16 @@ void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_
             continue;
         }
 
-        SteamNetworkingIdentity steam_id;
-        steam_id.SetSteamID64(entry.steam_id);
+        SteamNetworkingIdentity steam_networking_id;
+        steam_networking_id.SetSteamID(entry.steam_id);
 
         auto result = SteamNetworkingMessages()->SendMessageToUser(
-            steam_id, &state, sizeof(state), k_nSteamNetworkingSend_Reliable,
+            steam_networking_id, &state, sizeof(state), k_nSteamNetworkingSend_Reliable,
             steam_networking_channel_transmog);
         if (result != k_EResultOK)
         {
             SPDLOG_ERROR("Error {} sending Steam networking message to user {}", (int)result,
-                         entry.steam_id);
+                         entry.steam_id.ConvertToUint64());
         }
     }
 }
@@ -103,7 +104,7 @@ void ertransmogrify::net::receive_messages()
 }
 
 const ertransmogrify::vfx::player_state_st &ertransmogrify::net::get_net_player_state(
-    unsigned long long steam_id)
+    CSteamID steam_id)
 {
     auto entry = net_state_by_steam_id.find(steam_id);
     if (entry != net_state_by_steam_id.end())

@@ -2,6 +2,8 @@
 
 #include "ertransmogrify_vfx.hpp"
 
+#include <steam/steamclientpublic.h>
+
 namespace ertransmogrify
 {
 namespace net
@@ -21,7 +23,7 @@ void receive_messages();
 /**
  * Get the transmog state sent by another player
  */
-const ertransmogrify::vfx::player_state_st &get_net_player_state(unsigned long long steam_id);
+const ertransmogrify::vfx::player_state_st &get_net_player_state(CSteamID);
 
 }
 }
