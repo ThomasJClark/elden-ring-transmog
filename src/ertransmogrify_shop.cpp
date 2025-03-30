@@ -260,12 +260,19 @@ static void open_regular_shop_detour(void *unk, unsigned long long begin_id,
                                er::CS::PlayerGameData::body_type_en::type_a;
         for (auto &[goods_id, goods] : transmog_goods)
         {
-            auto [protector, protector_exists] = er::param::EquipParamProtector
-                [ertransmogrify::shop::get_protector_id_for_transmog_good(goods_id)];
-            if (protector_exists)
+            auto protector_id = ertransmogrify::shop::get_protector_id_for_transmog_good(goods_id);
+            if (protector_id == -1 || shop::is_invisible_protector_id(protector_id))
             {
-                goods.iconId = show_male_icons ? protector.iconIdM : protector.iconIdF;
+                continue;
             }
+
+            auto [protector, protector_exists] = er::param::EquipParamProtector[protector_id];
+            if (!protector_exists)
+            {
+                continue;
+            }
+
+            goods.iconId = show_male_icons ? protector.iconIdM : protector.iconIdF;
         }
     }
 }

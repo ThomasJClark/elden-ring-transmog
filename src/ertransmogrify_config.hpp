@@ -46,5 +46,10 @@ extern unsigned int initialize_delay;
  * Disables networking, for PVP reasons.
  */
 extern bool client_side_only;
+
+/**
+ * Enables debug console
+ */
+extern bool debug;
 };
 };

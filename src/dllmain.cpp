@@ -26,30 +26,6 @@ namespace fs = std::filesystem;
 
 std::thread mod_thread;
 
-void setup_logger(const fs::path &logs_path)
-{
-    auto logger = std::make_shared<spdlog::logger>("transmog");
-    logger->sinks().push_back(
-        make_shared<spdlog::sinks::daily_file_sink_st>(logs_path.string(), 0, 0, false, 5));
-
-#if _DEBUG
-    AllocConsole();
-    FILE *stream;
-    freopen_s(&stream, "CONOUT$", "w", stdout);
-    freopen_s(&stream, "CONOUT$", "w", stderr);
-    freopen_s(&stream, "CONIN$", "r", stdin);
-    logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
-    logger->set_level(spdlog::level::trace);
-    logger->flush_on(spdlog::level::trace);
-    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ [%s:%#] %v");
-#else
-    logger->flush_on(spdlog::level::warn);
-    logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
-#endif
-
-    spdlog::set_default_logger(logger);
-}
-
 bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_reserved)
 {
     if (fdw_reason == DLL_PROCESS_ATTACH)
@@ -58,11 +34,29 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
         GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH);
         auto folder = fs::path(dll_filename).parent_path();
 
-        setup_logger(folder / "logs" / "ertransmogrify.log");
+        auto logger = std::make_shared<spdlog::logger>("transmog");
+        logger->sinks().push_back(make_shared<spdlog::sinks::daily_file_sink_st>(
+            (folder / "logs" / "ertransmogrify.log").string(), 0, 0, false, 5));
+        logger->flush_on(spdlog::level::warn);
+        logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ %v");
+        spdlog::set_default_logger(logger);
 
         SPDLOG_INFO("Transmog version {}", PROJECT_VERSION);
 
         ertransmogrify::config::load(folder / "ertransmogrify.ini");
+
+        if (ertransmogrify::config::debug)
+        {
+            AllocConsole();
+            FILE *stream;
+            freopen_s(&stream, "CONOUT$", "w", stdout);
+            freopen_s(&stream, "CONOUT$", "w", stderr);
+            freopen_s(&stream, "CONIN$", "r", stdin);
+            logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
+            logger->set_level(spdlog::level::trace);
+            logger->flush_on(spdlog::level::trace);
+            logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] %^[%l]%$ [%s:%#] %v");
+        }
 
         mod_thread = std::thread([]() {
             try

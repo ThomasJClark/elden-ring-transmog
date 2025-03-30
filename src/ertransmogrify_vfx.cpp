@@ -17,6 +17,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+using namespace std;
 using namespace ertransmogrify;
 
 unsigned short head_transmog_state_info = 998;
@@ -126,13 +127,13 @@ struct player_context_st
                                                   .isVisibleDeadChr = true};
 };
 
-static auto player_context_buffer = std::array<player_context_st, 128>{};
-static auto player_contexts = std::span{player_context_buffer.data(), 0};
+static auto player_context_buffer = make_unique<array<player_context_st, 128>>();
+static auto player_contexts = span{player_context_buffer->data(), 0};
 
 // Patched versions of VFX params. We don't directly edit these in memory to avoid triggering
 // Seamless Co-op matchingmaking, which doesn't allow connections between players with different
 // params.
-static std::map<unsigned int, er::paramdef::sp_effect_vfx_param_st> patched_vfx_params;
+static map<unsigned int, er::paramdef::sp_effect_vfx_param_st> patched_vfx_params;
 
 /**
  * Utility to alias fake EquipParamProtector IDs to armor pieces chosen by the player
@@ -395,7 +396,7 @@ static bool update_player_context(player_context_st &context,
         // Check for any protectors that apply purely cosmetic VFX, such as Midras Gaze in
         // The Convergence. We should apply these effects when the protectors are chosen as
         // transmogs, but we shouldn't include any effects that have mechanical benefits.
-        auto get_cosmetic_vfx_id = [](std::initializer_list<int> protector_ids) {
+        auto get_cosmetic_vfx_id = [](initializer_list<int> protector_ids) {
             for (auto protector_id : protector_ids)
             {
                 if (protector_id == -1)
@@ -465,8 +466,8 @@ static void update_player_contexts()
 {
     static auto empty_state = ertransmogrify::vfx::player_state_st{};
 
-    static auto clock = std::chrono::steady_clock{};
-    static auto next_net_update_time = std::chrono::steady_clock::time_point{};
+    static auto clock = chrono::steady_clock{};
+    static auto next_net_update_time = chrono::steady_clock::time_point{};
 
     auto world_chr_man = er::CS::WorldChrManImp::instance();
     if (!world_chr_man)
@@ -474,7 +475,7 @@ static void update_player_contexts()
         return;
     }
 
-    player_contexts = std::span{player_contexts.data(), world_chr_man->player_chr_set.capacity()};
+    player_contexts = span{player_contexts.data(), world_chr_man->player_chr_set.capacity()};
 
     auto &local_player_context = player_contexts[0];
     local_player_context.player = world_chr_man->main_player;
@@ -528,14 +529,14 @@ static void update_player_contexts()
     auto now = clock.now();
     if (any_changed || now >= next_net_update_time)
     {
-        next_net_update_time = now + std::chrono::seconds(5);
+        next_net_update_time = now + chrono::seconds(5);
         ertransmogrify::net::send_messages(state);
     }
 
     ertransmogrify::net::receive_messages();
     for (int i = 1; i < player_contexts.size(); i++)
     {
-        auto &player_context = player_context_buffer[i];
+        auto &player_context = (*player_context_buffer)[i];
         player_context.player = world_chr_man->player_chr_set.at(i);
         if (!player_context.player || !player_context.player->session_holder.network_session)
         {
@@ -694,14 +695,14 @@ void vfx::initialize()
     modutils::hook({.address = in_game_stay_step_vfptr[4]}, in_game_stay_step_load_finish_detour,
                    in_game_stay_step_load_finish);
 
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> speffect_id_dist(
+    random_device dev;
+    mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> speffect_id_dist(
         transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
     auto base_vfx_speffect_id = speffect_id_dist(rng);
 
     int i = 0;
-    for (auto &context : player_context_buffer)
+    for (auto &context : *player_context_buffer)
     {
         context.player = nullptr;
 
@@ -718,9 +719,9 @@ void vfx::initialize()
         // player's game
         if (i == 0)
         {
-            std::random_device dev;
-            std::mt19937 rng(dev());
-            std::uniform_int_distribution<std::mt19937::result_type> speffect_id_dist(
+            random_device dev;
+            mt19937 rng(dev());
+            uniform_int_distribution<mt19937::result_type> speffect_id_dist(
                 transmog_vfx_speffect_start_id, transmog_vfx_speffect_end_id - 1);
 
             auto id = speffect_id_dist(rng);
