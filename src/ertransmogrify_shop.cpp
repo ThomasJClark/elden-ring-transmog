@@ -242,14 +242,30 @@ static void open_regular_shop_detour(void *unk, unsigned long long begin_id,
 
     open_regular_shop(unk, begin_id, end_id);
 
-    // Override the default sort type for the transmog shop to sort by item type
     if (is_transmog_shop)
     {
         auto game_data_man = er::CS::GameDataMan::instance();
-        if (game_data_man)
+        if (!game_data_man)
         {
-            game_data_man->menu_system_save_load->sorts[er::sort_index_all_items] =
-                er::menu_sort::item_type_ascending;
+            return;
+        }
+
+        // Override the default sort type for the transmog shop to sort by item type
+        game_data_man->menu_system_save_load->sorts[er::sort_index_all_items] =
+            er::menu_sort::item_type_ascending;
+
+        // Update shop icons to the male or female variants based on the current player
+        // character's body type
+        auto show_male_icons = game_data_man->player_game_data->body_type ==
+                               er::CS::PlayerGameData::body_type_en::type_a;
+        for (auto &[goods_id, goods] : transmog_goods)
+        {
+            auto [protector, protector_exists] = er::param::EquipParamProtector
+                [ertransmogrify::shop::get_protector_id_for_transmog_good(goods_id)];
+            if (protector_exists)
+            {
+                goods.iconId = show_male_icons ? protector.iconIdM : protector.iconIdF;
+            }
         }
     }
 }
