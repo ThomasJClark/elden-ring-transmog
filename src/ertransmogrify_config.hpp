@@ -2,10 +2,8 @@
 
 #include <filesystem>
 
-namespace ertransmogrify
-{
-namespace config
-{
+namespace ertransmogrify {
+namespace config {
 /**
  * Load user preferences from an .ini file
  */

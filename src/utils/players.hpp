@@ -3,8 +3,7 @@
 #include <elden-x/chr/chr.hpp>
 #include <elden-x/chr/player.hpp>
 
-namespace players
-{
+namespace players {
 typedef int ApplySpEffectFn(er::CS::ChrIns *, unsigned int speffect_id, bool unk);
 typedef int ClearSpEffectFn(er::CS::ChrIns *, unsigned int speffect_id);
 typedef void SpawnOneShotVFXOnChrFn(er::CS::ChrIns *, int dummy_poly_id, int sfx_id, void *unk);

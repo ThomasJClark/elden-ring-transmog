@@ -4,10 +4,8 @@
 
 #include <steam/steamclientpublic.h>
 
-namespace ertransmogrify
-{
-namespace net
-{
+namespace ertransmogrify {
+namespace net {
 
 /**
  * Send the local player's transmog selections to every connected player in the current session

@@ -12,8 +12,7 @@
 
 using namespace ertransmogrify;
 
-namespace
-{
+namespace {
 extern talkscript_menu_state transmog_menu_state;
 
 auto transmog_option =
@@ -54,8 +53,7 @@ static auto patched_transitions = std::array<er::ezstate::transition *, 100>{};
 /**
  * Return true if the given EzState event is AddTalkListData(??, message_id, ??)
  */
-static bool is_add_talk_list_data_event(er::ezstate::event &event, int message_id)
-{
+static bool is_add_talk_list_data_event(er::ezstate::event &event, int message_id) {
     return event.command == er::talk_command::add_talk_list_data && event.args.size() == 3 &&
            get_ezstate_int_value(event.args[1]) == message_id;
 }
@@ -63,17 +61,14 @@ static bool is_add_talk_list_data_event(er::ezstate::event &event, int message_i
 /**
  * Return true if the given EzState event is the site of grace "Sort chest" menu option
  */
-static bool is_sort_chest_event(er::ezstate::event &event)
-{
-    if (event.command == er::talk_command::add_talk_list_data)
-    {
+static bool is_sort_chest_event(er::ezstate::event &event) {
+    if (event.command == er::talk_command::add_talk_list_data) {
         auto message_id = get_ezstate_int_value(event.args[1]);
         return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
     }
 
     if (event.command == er::talk_command::add_talk_list_data_if ||
-        event.command == er::talk_command::add_talk_list_data_alt)
-    {
+        event.command == er::talk_command::add_talk_list_data_alt) {
         auto message_id = get_ezstate_int_value(event.args[2]);
         return message_id == ertransmogrify::msg::event_text_for_talk_sort_chest;
     }
@@ -81,14 +76,10 @@ static bool is_sort_chest_event(er::ezstate::event &event)
     return false;
 }
 
-static bool is_grace_state_group(er::ezstate::state_group *state_group)
-{
-    for (auto &state : state_group->states)
-    {
-        for (auto &event : state.entry_events)
-        {
-            if (is_sort_chest_event(event))
-            {
+static bool is_grace_state_group(er::ezstate::state_group *state_group) {
+    for (auto &state : state_group->states) {
+        for (auto &event : state.entry_events) {
+            if (is_sort_chest_event(event)) {
                 return true;
             }
         }
@@ -99,8 +90,7 @@ static bool is_grace_state_group(er::ezstate::state_group *state_group)
 /**
  * Return true if the given EzState transition goes to a state that opens the storage chest
  */
-static bool is_sort_chest_transition(const er::ezstate::transition *transition)
-{
+static bool is_sort_chest_transition(const er::ezstate::transition *transition) {
     auto target_state = transition->target_state;
     return target_state && !target_state->entry_events.empty() &&
            target_state->entry_events[0].command == er::talk_command::open_repository;
@@ -109,8 +99,7 @@ static bool is_sort_chest_transition(const er::ezstate::transition *transition)
 /**
  * Patch the site of grace menu to contain a "Transmogrify armor" option
  */
-static bool patch_state_group(er::ezstate::state_group *state_group)
-{
+static bool patch_state_group(er::ezstate::state_group *state_group) {
     er::ezstate::state *add_menu_state = nullptr;
     er::ezstate::state *menu_transition_state = nullptr;
 
@@ -119,21 +108,15 @@ static bool patch_state_group(er::ezstate::state_group *state_group)
 
     // Look for a state that adds a "Sort chest" menu option, and a state that opens the storage
     // chest.
-    for (auto &state : state_group->states)
-    {
-        for (int i = 0; i < state.entry_events.size(); i++)
-        {
+    for (auto &state : state_group->states) {
+        for (int i = 0; i < state.entry_events.size(); i++) {
             auto &event = state.entry_events[i];
-            if (is_sort_chest_event(event))
-            {
+            if (is_sort_chest_event(event)) {
                 add_menu_state = &state;
                 event_index = i;
-            }
-            else if (event.command == er::talk_command::add_talk_list_data)
-            {
+            } else if (event.command == er::talk_command::add_talk_list_data) {
                 auto message_id = get_ezstate_int_value(event.args[1]);
-                if (message_id == ertransmogrify::msg::event_text_for_talk_transmog_armor)
-                {
+                if (message_id == ertransmogrify::msg::event_text_for_talk_transmog_armor) {
                     SPDLOG_DEBUG("Not patching state group x{}, already patched",
                                  0x7fffffff - state_group->id);
                     return false;
@@ -141,10 +124,8 @@ static bool patch_state_group(er::ezstate::state_group *state_group)
             }
         }
 
-        for (int i = 0; i < state.transitions.size(); i++)
-        {
-            if (is_sort_chest_transition(state.transitions[i]))
-            {
+        for (int i = 0; i < state.transitions.size(); i++) {
+            if (is_sort_chest_transition(state.transitions[i])) {
                 menu_transition_state = &state;
                 transition_index = i;
                 break;
@@ -152,8 +133,7 @@ static bool patch_state_group(er::ezstate::state_group *state_group)
         }
     }
 
-    if (event_index == -1 || transition_index == -1)
-    {
+    if (event_index == -1 || transition_index == -1) {
         return false;
     }
 
@@ -177,16 +157,16 @@ static bool patch_state_group(er::ezstate::state_group *state_group)
     return true;
 }
 
-static void (*ezstate_enter_state)(er::ezstate::state *state, er::ezstate::machine *machine,
+static void (*ezstate_enter_state)(er::ezstate::state *state,
+                                   er::ezstate::machine *machine,
                                    void *unk);
 
-static void ezstate_enter_state_detour(er::ezstate::state *state, er::ezstate::machine *machine,
-                                       void *unk)
-{
-    if (is_grace_state_group(machine->state_group))
-    {
-        if (state == machine->state_group->initial_state && patch_state_group(machine->state_group))
-        {
+static void ezstate_enter_state_detour(er::ezstate::state *state,
+                                       er::ezstate::machine *machine,
+                                       void *unk) {
+    if (is_grace_state_group(machine->state_group)) {
+        if (state == machine->state_group->initial_state &&
+            patch_state_group(machine->state_group)) {
             transmog_menu_state.opts.back().transition.target_state =
                 machine->state_group->initial_state;
         }
@@ -195,16 +175,15 @@ static void ezstate_enter_state_detour(er::ezstate::state *state, er::ezstate::m
     ezstate_enter_state(state, machine, unk);
 }
 
-void talkscript::initialize()
-{
+void talkscript::initialize() {
     modutils::hook(
         {
-            .aob = "80 7e 18 00"     // cmp byte ptr [rsi + 0x18], 0x0
-                   "74 15"           // jz end_label
-                   "4c 8d 44 24 40"  // lea r8=>local_4c8, [rsp + 0x40]
-                   "48 8b d6"        // mov rdx,rsi
-                   "48 8b 4e 20"     // mov rcx,qword ptr [rsi + 0x20]
-                   "e8 ?? ?? ?? ??", // call EzState::EnterState
+            .aob = "80 7e 18 00"      // cmp byte ptr [rsi + 0x18], 0x0
+                   "74 15"            // jz end_label
+                   "4c 8d 44 24 40"   // lea r8=>local_4c8, [rsp + 0x40]
+                   "48 8b d6"         // mov rdx,rsi
+                   "48 8b 4e 20"      // mov rcx,qword ptr [rsi + 0x20]
+                   "e8 ?? ?? ?? ??",  // call EzState::EnterState
             .offset = 18,
             .relative_offsets = {{1, 5}},
         },

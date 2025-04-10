@@ -4,10 +4,8 @@
 
 #include <elden-x/chr/player.hpp>
 
-namespace ertransmogrify
-{
-namespace local_player
-{
+namespace ertransmogrify {
+namespace local_player {
 
 /**
  * Get the transmog state selected by the local player

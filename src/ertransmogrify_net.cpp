@@ -21,22 +21,18 @@ static const auto empty_state = ertransmogrify::vfx::player_state_st{};
 
 static constexpr int steam_networking_channel_transmog = 100069;
 
-void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_st &state)
-{
+void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_st &state) {
     auto session_manager = er::CS::CSSessionManagerImp::instance();
-    if (!session_manager || session_manager->player_entries().empty())
-    {
+    if (!session_manager || session_manager->player_entries().empty()) {
         return;
     }
 
     auto local_player_steam_id = SteamUser()->GetSteamID();
 
     // Send the local player's transmog selections to every connected player in the current session
-    for (auto &entry : session_manager->player_entries())
-    {
+    for (auto &entry : session_manager->player_entries()) {
         // Don't send messages to ourself
-        if (entry.steam_id == local_player_steam_id)
-        {
+        if (entry.steam_id == local_player_steam_id) {
             continue;
         }
 
@@ -46,34 +42,29 @@ void ertransmogrify::net::send_messages(const ertransmogrify::vfx::player_state_
         auto result = SteamNetworkingMessages()->SendMessageToUser(
             steam_networking_id, &state, sizeof(state), k_nSteamNetworkingSend_Reliable,
             steam_networking_channel_transmog);
-        if (result != k_EResultOK)
-        {
+        if (result != k_EResultOK) {
             SPDLOG_ERROR("Error {} sending Steam networking message to user {}", (int)result,
                          entry.steam_id.ConvertToUint64());
         }
     }
 }
 
-void ertransmogrify::net::receive_messages()
-{
+void ertransmogrify::net::receive_messages() {
     static auto message_buffer = std::array<SteamNetworkingMessage_t *, 128>{};
 
     auto message_count = SteamNetworkingMessages()->ReceiveMessagesOnChannel(
         steam_networking_channel_transmog, message_buffer.data(), message_buffer.size());
     auto messages = std::span{message_buffer.data(), (size_t)message_count};
 
-    for (auto &message : messages)
-    {
-        if (message->GetSize() < sizeof(ertransmogrify::vfx::player_state_st))
-        {
+    for (auto &message : messages) {
+        if (message->GetSize() < sizeof(ertransmogrify::vfx::player_state_st)) {
             continue;
         }
 
         auto steam_id = message->m_identityPeer.GetSteamID64();
         auto &net_state =
             *reinterpret_cast<const ertransmogrify::vfx::player_state_st *>(message->GetData());
-        if (net_state_by_steam_id.insert_or_assign(steam_id, net_state).second)
-        {
+        if (net_state_by_steam_id.insert_or_assign(steam_id, net_state).second) {
             auto steam_name = SteamFriends()->GetFriendPersonaName(steam_id);
             if (steam_name)
                 SPDLOG_INFO("Received transmog state from Steam user {}", steam_name);
@@ -89,26 +80,20 @@ void ertransmogrify::net::receive_messages()
     auto player_entries = session_manager ? session_manager->player_entries()
                                           : std::span<er::CS::CSSessionManagerImp::player_entry>{};
 
-    for (auto it = net_state_by_steam_id.begin(); it != net_state_by_steam_id.end();)
-    {
+    for (auto it = net_state_by_steam_id.begin(); it != net_state_by_steam_id.end();) {
         if (std::none_of(player_entries.begin(), player_entries.end(),
-                         [&](auto entry) { return entry.steam_id == it->first; }))
-        {
+                         [&](auto entry) { return entry.steam_id == it->first; })) {
             it = net_state_by_steam_id.erase(it);
-        }
-        else
-        {
+        } else {
             it++;
         }
     }
 }
 
 const ertransmogrify::vfx::player_state_st &ertransmogrify::net::get_net_player_state(
-    CSteamID steam_id)
-{
+    CSteamID steam_id) {
     auto entry = net_state_by_steam_id.find(steam_id);
-    if (entry != net_state_by_steam_id.end())
-    {
+    if (entry != net_state_by_steam_id.end()) {
         return entry->second;
     }
 

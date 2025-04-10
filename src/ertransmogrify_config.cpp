@@ -17,14 +17,12 @@ bool ertransmogrify::config::debug = true;
 bool ertransmogrify::config::debug = false;
 #endif
 
-void ertransmogrify::config::load(const fs::path &ini_path)
-{
+void ertransmogrify::config::load(const fs::path &ini_path) {
     SPDLOG_INFO("Loading config from {}", ini_path.string());
 
     mINI::INIFile file(ini_path.string());
     mINI::INIStructure ini;
-    if (file.read(ini) && ini.has("ertransmogrify"))
-    {
+    if (file.read(ini) && ini.has("ertransmogrify")) {
         auto &config = ini["ertransmogrify"];
 
         if (config.has("include_unobtained_armor"))
@@ -45,8 +43,7 @@ void ertransmogrify::config::load(const fs::path &ini_path)
         if (config.has("client_side_only"))
             client_side_only = config["client_side_only"] != "false";
 
-        if (config.has("debug"))
-            debug = config["debug"] != "false";
+        if (config.has("debug")) debug = config["debug"] != "false";
     }
 
     SPDLOG_INFO("include_unobtained_armor = {}", include_unobtained_armor);
@@ -55,8 +52,7 @@ void ertransmogrify::config::load(const fs::path &ini_path)
     SPDLOG_INFO("patch_grace_talk_script = {}", patch_grace_talk_script);
     SPDLOG_INFO("initialize_delay = {}", initialize_delay);
     SPDLOG_INFO("client_side_only = {}", client_side_only);
-    if (debug)
-    {
+    if (debug) {
         SPDLOG_INFO("debug = true");
     }
 }

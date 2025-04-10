@@ -3,12 +3,9 @@
 #include <map>
 #include <string>
 
-namespace ertransmogrify
-{
-namespace msg
-{
-struct Messages
-{
+namespace ertransmogrify {
+namespace msg {
+struct Messages {
     std::wstring transmog_armor;
     std::wstring transmog_head;
     std::wstring transmog_chest;

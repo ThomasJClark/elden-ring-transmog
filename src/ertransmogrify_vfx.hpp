@@ -1,9 +1,7 @@
 #pragma once
 
-namespace ertransmogrify
-{
-namespace vfx
-{
+namespace ertransmogrify {
+namespace vfx {
 // Fake armor set used as the transformProtector for transmogrification. The params that this ID
 // resolves to changes at runtime based on the player's transmog selection.
 static constexpr long long transmog_set_base_id = 69000000;
@@ -29,8 +27,7 @@ static constexpr long long chest_protector_offset = 100;
 static constexpr long long arms_protector_offset = 200;
 static constexpr long long legs_protector_offset = 300;
 
-struct player_state_st
-{
+struct player_state_st {
     int head_protector_id{-1};
     int chest_protector_id{-1};
     int arms_protector_id{-1};

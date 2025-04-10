@@ -2,10 +2,8 @@
 
 #include <map>
 
-namespace ertransmogrify
-{
-namespace shop
-{
+namespace ertransmogrify {
+namespace shop {
 static constexpr unsigned int item_type_protector_begin = 0x10000000;
 static constexpr unsigned int item_type_goods_begin = 0x40000000;
 static constexpr unsigned int item_type_goods_end = 0x50000000;
@@ -47,28 +45,23 @@ void remove_transmog_goods(signed char protector_category = -1);
  */
 void add_transmog_good(unsigned long long protector_id);
 
-inline bool is_invisible_protector_id(long long protector_id)
-{
+inline bool is_invisible_protector_id(long long protector_id) {
     return protector_id == bare_head_protector_id || protector_id == bare_chest_protector_id ||
            protector_id == bare_arms_protector_id || protector_id == bare_legs_protector_id;
 }
 
-inline long long get_transmog_goods_id_for_protector(long long protector_id)
-{
+inline long long get_transmog_goods_id_for_protector(long long protector_id) {
     // Ignore armor IDs with upgrade level digits set, since these digits should be 0 in Elden Ring,
     // and transmog good IDs don't take them into account
-    if (protector_id % 100 != 0)
-    {
+    if (protector_id % 100 != 0) {
         return -1;
     }
 
     return transmog_goods_start_id + protector_id / 100;
 }
 
-inline long long get_protector_id_for_transmog_good(long long goods_id)
-{
-    if (goods_id >= transmog_goods_start_id && goods_id < transmog_goods_end_id)
-    {
+inline long long get_protector_id_for_transmog_good(long long goods_id) {
+    if (goods_id >= transmog_goods_start_id && goods_id < transmog_goods_end_id) {
         return 100 * (goods_id - transmog_goods_start_id);
     }
 

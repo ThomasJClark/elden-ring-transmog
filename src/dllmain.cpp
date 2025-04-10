@@ -26,10 +26,8 @@ namespace fs = std::filesystem;
 
 std::thread mod_thread;
 
-bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_reserved)
-{
-    if (fdw_reason == DLL_PROCESS_ATTACH)
-    {
+bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_reserved) {
+    if (fdw_reason == DLL_PROCESS_ATTACH) {
         wchar_t dll_filename[MAX_PATH] = {0};
         GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH);
         auto folder = fs::path(dll_filename).parent_path();
@@ -45,8 +43,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
 
         ertransmogrify::config::load(folder / "ertransmogrify.ini");
 
-        if (ertransmogrify::config::debug)
-        {
+        if (ertransmogrify::config::debug) {
             AllocConsole();
             FILE *stream;
             freopen_s(&stream, "CONOUT$", "w", stdout);
@@ -59,8 +56,7 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
         }
 
         mod_thread = std::thread([]() {
-            try
-            {
+            try {
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 modutils::initialize();
                 er::FD4::find_singletons();
@@ -79,14 +75,12 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::shop::initialize();
 
-                if (ertransmogrify::config::patch_grace_talk_script)
-                {
+                if (ertransmogrify::config::patch_grace_talk_script) {
                     SPDLOG_INFO("Hooking talk scripts...");
                     ertransmogrify::talkscript::initialize();
                 }
 
-                if (ertransmogrify::config::initialize_delay)
-                {
+                if (ertransmogrify::config::initialize_delay) {
                     SPDLOG_INFO("Waiting {}ms to enable...",
                                 ertransmogrify::config::initialize_delay);
                     std::this_thread::sleep_for(
@@ -96,24 +90,17 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
                 modutils::enable_hooks();
 
                 SPDLOG_INFO("Initialized transmog");
-            }
-            catch (std::runtime_error const &e)
-            {
+            } catch (std::runtime_error const &e) {
                 SPDLOG_ERROR("Error initializing mod: {}", e.what());
                 modutils::deinitialize();
             }
         });
-    }
-    else if (fdw_reason == DLL_PROCESS_DETACH && lpv_reserved != nullptr)
-    {
-        try
-        {
+    } else if (fdw_reason == DLL_PROCESS_DETACH && lpv_reserved != nullptr) {
+        try {
             mod_thread.join();
             modutils::deinitialize();
             SPDLOG_INFO("Deinitialized transmog");
-        }
-        catch (std::runtime_error const &e)
-        {
+        } catch (std::runtime_error const &e) {
             SPDLOG_ERROR("Error deinitializing mod: {}", e.what());
             spdlog::shutdown();
             return false;
@@ -125,19 +112,14 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
 
 // Set up a fake ModEngine2 extension simply so it doesn't print a "is not a modengine extension"
 // error
-static struct dummy_modengine_extension_st
-{
+static struct dummy_modengine_extension_st {
     virtual ~dummy_modengine_extension_st() = default;
     virtual void on_attach(){};
     virtual void on_detach(){};
-    virtual const char *id()
-    {
-        return "transmog";
-    }
+    virtual const char *id() { return "transmog"; }
 } modengine_extension;
 
-extern "C" __declspec(dllexport) bool modengine_ext_init(void *connector, void **extension)
-{
+extern "C" __declspec(dllexport) bool modengine_ext_init(void *connector, void **extension) {
     *extension = &modengine_extension;
     return true;
 }
