@@ -16,9 +16,6 @@ ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_pla
 
     auto &gear_param_ids = player->game_data->equip_game_data.chr_asm.gear_param_ids;
 
-    // If the player isn't using transmog, default to their actual armor. We could instead not
-    // apply transmog at all, but the Roundtable Hold mirror glitches if you remove a transform
-    // protector without reloading.
     auto state = ertransmogrify::vfx::player_state_st{
         .head_protector_id = gear_param_ids.head_protector_id,
         .chest_protector_id = gear_param_ids.chest_protector_id,

@@ -246,7 +246,8 @@ static void open_regular_shop_detour(void *unk,
                                er::CS::PlayerGameData::body_type_en::type_a;
         for (auto &[goods_id, goods] : transmog_goods) {
             auto protector_id = ertransmogrify::shop::get_protector_id_for_transmog_good(goods_id);
-            if (protector_id == -1 || shop::is_invisible_protector_id(protector_id)) {
+            if (protector_id == -1 || shop::is_invisible_protector_id(protector_id) ||
+                shop::dlc_transformation_goods_by_protector_id.contains(protector_id)) {
                 continue;
             }
 
@@ -426,10 +427,8 @@ void shop::initialize() {
         // Skip invalid items, and cut items that don't have a name (these are usually
         // duplicates used for NPCs)
         auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
-        if (protector_name == msg::cut_item_prefix && !dlc_transformation_protector) {
-            continue;
-        }
-        if (protector_name.empty() && !known_modded_protector_ids.contains(protector_id)) {
+        if (!dlc_transformation_protector && !known_modded_protector_ids.contains(protector_id) &&
+            (protector_name == msg::cut_item_prefix || protector_name.empty())) {
             continue;
         }
 

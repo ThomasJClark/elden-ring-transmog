@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(ertransmogrify
-  VERSION   "2.4.3"
+  VERSION   "2.4.4"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
