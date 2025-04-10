@@ -4,9 +4,51 @@
 
 #include <spdlog/spdlog.h>
 
-#include <elden-x/params/param_table.hpp>
+#include <elden-x/params.hpp>
 
 static constexpr int transmog_sfx_id = 8020;
+
+/**
+ * Get the player's displayed armor before transmog is applied
+ */
+static ertransmogrify::vfx::player_state_st get_default_player_state(er::CS::PlayerIns *player) {
+    auto &gear_param_ids = player->game_data->equip_game_data.chr_asm.gear_param_ids;
+
+    // If the player isn't using transmog, default to their actual armor.
+    auto state = ertransmogrify::vfx::player_state_st{
+        .head_protector_id = gear_param_ids.head_protector_id,
+        .chest_protector_id = gear_param_ids.chest_protector_id,
+        .arms_protector_id = gear_param_ids.arms_protector_id,
+        .legs_protector_id = gear_param_ids.legs_protector_id};
+
+    // If any other transform effects are present other than transmog (e.g. the DLC transformation
+    // items), override the armor.
+    for (auto entry = player->special_effects->head; entry; entry = entry->next) {
+        if (entry->param_id >= ertransmogrify::vfx::transmog_vfx_speffect_start_id &&
+            entry->param_id < ertransmogrify::vfx::transmog_vfx_speffect_end_id) {
+            continue;
+        }
+
+        if (entry->param->vfxId != -1) {
+            auto &vfx = er::param::SpEffectVfxParam[entry->param->vfxId].first;
+            if (vfx.transformProtectorId != -1) {
+                if (vfx.isFullBodyTransformProtectorId) {
+                    state.chest_protector_id =
+                        vfx.transformProtectorId + ertransmogrify::vfx::chest_protector_offset;
+                    state.arms_protector_id =
+                        vfx.transformProtectorId + ertransmogrify::vfx::arms_protector_offset;
+                    state.legs_protector_id =
+                        vfx.transformProtectorId + ertransmogrify::vfx::legs_protector_offset;
+                } else {
+                    state.head_protector_id =
+                        vfx.transformProtectorId + ertransmogrify::vfx::head_protector_offset;
+                }
+            }
+        }
+    }
+
+    return state;
+}
 
 ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_player_state(
     er::CS::PlayerIns *player) {
@@ -14,13 +56,7 @@ ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_pla
         return ertransmogrify::vfx::player_state_st{};
     }
 
-    auto &gear_param_ids = player->game_data->equip_game_data.chr_asm.gear_param_ids;
-
-    auto state = ertransmogrify::vfx::player_state_st{
-        .head_protector_id = gear_param_ids.head_protector_id,
-        .chest_protector_id = gear_param_ids.chest_protector_id,
-        .arms_protector_id = gear_param_ids.arms_protector_id,
-        .legs_protector_id = gear_param_ids.legs_protector_id};
+    auto state = get_default_player_state(player);
 
     // When the local player is given this speffect, remove any transmogs
     if (players::has_speffect(player, ertransmogrify::vfx::undo_transmog_speffect_id)) {

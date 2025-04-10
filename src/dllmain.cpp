@@ -7,7 +7,7 @@
 #include "ertransmogrify_vfx.hpp"
 #include "utils/players.hpp"
 
-#include <elden-x/params/params.hpp>
+#include <elden-x/params.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 #include <spdlog/sinks/daily_file_sink.h>

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28.1)
 set(CMAKE_GENERATOR_PLATFORM x64)
 
 project(ertransmogrify
-  VERSION   "2.4.4"
+  VERSION   "2.4.5"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -32,7 +32,7 @@ FetchContent_Declare(steamworks-sdk
 
 FetchContent_Declare(elden-x
   GIT_REPOSITORY        https://github.com/ThomasJClark/elden-x.git
-  GIT_TAG               a270689b2ae427f3906c92cd1fa4138bb9cbda09)
+  GIT_TAG               809e9af3186e6f5caaf01d445de73cf51e258f28)
 
 add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)  
 

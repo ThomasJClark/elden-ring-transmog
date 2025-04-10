@@ -6,7 +6,7 @@
 
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/gamedata/game_data_man.hpp>
-#include <elden-x/params/param_table.hpp>
+#include <elden-x/params.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 #include <spdlog/spdlog.h>
