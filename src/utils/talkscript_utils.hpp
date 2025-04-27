@@ -14,12 +14,12 @@ typedef std::array<unsigned char, 6> int_expression;
  */
 static constexpr int_expression make_int_expression(int value) {
     return {
-        0x82,
-        static_cast<unsigned char>((value & 0x000000ff)),
-        static_cast<unsigned char>((value & 0x0000ff00) >> 8),
-        static_cast<unsigned char>((value & 0x00ff0000) >> 16),
-        static_cast<unsigned char>((value & 0xff000000) >> 24),
-        0xa1,
+        0x82,                                                    // value
+        static_cast<unsigned char>((value & 0x000000ff)),        // value
+        static_cast<unsigned char>((value & 0x0000ff00) >> 8),   // value
+        static_cast<unsigned char>((value & 0x00ff0000) >> 16),  // value
+        static_cast<unsigned char>((value & 0xff000000) >> 24),  // value
+        0xa1,                                                    // end
     };
 }
 
@@ -45,15 +45,15 @@ static int get_ezstate_int_value(const er::ezstate::expression arg) {
  */
 static constexpr std::array<unsigned char, 9> make_talk_list_result_expression(int value) {
     return {
-        0x57,
-        0x84,
-        0x82,
-        static_cast<unsigned char>((value & 0x000000ff)),
-        static_cast<unsigned char>((value & 0x0000ff00) >> 8),
-        static_cast<unsigned char>((value & 0x00ff0000) >> 16),
-        static_cast<unsigned char>((value & 0xff000000) >> 24),
-        0x95,
-        0xa1,
+        0x57,                                                    // 23 (GetTalkListEntryResult)
+        0x84,                                                    // call with 0 args
+        0x82,                                                    // value
+        static_cast<unsigned char>((value & 0x000000ff)),        // value
+        static_cast<unsigned char>((value & 0x0000ff00) >> 8),   // value
+        static_cast<unsigned char>((value & 0x00ff0000) >> 16),  // value
+        static_cast<unsigned char>((value & 0xff000000) >> 24),  // value
+        0x95,                                                    // ==
+        0xa1,                                                    // end
     };
 }
 
@@ -79,53 +79,41 @@ static auto true_expression = std::array<unsigned char, 2>{0x41, 0xa1};
 /**
  * Common ESD expression for the generic talk menu closing
  */
-static auto talk_menu_closed_expression =
-    std::array<unsigned char, 40>{// start?
-                                  (unsigned char)0x7b,
-                                  // CheckSpecificPersonMenuIsOpen(1, 0)
-                                  0x82, 0x01, 0x00, 0x00, 0x00, 0x82, 0x00, 0x00, 0x00, 0x00, 0x86,
-                                  // 1
-                                  0x82, 0x01, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // CheckSpecificPersonGenericDialogIsOpen(0)
-                                  0x7a, 0x82, 0x00, 0x00, 0x00, 0x00, 0x85,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // &&
-                                  0x98,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // end
-                                  0xa1};
+static auto talk_menu_closed_expression = std::array<unsigned char, 15>{
+    0x7b,  // 59 (CheckSpecificPersonMenuIsOpen)
+    0x41,  // 1
+    0x40,  // 0
+    0x86,  // call with 2 args
+    0x41,  // 1
+    0x95,  // ==
+    0x7a,  // 58 (CheckSpecificPersonGenericDialogIsOpen)
+    0x40,  // 0
+    0x85,  // call with 1 arg
+    0x40,  // 0
+    0x95,  // ==
+    0x98,  // &&
+    0x40,  // 0
+    0x95,  // ==
+    0xa1   // end
+};
 
-static auto regular_shop_menu_closed_expression =
-    std::array<unsigned char, 40>{// start?
-                                  (unsigned char)0x7b,
-                                  // CheckSpecificPersonMenuIsOpen(5, 0)
-                                  0x82, 0x05, 0x00, 0x00, 0x00, 0x82, 0x00, 0x00, 0x00, 0x00, 0x86,
-                                  // 1
-                                  0x82, 0x01, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // CheckSpecificPersonGenericDialogIsOpen(0)
-                                  0x7a, 0x82, 0x00, 0x00, 0x00, 0x00, 0x85,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // &&
-                                  0x98,
-                                  // 0
-                                  0x82, 0x00, 0x00, 0x00, 0x00,
-                                  // ==
-                                  0x95,
-                                  // end
-                                  0xa1};
+static auto regular_shop_menu_closed_expression = std::array<unsigned char, 15>{
+    0x7b,  // 59 (CheckSpecificPersonMenuIsOpen)
+    0x45,  // 5
+    0x40,  // 0
+    0x86,  // call with 2 args
+    0x41,  // 1
+    0x95,  // ==
+    0x7a,  // 58 (CheckSpecificPersonGenericDialogIsOpen)
+    0x40,  // 0
+    0x85,  // call with 1 arg
+    0x40,  // 0
+    0x95,  // ==
+    0x98,  // &&
+    0x40,  // 0
+    0x95,  // ==
+    0xa1   // end
+};
 
 /**
  * Helper that holds commonly used structs for a talk menu list item
