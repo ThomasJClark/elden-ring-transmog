@@ -15,10 +15,11 @@
 #include <unordered_set>
 
 using namespace ertransmogrify;
+using namespace std;
 
 static constexpr unsigned short invisible_icon_id = 3142;
 
-static const std::unordered_set<unsigned long long> exluded_protector_ids = {
+static const unordered_set<unsigned long long> exluded_protector_ids = {
     // Skip Grass Hair Ornament, which is a cut helmet that's missing an icon
     920000,
 
@@ -26,24 +27,32 @@ static const std::unordered_set<unsigned long long> exluded_protector_ids = {
     // have a model
     955000, 955100, 955200, 955300, 956100};
 
-// Include protectors with missing names if they're from known mods. We filter out nameless rows
-// to exclude NPC duplicates and other junk, but we should skip this filtering for mods that might
-// not have localization in the user's current language.
-static const std::unordered_set<unsigned long long> known_modded_protector_ids = {
+// Include protectors with missing names if they're from known mods or cut content. We filter out
+// nameless rows to exclude NPC duplicates and other junk, but we should skip this filtering for
+// content that might not have localization in the user's current language.
+static const unordered_set<unsigned long long> known_protector_ids = {
+    // Brave's set
+    700000, 700100, 700200, 700300, 701000, 702000,
+
+    // Deathbed Smalls
+    1930300,
+
+    // Millicent's set
+    1950100, 1950200, 1950300, 1970100, 1970200,
+
     // Berserker Armor - https://www.nexusmods.com/eldenring/mods/729
     964400, 964500, 964600, 964700, 965400, 965500};
 
-const std::map<unsigned long long, unsigned long long>
-    shop::dlc_transformation_goods_by_protector_id = {
-        {5040100, 2002010},  // Rock Heart (chest, includes full body)
-        {5040200, 2002010},  // Rock Heart (arms, invisible)
-        {5040300, 2002010},  // Rock Heart (legs, invisible)
-        {5050100, 2002020},  // Priestess Heart (chest, includes full body)
-        {5050200, 2002020},  // Priestess Heart (arms, invisible)
-        {5050300, 2002020},  // Priestess Heart (legs, invisible)
-        {5170100, 2002030},  // Lamenter's Mask (chest, includes full body)
-        {5170200, 2002030},  // Lamenter's Mask (arms, invisible)
-        {5170300, 2002030},  // Lamenter's Mask (legs, invisible)
+const map<unsigned long long, unsigned long long> shop::dlc_transformation_goods_by_protector_id = {
+    {5040100, 2002010},  // Rock Heart (chest, includes full body)
+    {5040200, 2002010},  // Rock Heart (arms, invisible)
+    {5040300, 2002010},  // Rock Heart (legs, invisible)
+    {5050100, 2002020},  // Priestess Heart (chest, includes full body)
+    {5050200, 2002020},  // Priestess Heart (arms, invisible)
+    {5050300, 2002020},  // Priestess Heart (legs, invisible)
+    {5170100, 2002030},  // Lamenter's Mask (chest, includes full body)
+    {5170200, 2002030},  // Lamenter's Mask (arms, invisible)
+    {5170300, 2002030},  // Lamenter's Mask (legs, invisible)
 };
 
 typedef void AddRemoveItemFn(unsigned long long item_type, unsigned int item_id, int quantity);
@@ -76,8 +85,8 @@ static er::paramdef::shop_lineup_param transmog_chest_shop_menu = {0};
 static er::paramdef::shop_lineup_param transmog_arms_shop_menu = {0};
 static er::paramdef::shop_lineup_param transmog_legs_shop_menu = {0};
 
-static std::unordered_map<int, er::paramdef::shop_lineup_param> transmog_shop_lineups;
-static std::unordered_map<int, er::paramdef::equip_param_goods_st> transmog_goods;
+static unordered_map<int, er::paramdef::shop_lineup_param> transmog_shop_lineups;
+static unordered_map<int, er::paramdef::equip_param_goods_st> transmog_goods;
 
 static FindShopMenuResult *(*get_shop_menu)(FindShopMenuResult *result,
                                             unsigned char shop_type,
@@ -352,7 +361,7 @@ void shop::initialize() {
         .relative_offsets = {{1, 5}},
     });
     if (add_remove_item == nullptr) {
-        throw std::runtime_error("Couldn't find AddRemoveItem");
+        throw runtime_error("Couldn't find AddRemoveItem");
     }
 
     // Add a shop to "buy" armor pieces for each category. Note: these params control the title
@@ -427,7 +436,7 @@ void shop::initialize() {
         // Skip invalid items, and cut items that don't have a name (these are usually
         // duplicates used for NPCs)
         auto [protector_name, protector_is_dlc] = msg::get_protector_data(protector_id);
-        if (!dlc_transformation_protector && !known_modded_protector_ids.contains(protector_id) &&
+        if (!dlc_transformation_protector && !known_protector_ids.contains(protector_id) &&
             (protector_name == msg::cut_item_prefix || protector_name.empty())) {
             continue;
         }
