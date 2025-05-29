@@ -57,7 +57,6 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
 
         mod_thread = std::thread([]() {
             try {
-                std::this_thread::sleep_for(std::chrono::seconds(5));
                 modutils::initialize();
                 er::FD4::find_singletons();
                 players::initialize();
