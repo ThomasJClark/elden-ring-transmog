@@ -369,13 +369,15 @@ static bool update_player_context(player_context_st &context,
                     if (sp_effect_id == -1) continue;
 
                     auto &sp_effect = er::param::SpEffectParam[sp_effect_id].first;
+
+                    // Ignore effects that have mechanical benefits or drawbacks, which is
+                    // typically indicated by an icon
+                    if (sp_effect.iconId != -1) continue;
+
                     for (auto vfx_id :
                          {sp_effect.vfxId, sp_effect.vfxId1, sp_effect.vfxId2, sp_effect.vfxId3,
                           sp_effect.vfxId4, sp_effect.vfxId5, sp_effect.vfxId6, sp_effect.vfxId7}) {
-                        if (vfx_id == -1) continue;
-
-                        auto &vfx = er::param::SpEffectVfxParam[vfx_id].first;
-                        if (!vfx.isSilence) return vfx_id;
+                        if (vfx_id != -1) return vfx_id;
                     }
                 }
             }
