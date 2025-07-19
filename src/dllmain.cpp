@@ -74,10 +74,8 @@ bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_r
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 ertransmogrify::shop::initialize();
 
-                if (ertransmogrify::config::patch_grace_talk_script) {
-                    SPDLOG_INFO("Hooking talk scripts...");
-                    ertransmogrify::talkscript::initialize();
-                }
+                SPDLOG_INFO("Hooking talk scripts...");
+                ertransmogrify::talkscript::initialize();
 
                 if (ertransmogrify::config::initialize_delay) {
                     SPDLOG_INFO("Waiting {}ms to enable...",

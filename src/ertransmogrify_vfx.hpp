@@ -27,6 +27,10 @@ static constexpr long long chest_protector_offset = 100;
 static constexpr long long arms_protector_offset = 200;
 static constexpr long long legs_protector_offset = 300;
 
+// Hack: the character creation menu shows a copy of the player model, but it has some odd behavior
+// with transform protectors. Make the player temporarily naked while this menu is up.
+extern bool is_in_chr_make_menu;
+
 struct player_state_st {
     int head_protector_id{-1};
     int chest_protector_id{-1};

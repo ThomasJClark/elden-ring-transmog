@@ -21,6 +21,8 @@
 using namespace std;
 using namespace ertransmogrify;
 
+bool vfx::is_in_chr_make_menu = false;
+
 unsigned short head_transmog_state_info = 998;
 unsigned short body_transmog_state_info = 999;
 
@@ -328,8 +330,18 @@ static void copy_player_character_data_detour(er::CS::PlayerIns *target,
  */
 class update_transmog_vfx_task : public er::CS::CSEzTask {
     bool update_player_context(player_context_st &context,
-                               const ertransmogrify::vfx::player_state_st &new_state,
+                               ertransmogrify::vfx::player_state_st new_state,
                                int index) {
+        // Don't show armor in the character creator menu
+        bool disable_toggle = false;
+        if (vfx::is_in_chr_make_menu && index == 0) {
+            new_state.head_protector_id = shop::bare_head_protector_id;
+            new_state.chest_protector_id = shop::bare_chest_protector_id;
+            new_state.arms_protector_id = shop::bare_arms_protector_id;
+            new_state.legs_protector_id = shop::bare_legs_protector_id;
+            disable_toggle = true;
+        }
+
         if (new_state.head_protector_id != context.state.head_protector_id ||
             new_state.chest_protector_id != context.state.chest_protector_id ||
             new_state.arms_protector_id != context.state.arms_protector_id ||
@@ -337,15 +349,17 @@ class update_transmog_vfx_task : public er::CS::CSEzTask {
             // Toggle between the main and alternate set IDs when the protectors change, so the game
             // looks up the params again. Both of these IDs alias to the same armor set which is
             // dynamically updated.
-            int diff = ertransmogrify::vfx::transmog_set_alt_base_id -
-                       ertransmogrify::vfx::transmog_set_base_id;
-            if (context.head_vfx.transformProtectorId >=
-                ertransmogrify::vfx::transmog_set_alt_base_id) {
-                context.head_vfx.transformProtectorId -= diff;
-                context.body_vfx.transformProtectorId -= diff;
-            } else {
-                context.head_vfx.transformProtectorId += diff;
-                context.body_vfx.transformProtectorId += diff;
+            if (!disable_toggle) {
+                int diff = ertransmogrify::vfx::transmog_set_alt_base_id -
+                           ertransmogrify::vfx::transmog_set_base_id;
+                if (context.head_vfx.transformProtectorId >=
+                    ertransmogrify::vfx::transmog_set_alt_base_id) {
+                    context.head_vfx.transformProtectorId -= diff;
+                    context.body_vfx.transformProtectorId -= diff;
+                } else {
+                    context.head_vfx.transformProtectorId += diff;
+                    context.body_vfx.transformProtectorId += diff;
+                }
             }
 
             auto is_head_applied = new_state.head_protector_id > 0;

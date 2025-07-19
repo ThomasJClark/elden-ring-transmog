@@ -1,4 +1,5 @@
 #include "ertransmogrify_talkscript.hpp"
+#include "ertransmogrify_config.hpp"
 #include "ertransmogrify_messages.hpp"
 #include "ertransmogrify_shop.hpp"
 #include "ertransmogrify_vfx.hpp"
@@ -164,11 +165,23 @@ static void (*ezstate_enter_state)(er::ezstate::state *state,
 static void ezstate_enter_state_detour(er::ezstate::state *state,
                                        er::ezstate::machine *machine,
                                        void *unk) {
-    if (is_grace_state_group(machine->state_group)) {
-        if (state == machine->state_group->initial_state &&
-            patch_state_group(machine->state_group)) {
-            transmog_menu_state.opts.back().transition.target_state =
-                machine->state_group->initial_state;
+    if (ertransmogrify::config::patch_grace_talk_script) {
+        if (is_grace_state_group(machine->state_group)) {
+            if (state == machine->state_group->initial_state &&
+                patch_state_group(machine->state_group)) {
+                transmog_menu_state.opts.back().transition.target_state =
+                    machine->state_group->initial_state;
+            }
+        }
+    }
+
+    for (auto &event : state->entry_events) {
+        if (event.command == er::talk_command::open_chara_make_menu) {
+            vfx::is_in_chr_make_menu = true;
+            break;
+        } else if (event.command == er::talk_command::clear_talk_list_data) {
+            vfx::is_in_chr_make_menu = false;
+            break;
         }
     }
 
