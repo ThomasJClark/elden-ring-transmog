@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 #include <elden-x/chr/world_chr_man.hpp>
 #include <elden-x/params.hpp>
+#include <elden-x/task.hpp>
 #include <elden-x/utils/modutils.hpp>
 
 #include <chrono>
@@ -322,202 +323,204 @@ static void copy_player_character_data_detour(er::CS::PlayerIns *target,
     }
 }
 
-static bool update_player_context(player_context_st &context,
-                                  const ertransmogrify::vfx::player_state_st &new_state,
-                                  int index) {
-    if (new_state.head_protector_id != context.state.head_protector_id ||
-        new_state.chest_protector_id != context.state.chest_protector_id ||
-        new_state.arms_protector_id != context.state.arms_protector_id ||
-        new_state.legs_protector_id != context.state.legs_protector_id) {
-        // Toggle between the main and alternate set IDs when the protectors change, so the game
-        // looks up the params again. Both of these IDs alias to the same armor set which is
-        // dynamically updated.
-        int diff = ertransmogrify::vfx::transmog_set_alt_base_id -
-                   ertransmogrify::vfx::transmog_set_base_id;
-        if (context.head_vfx.transformProtectorId >=
-            ertransmogrify::vfx::transmog_set_alt_base_id) {
-            context.head_vfx.transformProtectorId -= diff;
-            context.body_vfx.transformProtectorId -= diff;
-        } else {
-            context.head_vfx.transformProtectorId += diff;
-            context.body_vfx.transformProtectorId += diff;
-        }
-
-        auto is_head_applied = new_state.head_protector_id > 0;
-        auto is_body_applied = new_state.chest_protector_id > 0 ||
-                               new_state.arms_protector_id > 0 || new_state.legs_protector_id > 0;
-
-        // Set the VFX for the speffects applied to the player if they're applied. We could also
-        // just add and remove the speffects to toggle the VFX, but speffect removal is not synced
-        // in co-op.
-        context.head_speffect.vfxId =
-            is_head_applied ? ertransmogrify::vfx::transmog_head_base_vfx_id + index : -1;
-        context.body_speffect.vfxId =
-            is_body_applied ? ertransmogrify::vfx::transmog_body_base_vfx_id + index : -1;
-
-        // Check for any protectors that apply purely cosmetic VFX, such as Midras Gaze in
-        // The Convergence. We should apply these effects when the protectors are chosen as
-        // transmogs, but we shouldn't include any effects that have mechanical benefits.
-        auto get_cosmetic_vfx_id = [](initializer_list<int> protector_ids) {
-            for (auto protector_id : protector_ids) {
-                if (protector_id == -1) continue;
-
-                auto &protector = er::param::EquipParamProtector[protector_id].first;
-                for (auto sp_effect_id :
-                     {protector.residentSpEffectId, protector.residentSpEffectId2,
-                      protector.residentSpEffectId3}) {
-                    if (sp_effect_id == -1) continue;
-
-                    auto &sp_effect = er::param::SpEffectParam[sp_effect_id].first;
-
-                    // Ignore effects that have mechanical benefits or drawbacks, which is
-                    // typically indicated by an icon
-                    if (sp_effect.iconId != -1) continue;
-
-                    for (auto vfx_id :
-                         {sp_effect.vfxId, sp_effect.vfxId1, sp_effect.vfxId2, sp_effect.vfxId3,
-                          sp_effect.vfxId4, sp_effect.vfxId5, sp_effect.vfxId6, sp_effect.vfxId7}) {
-                        if (vfx_id != -1) return vfx_id;
-                    }
-                }
-            }
-            return -1;
-        };
-
-        context.head_speffect.vfxId1 = get_cosmetic_vfx_id({
-            new_state.head_protector_id,
-        });
-
-        context.body_speffect.vfxId1 = get_cosmetic_vfx_id({
-            new_state.chest_protector_id,
-            new_state.arms_protector_id,
-            new_state.legs_protector_id,
-        });
-
-        context.state = new_state;
-
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * Returns true if the local player's transmog shouldn't be displayed on other player's screens
- * and vice versa
- */
-static bool is_client_side_only() {
-    auto result = ertransmogrify::config::client_side_only;
-
-    // F8 temporarily inverts this setting so you can peek at other players' actual armor
-    if (GetAsyncKeyState(VK_F8) & 0x8000) {
-        return !result;
-    }
-
-    return result;
-}
-
-static void update_player_contexts() {
-    static auto empty_state = ertransmogrify::vfx::player_state_st{};
-
-    static auto clock = chrono::steady_clock{};
-    static auto next_net_update_time = chrono::steady_clock::time_point{};
-
-    auto world_chr_man = er::CS::WorldChrManImp::instance();
-    if (!world_chr_man) {
-        return;
-    }
-
-    player_contexts = span{player_contexts.data(), world_chr_man->player_chr_set.capacity()};
-
-    auto &local_player_context = player_contexts[0];
-    local_player_context.player = world_chr_man->main_player;
-
-    // Update the local player VFX based on their transmog selections
-    auto state = ertransmogrify::local_player::get_local_player_state(world_chr_man->main_player);
-    auto any_changed = update_player_context(local_player_context, state, 0);
-
-    // Apply or remove the transmog SpEffects on the main player based on their selections
-    if (local_player_context.player && any_changed) {
-        if (local_player_context.state.head_protector_id > 0) {
-            players::apply_speffect(local_player_context.player,
-                                    local_player_context.head_speffect_id, false);
-        } else {
-            players::clear_speffect(local_player_context.player,
-                                    local_player_context.head_speffect_id);
-        }
-
-        if (local_player_context.state.chest_protector_id > 0 ||
-            local_player_context.state.arms_protector_id > 0 ||
-            local_player_context.state.legs_protector_id > 0) {
-            players::apply_speffect(local_player_context.player,
-                                    local_player_context.body_speffect_id, false);
-        } else {
-            players::clear_speffect(local_player_context.player,
-                                    local_player_context.body_speffect_id);
-        }
-    }
-
-    static bool prev_client_side_only = false;
-    bool client_side_only = is_client_side_only();
-    if (client_side_only != prev_client_side_only) {
-        any_changed = true;
-        prev_client_side_only = client_side_only;
-    }
-    if (client_side_only) {
-        state = empty_state;
-    }
-
-    // Send the main player's transmog state to other players in the session when it changes,
-    // and also periodically just in case
-    auto now = clock.now();
-    if (any_changed || now >= next_net_update_time) {
-        next_net_update_time = now + chrono::seconds(5);
-        ertransmogrify::net::send_messages(state);
-    }
-
-    ertransmogrify::net::receive_messages();
-    for (int i = 1; i < player_contexts.size(); i++) {
-        auto &player_context = (*player_context_buffer)[i];
-        player_context.player = world_chr_man->player_chr_set.at(i);
-        if (!player_context.player || !player_context.player->session_holder.network_session) {
-            continue;
-        }
-
-        // Search for the net player's transmog speffect IDs
-        for (auto entry = player_context.player->special_effects->head; entry != nullptr;
-             entry = entry->next) {
-            if (entry->param_id >= vfx::transmog_vfx_speffect_start_id &&
-                entry->param_id < vfx::transmog_vfx_speffect_end_id) {
-                if (entry->param_id % 2 == 0) {
-                    entry->param = &player_context.head_speffect;
-                    player_context.head_speffect_id = entry->param_id;
-                } else {
-                    entry->param = &player_context.body_speffect;
-                    player_context.body_speffect_id = entry->param_id;
-                }
-            }
-        }
-
-        // Update the networked player VFX based on the state previously sent over the
-        // network
-        auto &state = client_side_only
-                          ? empty_state
-                          : ertransmogrify::net::get_net_player_state(
-                                player_context.player->session_holder.network_session->steam_id);
-
-        update_player_context(player_context, state, i);
-    }
-}
-
 /**
  * Update the main player and each network player's transmog state as part of the main game loop
  */
-static void (*in_game_stay_step_load_finish)(InGameStep *) = nullptr;
-static void in_game_stay_step_load_finish_detour(InGameStep *step) {
-    update_player_contexts();
-    in_game_stay_step_load_finish(step);
-}
+class update_transmog_vfx_task : public er::CS::CSEzTask {
+    bool update_player_context(player_context_st &context,
+                               const ertransmogrify::vfx::player_state_st &new_state,
+                               int index) {
+        if (new_state.head_protector_id != context.state.head_protector_id ||
+            new_state.chest_protector_id != context.state.chest_protector_id ||
+            new_state.arms_protector_id != context.state.arms_protector_id ||
+            new_state.legs_protector_id != context.state.legs_protector_id) {
+            // Toggle between the main and alternate set IDs when the protectors change, so the game
+            // looks up the params again. Both of these IDs alias to the same armor set which is
+            // dynamically updated.
+            int diff = ertransmogrify::vfx::transmog_set_alt_base_id -
+                       ertransmogrify::vfx::transmog_set_base_id;
+            if (context.head_vfx.transformProtectorId >=
+                ertransmogrify::vfx::transmog_set_alt_base_id) {
+                context.head_vfx.transformProtectorId -= diff;
+                context.body_vfx.transformProtectorId -= diff;
+            } else {
+                context.head_vfx.transformProtectorId += diff;
+                context.body_vfx.transformProtectorId += diff;
+            }
+
+            auto is_head_applied = new_state.head_protector_id > 0;
+            auto is_body_applied = new_state.chest_protector_id > 0 ||
+                                   new_state.arms_protector_id > 0 ||
+                                   new_state.legs_protector_id > 0;
+
+            // Set the VFX for the speffects applied to the player if they're applied. We could also
+            // just add and remove the speffects to toggle the VFX, but speffect removal is not
+            // synced in co-op.
+            context.head_speffect.vfxId =
+                is_head_applied ? ertransmogrify::vfx::transmog_head_base_vfx_id + index : -1;
+            context.body_speffect.vfxId =
+                is_body_applied ? ertransmogrify::vfx::transmog_body_base_vfx_id + index : -1;
+
+            // Check for any protectors that apply purely cosmetic VFX, such as Midras Gaze in
+            // The Convergence. We should apply these effects when the protectors are chosen as
+            // transmogs, but we shouldn't include any effects that have mechanical benefits.
+            auto get_cosmetic_vfx_id = [](initializer_list<int> protector_ids) {
+                for (auto protector_id : protector_ids) {
+                    if (protector_id == -1) continue;
+
+                    auto &protector = er::param::EquipParamProtector[protector_id].first;
+                    for (auto sp_effect_id :
+                         {protector.residentSpEffectId, protector.residentSpEffectId2,
+                          protector.residentSpEffectId3}) {
+                        if (sp_effect_id == -1) continue;
+
+                        auto &sp_effect = er::param::SpEffectParam[sp_effect_id].first;
+
+                        // Ignore effects that have mechanical benefits or drawbacks, which is
+                        // typically indicated by an icon
+                        if (sp_effect.iconId != -1) continue;
+
+                        for (auto vfx_id : {sp_effect.vfxId, sp_effect.vfxId1, sp_effect.vfxId2,
+                                            sp_effect.vfxId3, sp_effect.vfxId4, sp_effect.vfxId5,
+                                            sp_effect.vfxId6, sp_effect.vfxId7}) {
+                            if (vfx_id != -1) return vfx_id;
+                        }
+                    }
+                }
+                return -1;
+            };
+
+            context.head_speffect.vfxId1 = get_cosmetic_vfx_id({
+                new_state.head_protector_id,
+            });
+
+            context.body_speffect.vfxId1 = get_cosmetic_vfx_id({
+                new_state.chest_protector_id,
+                new_state.arms_protector_id,
+                new_state.legs_protector_id,
+            });
+
+            context.state = new_state;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if the local player's transmog shouldn't be displayed on other player's screens
+     * and vice versa
+     */
+    bool is_client_side_only() {
+        auto result = ertransmogrify::config::client_side_only;
+
+        // F8 temporarily inverts this setting so you can peek at other players' actual armor
+        if (GetAsyncKeyState(VK_F8) & 0x8000) {
+            return !result;
+        }
+
+        return result;
+    }
+
+public:
+    virtual void execute(er::FD4::task_data *data,
+                         er::FD4::task_group group,
+                         er::FD4::task_affinity affinity) override {
+        static auto empty_state = ertransmogrify::vfx::player_state_st{};
+
+        static auto clock = chrono::steady_clock{};
+        static auto next_net_update_time = chrono::steady_clock::time_point{};
+
+        auto world_chr_man = er::CS::WorldChrManImp::instance();
+        if (!world_chr_man) {
+            return;
+        }
+
+        player_contexts = span{player_contexts.data(), world_chr_man->player_chr_set.capacity()};
+
+        auto &local_player_context = player_contexts[0];
+        local_player_context.player = world_chr_man->main_player;
+
+        // Update the local player VFX based on their transmog selections
+        auto state =
+            ertransmogrify::local_player::get_local_player_state(world_chr_man->main_player);
+        auto any_changed = update_player_context(local_player_context, state, 0);
+
+        // Apply or remove the transmog SpEffects on the main player based on their selections
+        if (local_player_context.player && any_changed) {
+            if (local_player_context.state.head_protector_id > 0) {
+                players::apply_speffect(local_player_context.player,
+                                        local_player_context.head_speffect_id, false);
+            } else {
+                players::clear_speffect(local_player_context.player,
+                                        local_player_context.head_speffect_id);
+            }
+
+            if (local_player_context.state.chest_protector_id > 0 ||
+                local_player_context.state.arms_protector_id > 0 ||
+                local_player_context.state.legs_protector_id > 0) {
+                players::apply_speffect(local_player_context.player,
+                                        local_player_context.body_speffect_id, false);
+            } else {
+                players::clear_speffect(local_player_context.player,
+                                        local_player_context.body_speffect_id);
+            }
+        }
+
+        static bool prev_client_side_only = false;
+        bool client_side_only = is_client_side_only();
+        if (client_side_only != prev_client_side_only) {
+            any_changed = true;
+            prev_client_side_only = client_side_only;
+        }
+        if (client_side_only) {
+            state = empty_state;
+        }
+
+        // Send the main player's transmog state to other players in the session when it changes,
+        // and also periodically just in case
+        auto now = clock.now();
+        if (any_changed || now >= next_net_update_time) {
+            next_net_update_time = now + chrono::seconds(5);
+            ertransmogrify::net::send_messages(state);
+        }
+
+        ertransmogrify::net::receive_messages();
+        for (int i = 1; i < player_contexts.size(); i++) {
+            auto &player_context = (*player_context_buffer)[i];
+            player_context.player = world_chr_man->player_chr_set.at(i);
+            if (!player_context.player || !player_context.player->session_holder.network_session) {
+                continue;
+            }
+
+            // Search for the net player's transmog speffect IDs
+            for (auto entry = player_context.player->special_effects->head; entry != nullptr;
+                 entry = entry->next) {
+                if (entry->param_id >= vfx::transmog_vfx_speffect_start_id &&
+                    entry->param_id < vfx::transmog_vfx_speffect_end_id) {
+                    if (entry->param_id % 2 == 0) {
+                        entry->param = &player_context.head_speffect;
+                        player_context.head_speffect_id = entry->param_id;
+                    } else {
+                        entry->param = &player_context.body_speffect;
+                        player_context.body_speffect_id = entry->param_id;
+                    }
+                }
+            }
+
+            // Update the networked player VFX based on the state previously sent over the
+            // network
+            auto &state =
+                client_side_only
+                    ? empty_state
+                    : ertransmogrify::net::get_net_player_state(
+                          player_context.player->session_holder.network_session->steam_id);
+
+            update_player_context(player_context, state, i);
+        }
+    }
+};
 
 void vfx::initialize() {
     // Hook get_equip_param_protector() to return the above protectors and reinforce params. These
@@ -570,24 +573,6 @@ void vfx::initialize() {
                "e8 ?? ?? ?? ??",  // call ChrIns::ClearSpEffect
     });
 
-    auto in_game_stay_step_vfptr = modutils::scan<void *>({
-        .aob = "33 ed"                  // xor ebp, ebp
-               "48 89 ab b8 00 00 00"   // mov qword ptr [rbx + 0xb8], rbp
-               "48 89 ab c0 00 00 00"   // mov qword ptr [rbx + 0xc0], rbp
-               "48 89 ab c8 00 00 00"   // mov qword ptr [rbx + 0xc8], rbp
-               "48 89 ab d0 00 00 00"   // mov qword ptr [rbx + 0xd0], rbp
-               "48 89 ab d8 00 00 00"   // mov qword ptr [rbx + 0xd8], rbp
-               "48 89 ab e0 00 00 00"   // mov qword ptr [rbx + 0xe0], rbp
-               "48 89 ab e8 00 00 00"   // mov qword ptr [rbx + 0xe8], rbp
-               "48 89 ab f0 00 00 00"   // mov qword ptr [rbx + 0xf0], rbp
-               "48 89 ab f8 00 00 00"   // mov qword ptr [rbx + 0xf8], rbp
-               "48 89 ab 00 01 00 00"   // mov qword ptr [rbx + 0x100], rbp
-               "48 89 ab 08 01 00 00"   // mov qword ptr [rbx + 0x108], rbp
-               "40 88 ab 10 01 00 00",  // mov byte ptr [rbx + 0x110], bpl
-        .offset = -10,
-        .relative_offsets = {{3, 7}},
-    });
-
     auto get_posture_control_original = modutils::scan<void>({
         .aob = "0f b6 80 27 01 00 00"  // movzx eac, [rax + 0x127]
                "?? ?? ?? ?? ??"        // ...
@@ -623,8 +608,9 @@ void vfx::initialize() {
         },
         copy_player_character_data_detour, copy_player_character_data);
 
-    modutils::hook({.address = in_game_stay_step_vfptr[4]}, in_game_stay_step_load_finish_detour,
-                   in_game_stay_step_load_finish);
+    static auto task = update_transmog_vfx_task{};
+    er::CS::CSTask::instance()->register_task(
+        er::FD4::task_group::TaskLineIdx_InGame_InGameStayStep, task);
 
     random_device dev;
     mt19937 rng(dev());
