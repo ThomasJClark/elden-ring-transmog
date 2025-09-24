@@ -325,6 +325,42 @@ static void copy_player_character_data_detour(er::CS::PlayerIns *target,
     }
 }
 
+struct blood_message_create_options {
+    int32_t weapon_ids[12];
+    int32_t head_protector_id;
+    int32_t chest_protector_id;
+    int32_t arms_protector_id;
+    int32_t legs_protector_id;
+    er::CS::PlayerGameData::body_type_en body_type;
+    uint8_t unk4a[0xb];
+    er::CS::ChrAsm::arm_style_type arm_style;
+    int32_t left_weapon_index;
+    int32_t right_weapon_index;
+    int32_t left_arrow_index;
+    int32_t right_arrow_index;
+    int32_t left_bolt_index;
+    int32_t right_bolt_index;
+};
+
+/**
+ * When a player creates a blood message with a gesture, apply the relevant transmog VFX to the
+ * ghost data instead of their actual armor
+ */
+static void (*copy_player_to_blood_message_options)(er::CS::PlayerIns *_this,
+                                                    blood_message_create_options *options);
+static void copy_player_to_blood_message_options_detour(er::CS::PlayerIns *_this,
+                                                        blood_message_create_options *options) {
+    copy_player_to_blood_message_options(_this, options);
+
+    if (player_contexts.size() && player_contexts[0].player == _this) {
+        auto &context = player_contexts[0];
+        options->head_protector_id = context.state.head_protector_id;
+        options->chest_protector_id = context.state.chest_protector_id;
+        options->arms_protector_id = context.state.arms_protector_id;
+        options->legs_protector_id = context.state.legs_protector_id;
+    }
+}
+
 /**
  * Update the main player and each network player's transmog state as part of the main game loop
  */
@@ -621,6 +657,16 @@ void vfx::initialize() {
             .offset = -216,
         },
         copy_player_character_data_detour, copy_player_character_data);
+
+    modutils::hook(
+        {
+            .aob = "48 8d ?? 30"           // lea ??, [?? + 0x30]
+                   "48 8b ?? 38 06 00 00"  // mov ??, [?? + 0x638]
+                   "8b ??"                 // mov ??, ??
+                   "e8 ?? ?? ?? ??",       // call CS::ChrAsm::GetEquipmentEntryParamId
+            .offset = -60,
+        },
+        copy_player_to_blood_message_options_detour, copy_player_to_blood_message_options);
 
     static auto task = update_transmog_vfx_task{};
     er::CS::CSTask::instance()->register_task(
