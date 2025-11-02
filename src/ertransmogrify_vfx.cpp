@@ -476,13 +476,13 @@ class update_transmog_vfx_task : public er::CS::CSEzTask {
 public:
     virtual void execute(er::FD4::task_data *data,
                          er::FD4::task_group group,
-                         er::FD4::task_affinity affinity) override {
+                         er::FD4::task_runner runner) override {
         static auto empty_state = ertransmogrify::vfx::player_state_st{};
 
         static auto clock = chrono::steady_clock{};
         static auto next_net_update_time = chrono::steady_clock::time_point{};
 
-        auto world_chr_man = er::CS::WorldChrManImp::instance();
+        auto world_chr_man = er::CS::WorldChrMan::instance();
         if (!world_chr_man) {
             return;
         }

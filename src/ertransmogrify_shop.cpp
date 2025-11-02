@@ -138,7 +138,7 @@ static inline bool is_protector_unlocked(int goods_id) {
         return true;
     }
 
-    auto main_player = er::CS::WorldChrManImp::instance()->main_player;
+    auto main_player = er::CS::WorldChrMan::instance()->main_player;
 
     // If the player already chose a transmog, show it even if it's not unlocked. This can happen
     // if they discard the armor piece or change their include_unobtained_armor setting and restart
@@ -286,7 +286,7 @@ static bool add_inventory_from_shop_detour(int *item_id_address, int quantity) {
         return result;
     }
 
-    auto main_player = er::CS::WorldChrManImp::instance()->main_player;
+    auto main_player = er::CS::WorldChrMan::instance()->main_player;
 
     long long prev_transmog_protector_id = -1;
 

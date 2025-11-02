@@ -6,12 +6,19 @@
 
 #include <elden-x/params.hpp>
 
+#include <utility>
+
+using namespace std;
+
 static constexpr int transmog_sfx_id = 8020;
 
 /**
  * Get the player's displayed armor before transmog is applied
  */
-static ertransmogrify::vfx::player_state_st get_default_player_state(er::CS::PlayerIns *player) {
+static pair<ertransmogrify::vfx::player_state_st, bool> get_default_player_state(
+    er::CS::PlayerIns *player) {
+    bool ignore_arms_transmog = false;
+
     auto &gear_param_ids = player->game_data->equip_game_data.chr_asm.gear_param_ids;
 
     // If the player isn't using transmog, default to their actual armor.
@@ -39,6 +46,14 @@ static ertransmogrify::vfx::player_state_st get_default_player_state(er::CS::Pla
                         vfx.transformProtectorId + ertransmogrify::vfx::arms_protector_offset;
                     state.legs_protector_id =
                         vfx.transformProtectorId + ertransmogrify::vfx::legs_protector_offset;
+                } else if (vfx.isArmsTransformProtectorId) {
+                    state.arms_protector_id =
+                        vfx.transformProtectorId + ertransmogrify::vfx::arms_protector_offset;
+
+                    // Super special case: arm transforms are used for the singular purpose of
+                    // hiding armor while beast claws or DLC fists are equipped, and should take
+                    // priority over transmog selections.
+                    ignore_arms_transmog = true;
                 } else {
                     state.head_protector_id =
                         vfx.transformProtectorId + ertransmogrify::vfx::head_protector_offset;
@@ -47,7 +62,7 @@ static ertransmogrify::vfx::player_state_st get_default_player_state(er::CS::Pla
         }
     }
 
-    return state;
+    return {state, ignore_arms_transmog};
 }
 
 ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_player_state(
@@ -56,7 +71,7 @@ ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_pla
         return ertransmogrify::vfx::player_state_st{};
     }
 
-    auto state = get_default_player_state(player);
+    auto [state, ignore_arms_transmog] = get_default_player_state(player);
 
     // When the local player is given this speffect, remove any transmogs
     if (players::has_speffect(player, ertransmogrify::vfx::undo_transmog_speffect_id)) {
@@ -82,7 +97,9 @@ ertransmogrify::vfx::player_state_st ertransmogrify::local_player::get_local_pla
                         state.chest_protector_id = protector_id;
                         break;
                     case shop::protector_category_arms:
-                        state.arms_protector_id = protector_id;
+                        if (!ignore_arms_transmog) {
+                            state.arms_protector_id = protector_id;
+                        }
                         break;
                     case shop::protector_category_legs:
                         state.legs_protector_id = protector_id;
