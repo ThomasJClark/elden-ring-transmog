@@ -26,7 +26,7 @@ namespace fs = std::filesystem;
 
 std::thread mod_thread;
 
-bool WINAPI DllMain(HINSTANCE dll_instance, unsigned int fdw_reason, void *lpv_reserved) {
+BOOL WINAPI DllMain(HINSTANCE dll_instance, uint32_t fdw_reason, void *lpv_reserved) {
     if (fdw_reason == DLL_PROCESS_ATTACH) {
         wchar_t dll_filename[MAX_PATH] = {0};
         GetModuleFileNameW(dll_instance, dll_filename, MAX_PATH);
