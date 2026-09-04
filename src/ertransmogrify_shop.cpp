@@ -9,6 +9,8 @@
 #include <elden-x/params.hpp>
 #include <elden-x/utils/modutils.hpp>
 
+#include <steam/isteamapps.h>
+
 #include <spdlog/spdlog.h>
 
 #include <unordered_map>
@@ -54,6 +56,23 @@ const map<unsigned long long, unsigned long long> shop::dlc_transformation_goods
     {5170200, 2002030},  // Lamenter's Mask (arms, invisible)
     {5170300, 2002030},  // Lamenter's Mask (legs, invisible)
 };
+
+const unordered_set<uint64_t> tarnished_pack_protector_ids = {
+    // Broken Gold set
+    5340000, 5340100, 5340200, 5340300,
+
+    // Silver Grooved set
+    5350000, 5350100, 5350200, 5350300, 5351100,
+
+    // Leontiel's set
+    5360000, 5360100, 5360200, 5360300, 5361000,
+
+    // Steel set
+    5370000, 5370100, 5370200, 5370300};
+
+static constexpr auto shadow_of_the_erdtree_app_id = AppId_t{2778580};
+
+static constexpr auto tarnished_pack_app_id = AppId_t{3655690};
 
 typedef void AddRemoveItemFn(unsigned long long item_type, unsigned int item_id, int quantity);
 static AddRemoveItemFn *add_remove_item = nullptr;
@@ -396,6 +415,19 @@ void shop::initialize() {
         },
         get_shop_menu_detour, get_shop_menu);
 
+    auto shadow_of_the_erdtree_installed =
+        SteamApps()->BIsDlcInstalled(shadow_of_the_erdtree_app_id);
+    auto tarnished_pack_installed = SteamApps()->BIsDlcInstalled(tarnished_pack_app_id);
+
+    SPDLOG_INFO("Shadow of the Erdtree {}",
+                shadow_of_the_erdtree_installed
+                    ? "installed"
+                    : "not installed, armor sets unavailable for transmog");
+
+    SPDLOG_INFO("Tarnished Pack {}", tarnished_pack_installed
+                                         ? "installed"
+                                         : "not installed, armor sets unavailable for transmog");
+
     // Add goods and shop entries for every armor piece the player can buy
     for (auto [protector_id, protector_row] : er::param::EquipParamProtector) {
         auto goods_id = get_transmog_goods_id_for_protector(protector_id);
@@ -447,9 +479,16 @@ void shop::initialize() {
             continue;
         }
 
-        // Skip DLC items, if configured to do so
-        if (!config::include_dlc_armor && (protector_is_dlc || dlc_transformation_protector)) {
-            SPDLOG_DEBUG("Skipping DLC protector {}", protector_id);
+        // Skip Shadow of the Erdtree items if not installed
+        if (!shadow_of_the_erdtree_installed &&
+            (protector_is_dlc || dlc_transformation_protector)) {
+            SPDLOG_DEBUG("Skipping Shadow of the Erdtree protector {}", protector_id);
+            continue;
+        }
+
+        // Skip Tarnished Pack items, if not installed
+        if (!tarnished_pack_installed && tarnished_pack_protector_ids.contains(protector_id)) {
+            SPDLOG_DEBUG("Skipping Tarnished Pack protector {}", protector_id);
             continue;
         }
 

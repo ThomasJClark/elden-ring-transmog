@@ -20,12 +20,6 @@ extern bool include_unobtained_armor;
 extern bool include_cut_armor;
 
 /**
- * Include Shadow of the Erdtree armor pieces as transmogrification options. This can be disabled
- * to avoid spoilers.
- */
-extern bool include_dlc_armor;
-
-/**
  * Add the "Tranmsogrify armor" option to the Site of Grace menu. This can be disabled by mod
  * authors to add their entrypoint for transmog.
  *
