@@ -1,8 +1,8 @@
-#include "ertransmogrify_vfx.hpp"
 #include "ertransmogrify_config.hpp"
 #include "ertransmogrify_local_player.hpp"
 #include "ertransmogrify_net.hpp"
 #include "ertransmogrify_shop.hpp"
+#include "ertransmogrify_vfx.hpp"
 #include "utils/players.hpp"
 
 #include <spdlog/spdlog.h>
@@ -531,21 +531,31 @@ public:
         auto any_changed = update_player_context(local_player_context, state, 0);
 
         // Apply or remove the transmog SpEffects on the main player based on their selections
-        if (local_player_context.player && any_changed) {
+        if (local_player_context.player) {
+            auto has_head_speffect = players::has_speffect(local_player_context.player,
+                                                           local_player_context.head_speffect_id);
+
             if (local_player_context.state.head_protector_id > 0) {
-                players::apply_speffect(local_player_context.player,
-                                        local_player_context.head_speffect_id, false);
-            } else {
+                if (!has_head_speffect) {
+                    players::apply_speffect(local_player_context.player,
+                                            local_player_context.head_speffect_id, false);
+                }
+            } else if (has_head_speffect) {
                 players::clear_speffect(local_player_context.player,
                                         local_player_context.head_speffect_id);
             }
 
+            auto has_body_speffect = players::has_speffect(local_player_context.player,
+                                                           local_player_context.body_speffect_id);
+
             if (local_player_context.state.chest_protector_id > 0 ||
                 local_player_context.state.arms_protector_id > 0 ||
                 local_player_context.state.legs_protector_id > 0) {
-                players::apply_speffect(local_player_context.player,
-                                        local_player_context.body_speffect_id, false);
-            } else {
+                if (!has_body_speffect) {
+                    players::apply_speffect(local_player_context.player,
+                                            local_player_context.body_speffect_id, false);
+                }
+            } else if (has_body_speffect) {
                 players::clear_speffect(local_player_context.player,
                                         local_player_context.body_speffect_id);
             }
